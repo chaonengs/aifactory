@@ -20,6 +20,6 @@
       "ui-component/*": ["components/ui-component/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "src/pages/resources"],
   "exclude": ["node_modules"]
 }

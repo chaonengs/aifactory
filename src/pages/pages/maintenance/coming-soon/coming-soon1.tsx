@@ -6,7 +6,7 @@ import { useTheme, styled } from '@mui/material/styles';
 import { Avatar, ButtonBase, Card, CardContent, CardMedia, Grid, Link, Typography } from '@mui/material';
 
 // third-party
-import Carousel, { Modal, ModalGateway } from 'react-images';
+// import Carousel, { Modal, ModalGateway } from 'react-images';
 
 // project imports
 import LAYOUT from 'constant';
@@ -253,13 +253,13 @@ const ComingSoon1 = () => {
                         >
                           <Slider />
                         </Link>
-                        <ModalGateway>
+                        {/* <ModalGateway>
                           {open ? (
                             <Modal onClose={() => setOpen(!open)}>
                               <Carousel views={images} />
                             </Modal>
                           ) : null}
-                        </ModalGateway>
+                        </ModalGateway> */}
                       </Grid>
                       <Grid item xs={12} sm={6} sx={{ position: 'relative' }}>
                         <Grid container justifyContent="space-between" spacing={gridSpacing}>

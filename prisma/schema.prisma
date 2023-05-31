@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int            @id @default(autoincrement())
+  uid            String         @unique @default(uuid())
+  username       String
+  name           String?
+  email          String         @unique
+  mobile         String         @unique
+  password       String
+  thirdpartyName String
+  thirdpartyId   String
+  organizations  Organization[]
+}
+
+model Organization {
+  id          Int          @id @default(autoincrement())
+  uid         String       @unique @default(uuid())
+  name        String
+  owner       User         @relation(fields: [ownerId], references: [id])
+  ownerId     Int
+  aiResources AIResource[]
+  apps        App[]
+}
+
+model Usage {
+  id               Int        @id @default(autoincrement())
+  message          Message    @relation(fields: [messageId], references: [id])
+  messageId        Int        @unique
+  aiResource       AIResource @relation(fields: [aiResourceId], references: [id])
+  aiResourceId     Int        @unique
+  promptTokens     Int
+  completionTokens Int
+  totalTokens      Int
+}
+
+model Message {
+  id            Int      @id @default(autoincrement())
+  content       String
+  answer        String
+  createdAt     DateTime @default(now())
+  senderUnionId String
+  sender        String
+  app           App      @relation(fields: [appId], references: [id])
+  appId         Int
+  usage         Usage?
+}
+
+model AIResource {
+  id             Int          @id @default(autoincrement())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int          @unique
+  name           String
+  model          String
+  apiKey         String
+
+  usages Usage[]
+  app    App?
+}
+
+model App {
+  id              Int          @id @default(autoincrement())
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  organizationId  Int          @unique
+  uid             String       @unique @default(uuid())
+  appType         String
+  aiResource      AIResource   @relation(fields: [aiResourceId], references: [id])
+  aiResourceId    Int          @unique
+  messages        Message[]
+  tokenLimitation Int
+  tokenUsed       Int
+  config          Json
+}

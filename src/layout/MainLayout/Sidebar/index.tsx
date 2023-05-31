@@ -50,7 +50,7 @@ const Sidebar = ({ window }: SidebarProps) => {
         }}
       >
         <MenuList />
-        <MenuCard />
+        {/* <MenuCard /> */}
       </PerfectScrollbar>
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps

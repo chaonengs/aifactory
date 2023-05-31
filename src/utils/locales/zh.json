@@ -1,4 +1,11 @@
 {
+  "ai-apps": "AI应用",
+  "my-apps":"我的应用",
+  "app-market":"应用市场",
+  "ai-resources": "AI资源",
+  "sensitive-words": "敏感词",
+  "message-history": "消息历史",
+  "messages": "消息",
   "dashboard": "资讯主页",
   "default": "默认",
   "analytics": "分析工具",
