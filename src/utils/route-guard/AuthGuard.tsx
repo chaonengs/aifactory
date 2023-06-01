@@ -1,9 +1,10 @@
 import { useRouter } from 'next/router';
 // project imports
-import useAuth from 'hooks/useAuth';
+// import useAuth from 'hooks/useAuth';
 import { GuardProps } from 'types';
 import { useEffect } from 'react';
 import Loader from 'components/ui-component/Loader';
+import { useSession, signIn, signOut } from "next-auth/react"
 
 // ==============================|| AUTH GUARD ||============================== //
 
@@ -12,16 +13,17 @@ import Loader from 'components/ui-component/Loader';
  * @param {PropTypes.node} children children element/node
  */
 const AuthGuard = ({ children }: GuardProps) => {
-  const { isLoggedIn } = useAuth();
+  
+  const { data: session } = useSession()
   const router = useRouter();
   useEffect(() => {
-    if (!isLoggedIn) {
-      router.push('/login');
+    if (!session) {
+      router.push('/auth/signIn');
     }
     // eslint-disable-next-line
-  }, [isLoggedIn]);
+  }, [session]);
 
-  if (!isLoggedIn) return <Loader />;
+  if (!session) return <Loader />;
 
   return children;
 };

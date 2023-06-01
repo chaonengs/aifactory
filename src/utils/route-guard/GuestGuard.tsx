@@ -6,6 +6,7 @@ import useAuth from 'hooks/useAuth';
 import { DASHBOARD_PATH } from 'config';
 import { GuardProps } from 'types';
 import Loader from 'components/ui-component/Loader';
+import { useSession, signIn, signOut } from "next-auth/react"
 
 // ==============================|| GUEST GUARD ||============================== //
 
@@ -15,17 +16,18 @@ import Loader from 'components/ui-component/Loader';
  */
 
 const GuestGuard = ({ children }: GuardProps) => {
-  const { isLoggedIn } = useAuth();
+  // const { isLoggedIn } = useAuth();
   const router = useRouter();
+  const { data: session } = useSession()
 
   useEffect(() => {
-    if (isLoggedIn) {
+    if (session) {
       router.push(DASHBOARD_PATH);
     }
     // eslint-disable-next-line
-  }, [isLoggedIn]);
+  }, [session]);
 
-  if (isLoggedIn) return <Loader />;
+  if (session) return <Loader />;
 
   return children;
 };

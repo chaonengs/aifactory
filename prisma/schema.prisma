@@ -5,79 +5,135 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator typegraphql {
+  provider = "typegraphql-prisma"
+}
+
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  // Since you are using planetscale, comment it if you are not
+  relationMode = "prisma"
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model User {
-  id             Int            @id @default(autoincrement())
-  uid            String         @unique @default(uuid())
-  username       String
-  name           String?
-  email          String         @unique
-  mobile         String         @unique
-  password       String
-  thirdpartyName String
-  thirdpartyId   String
-  organizations  Organization[]
+  id            String         @id @default(cuid())
+  name          String?
+  mobile        String?
+  password      String?
+  email         String?        @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  organizations Organization[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 model Organization {
-  id          Int          @id @default(autoincrement())
-  uid         String       @unique @default(uuid())
+  id          String       @id @default(cuid())
   name        String
   owner       User         @relation(fields: [ownerId], references: [id])
-  ownerId     Int
+  ownerId     String
   aiResources AIResource[]
   apps        App[]
+
+  @@index([ownerId])
 }
 
 model Usage {
-  id               Int        @id @default(autoincrement())
+  id               String     @id @default(cuid())
   message          Message    @relation(fields: [messageId], references: [id])
-  messageId        Int        @unique
+  messageId        String     @unique
   aiResource       AIResource @relation(fields: [aiResourceId], references: [id])
-  aiResourceId     Int        @unique
+  aiResourceId     String     @unique
   promptTokens     Int
   completionTokens Int
   totalTokens      Int
+
+  @@index([messageId])
+  @@index([aiResourceId])
 }
 
 model Message {
-  id            Int      @id @default(autoincrement())
-  content       String
-  answer        String
+  id            String   @id @default(cuid())
+  content       String   @db.Text
+  answer        String   @db.Text
   createdAt     DateTime @default(now())
   senderUnionId String
   sender        String
   app           App      @relation(fields: [appId], references: [id])
-  appId         Int
+  appId         String
   usage         Usage?
+
+  @@index([appId])
+  @@index([senderUnionId])
 }
 
 model AIResource {
-  id             Int          @id @default(autoincrement())
+  id             String       @id @default(cuid())
   organization   Organization @relation(fields: [organizationId], references: [id])
-  organizationId Int          @unique
+  organizationId String
   name           String
   model          String
   apiKey         String
 
   usages Usage[]
-  app    App?
+  apps   App[]
+
+  @@index([organizationId])
 }
 
 model App {
-  id              Int          @id @default(autoincrement())
+  id              String       @id @default(cuid())
   organization    Organization @relation(fields: [organizationId], references: [id])
-  organizationId  Int          @unique
-  uid             String       @unique @default(uuid())
+  organizationId  String
+  cuid            String       @unique @default(cuid())
   appType         String
   aiResource      AIResource   @relation(fields: [aiResourceId], references: [id])
-  aiResourceId    Int          @unique
+  aiResourceId    String
   messages        Message[]
   tokenLimitation Int
   tokenUsed       Int
   config          Json
+
+  @@index([organizationId])
+  @@index([aiResourceId])
 }

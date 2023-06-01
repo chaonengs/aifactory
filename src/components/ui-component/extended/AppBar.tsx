@@ -108,7 +108,7 @@ const AppBar = ({ ...others }) => {
                           <ListItemText primary="Home" />
                         </ListItemButton>
                       </Link>
-                      <Link style={{ textDecoration: 'none' }} href="/login" target="_blank">
+                      <Link style={{ textDecoration: 'none' }} href="/auth/signIn" target="_blank">
                         <ListItemButton component="a">
                           <ListItemIcon>
                             <IconDashboard />

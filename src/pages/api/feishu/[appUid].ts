@@ -64,9 +64,9 @@ const eventDispatcher = (app:App & {aiResource:AIResource}) => {
                             }
                         },
                         aiResourceId: app.aiResourceId,
-                        promptTokens: result.data.usage.prompt_tokens,
-                        completionTokens: result.data.usage.completion_tokens,
-                        totalTokens: result.data.usage.completion_tokens,
+                        promptTokens: result.data.usage.prompt_tokens as number,
+                        completionTokens: result.data.usage.completion_tokens as number,
+                        totalTokens: result.data.usage.completion_tokens as number,
                     }
                 }
             )
@@ -91,7 +91,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { appUid } = req.query;
     if(typeof(appUid) == 'string'){
         const app = await findApp(appUid);
-        app?.aiResource
         if(app === null){
             res.status(404).end('not found')
         } else {

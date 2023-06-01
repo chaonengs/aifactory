@@ -31,7 +31,7 @@ import PerfectScrollbar from 'react-perfect-scrollbar';
 import MainCard from 'ui-component/cards/MainCard';
 import Transitions from 'ui-component/extended/Transitions';
 import UpgradePlanCard from './UpgradePlanCard';
-import useAuth from 'hooks/useAuth';
+import { useSession, signIn, signOut } from "next-auth/react"
 
 // assets
 import { IconLogout, IconSearch, IconSettings, IconUser } from '@tabler/icons-react';
@@ -45,12 +45,12 @@ const ProfileSection = () => {
   const theme = useTheme();
   const { borderRadius } = useConfig();
   // const navigate = useNavigate();
+  const { data: session } = useSession()
 
   const [sdm, setSdm] = useState(true);
   const [value, setValue] = useState('');
   const [notification, setNotification] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const { logout, user } = useAuth();
   const [open, setOpen] = useState(false);
   /**
    * anchorRef is used on different components and specifying one type leads to other components throwing an error
@@ -58,7 +58,7 @@ const ProfileSection = () => {
   const anchorRef = useRef<any>(null);
   const handleLogout = async () => {
     try {
-      await logout();
+      await signOut();
     } catch (err) {
       console.error(err);
     }
@@ -117,7 +117,7 @@ const ProfileSection = () => {
         }}
         icon={
           <Avatar
-            src={User1}
+            src={session?.user?.image || User1}
             sx={{
               ...theme.typography.mediumAvatar,
               margin: '8px 0 8px 8px !important',
@@ -166,7 +166,7 @@ const ProfileSection = () => {
                         <Stack direction="row" spacing={0.5} alignItems="center">
                           <Typography variant="h4">Good Morning,</Typography>
                           <Typography component="span" variant="h4" sx={{ fontWeight: 400 }}>
-                            {user?.name}
+                            {session?.user?.name}
                           </Typography>
                         </Stack>
                         <Typography variant="subtitle2">Project Admin</Typography>

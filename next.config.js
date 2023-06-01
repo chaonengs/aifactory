@@ -22,7 +22,7 @@ module.exports = {
     return [
       {
         source: '/',
-        destination: '/login',
+        destination: '/auth/signIn',
         permanent: true
       }
     ];

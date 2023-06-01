@@ -51,7 +51,7 @@ const AuthForgotPassword = ({ ...others }) => {
               })
             );
             setTimeout(() => {
-              window.location.replace('/login');
+              window.location.replace('/auth/signIn');
             }, 1500);
           }
         } catch (err: any) {

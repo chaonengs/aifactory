@@ -12,14 +12,14 @@ import type { AppProps } from 'next/app';
 import { Provider } from 'react-redux';
 
 // project-import
-import { store } from '../store';
 import ThemeCustomization from '../themes';
 import NavigationScroll from '../layout/NavigationScroll';
 import RTLLayout from 'ui-component/RTLLayout';
 import Locales from 'ui-component/Locales';
 import { ConfigProvider } from '../contexts/ConfigContext';
+import { SessionProvider } from "next-auth/react"
+import { store } from '../store';
 import Snackbar from 'ui-component/extended/Snackbar';
-import { FirebaseProvider as AuthProvider } from '../contexts/FirebaseContext';
 
 // types
 type LayoutProps = NextPage & {
@@ -30,7 +30,7 @@ interface Props {
   Component: LayoutProps;
 }
 
-function MyApp({ Component, pageProps }: AppProps & Props) {
+function MyApp({ Component, pageProps: { session, ...pageProps }, }: AppProps & Props) {
   const getLayout = Component.getLayout ?? ((page: any) => page);
 
   return (
@@ -40,12 +40,12 @@ function MyApp({ Component, pageProps }: AppProps & Props) {
           <RTLLayout>
             <Locales>
               <NavigationScroll>
-                <AuthProvider>
+                <SessionProvider session={session}>
                   <>
                     {getLayout(<Component {...pageProps} />)}
                     <Snackbar />
                   </>
-                </AuthProvider>
+                </SessionProvider>
               </NavigationScroll>
             </Locales>
           </RTLLayout>

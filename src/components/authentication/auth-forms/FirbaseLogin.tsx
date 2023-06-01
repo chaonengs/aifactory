@@ -25,30 +25,36 @@ import {
 // third party
 import * as Yup from 'yup';
 import { Formik } from 'formik';
-import { useSession, signIn, signOut } from "next-auth/react"
 
 // project imports
 import useConfig from 'hooks/useConfig';
+import useAuth from 'hooks/useAuth';
 import useScriptRef from 'hooks/useScriptRef';
 
 
 // assets
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import { sign } from 'crypto';
 
 const Google = '/assets/images/icons/social-google.svg';
-import GitHubIcon from '@mui/icons-material/GitHub';
-// import { getCsrfToken } from "next-auth/react"
 
-// ============================|| Auth - LOGIN ||============================ //
+// ============================|| FIREBASE - LOGIN ||============================ //
 
-const AuthLogin = ({ ...others }) => {
+const FirebaseLogin = ({ ...others }) => {
   const theme = useTheme();
   const scriptedRef = useScriptRef();
   const matchDownSM = useMediaQuery(theme.breakpoints.down('md'));
   const { borderRadius } = useConfig();
   const [checked, setChecked] = React.useState(true);
+
+  const { firebaseEmailPasswordSignIn, firebaseGoogleSignIn } = useAuth();
+  const googleHandler = async () => {
+    try {
+      await firebaseGoogleSignIn();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const [showPassword, setShowPassword] = React.useState(false);
   const handleClickShowPassword = () => {
@@ -67,7 +73,7 @@ const AuthLogin = ({ ...others }) => {
             <Button
               disableElevation
               fullWidth
-              onClick={()=> signIn('github')}
+              onClick={googleHandler}
               size="large"
               variant="outlined"
               sx={{
@@ -77,9 +83,9 @@ const AuthLogin = ({ ...others }) => {
               }}
             >
               <Box sx={{ mr: { xs: 1, sm: 2 }, width: 20, height: 20, marginRight: matchDownSM ? 8 : 16 }}>
-               <GitHubIcon />
+                <Image src={Google} alt="Berry Dashboard" layout="intrinsic" width={16} height={16}/>
               </Box>
-              Sign in with Github
+              Sign in with Google
             </Button>
           
         </Grid>
@@ -123,31 +129,31 @@ const AuthLogin = ({ ...others }) => {
 
       <Formik
         initialValues={{
-          email: '',
+          email: 'info@codedthemes.com',
+          password: '123456',
           submit: null
         }}
         validationSchema={Yup.object().shape({
           email: Yup.string().email('Must be a valid email').max(255).required('Email is required'),
+          password: Yup.string().max(255).required('Password is required')
         })}
         onSubmit={async (values, { setErrors, setStatus, setSubmitting }) => {
           try {
-            const res = await signIn("email", { email: values.email });
-            res;
-            // await firebaseEmailPasswordSignIn(values.email, values.password).then(
-            //   () => {
-            //     // WARNING: do not set any formik state here as formik might be already destroyed here. You may get following error by doing so.
-            //     // Warning: Can't perform a React state update on an unmounted component. This is a no-op, but it indicates a memory leak in your application.
-            //     // To fix, cancel all subscriptions and asynchronous tasks in a useEffect cleanup function.
-            //     // github issue: https://github.com/formium/formik/issues/2430
-            //   },
-            //   (err: any) => {
-            //     if (scriptedRef.current) {
-            //       setStatus({ success: false });
-            //       setErrors({ submit: err.message });
-            //       setSubmitting(false);
-            //     }
-            //   }
-            // );
+            await firebaseEmailPasswordSignIn(values.email, values.password).then(
+              () => {
+                // WARNING: do not set any formik state here as formik might be already destroyed here. You may get following error by doing so.
+                // Warning: Can't perform a React state update on an unmounted component. This is a no-op, but it indicates a memory leak in your application.
+                // To fix, cancel all subscriptions and asynchronous tasks in a useEffect cleanup function.
+                // github issue: https://github.com/formium/formik/issues/2430
+              },
+              (err: any) => {
+                if (scriptedRef.current) {
+                  setStatus({ success: false });
+                  setErrors({ submit: err.message });
+                  setSubmitting(false);
+                }
+              }
+            );
           } catch (err: any) {
             console.error(err);
             if (scriptedRef.current) {
@@ -159,9 +165,9 @@ const AuthLogin = ({ ...others }) => {
         }}
       >
         {({ errors, handleBlur, handleChange, handleSubmit, isSubmitting, touched, values }) => (
-          <form noValidate onSubmit={handleSubmit} {...others}  >
+          <form noValidate onSubmit={handleSubmit} {...others}>
             <FormControl fullWidth error={Boolean(touched.email && errors.email)} sx={{ ...theme.typography.customInput }}>
-              <InputLabel htmlFor="outlined-adornment-email-login">Email Address</InputLabel>
+              <InputLabel htmlFor="outlined-adornment-email-login">Email Address / Username</InputLabel>
               <OutlinedInput
                 id="outlined-adornment-email-login"
                 type="email"
@@ -179,7 +185,37 @@ const AuthLogin = ({ ...others }) => {
               )}
             </FormControl>
 
-           
+            <FormControl fullWidth error={Boolean(touched.password && errors.password)} sx={{ ...theme.typography.customInput }}>
+              <InputLabel htmlFor="outlined-adornment-password-login">Password</InputLabel>
+              <OutlinedInput
+                id="outlined-adornment-password-login"
+                type={showPassword ? 'text' : 'password'}
+                value={values.password}
+                name="password"
+                onBlur={handleBlur}
+                onChange={handleChange}
+                endAdornment={
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="toggle password visibility"
+                      onClick={handleClickShowPassword}
+                      onMouseDown={handleMouseDownPassword}
+                      edge="end"
+                      size="large"
+                    >
+                      {showPassword ? <Visibility /> : <VisibilityOff />}
+                    </IconButton>
+                  </InputAdornment>
+                }
+                label="Password"
+                inputProps={{}}
+              />
+              {touched.password && errors.password && (
+                <FormHelperText error id="standard-weight-helper-text-password-login">
+                  {errors.password}
+                </FormHelperText>
+              )}
+            </FormControl>
             <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
               <FormControlLabel
                 control={
@@ -187,6 +223,9 @@ const AuthLogin = ({ ...others }) => {
                 }
                 label="Remember me"
               />
+              <Typography variant="subtitle1" component={Link} href="/forgot" color="secondary" sx={{ textDecoration: 'none' }}>
+                Forgot Password?
+              </Typography>
             </Stack>
             {errors.submit && (
               <Box sx={{ mt: 3 }}>
@@ -208,11 +247,4 @@ const AuthLogin = ({ ...others }) => {
   );
 };
 
-export default AuthLogin;
-
-export async function getServerSideProps(context) {
-    const csrfToken = await getCsrfToken(context)
-    return {
-      props: { csrfToken },
-    }
-  }
+export default FirebaseLogin;
