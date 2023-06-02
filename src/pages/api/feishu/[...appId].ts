@@ -147,10 +147,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if(app === null){
             res.status(404).end('not found')
         } else {
-            const dispatcher = eventDispatcher(app);
-            const data = req.body;
-            const result = await dispatcher.invoke(data);
-            res.end(result)
+            if(req.body && req.body['type'] &&  req.body['type'] === 'url_verification'){
+                res.end(JSON.stringify({challenge:req.body['challenge']}));
+            } else if (req.body && req.body['encrypt'] ){
+                console.log( req.body['encrypt']);
+                const r = lark.generateChallenge(req.body,{encryptKey: app.config['appEncryptKey']});
+                res.end(JSON.stringify({challenge:r.challenge}));
+            }
+            else{
+                const dispatcher = eventDispatcher(app);
+                const data = req.body;
+                const result = await dispatcher.invoke(data);
+                res.end(result);
+            }
+
         }
 
     } else {

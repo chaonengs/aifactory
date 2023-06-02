@@ -193,6 +193,58 @@ export default function AppCard({ app }) {
           <Button onClick={handleConfigSave}>保存</Button>
         </DialogActions>
       </Dialog>
+
+      <Dialog open={open} onClose={handleClose}>
+        <DialogTitle>查看飞书配置</DialogTitle>
+        <DialogContent>
+          <DialogContentText>查看飞书URL配置</DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="appdId"
+            label="AppId"
+            fullWidth
+            variant="standard"
+            onChange={handleFormOnChange}
+            value={configForm.appId}
+          />
+          <TextField
+            autoFocus
+            margin="dense"
+            id="appSecret"
+            label="AppSecret"
+            fullWidth
+            variant="standard"
+            onChange={handleFormOnChange}
+            value={configForm.appSecret}
+          />
+          <TextField
+            autoFocus
+            margin="dense"
+            id="appEncryptKey"
+            label="App Encrypt Key"
+            fullWidth
+            variant="standard"
+            onChange={handleFormOnChange}
+            value={configForm.appEncryptKey}
+          />
+          <TextField
+            autoFocus
+            margin="dense"
+            id="appVerificationToken"
+            label="App Verification Token"
+            fullWidth
+            variant="standard"
+            onChange={handleFormOnChange}
+            value={configForm.appVerificationToken}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>取消</Button>
+          <Button onClick={handleConfigSave}>保存</Button>
+        </DialogActions>
+      </Dialog>
+
     </>
   );
 }
