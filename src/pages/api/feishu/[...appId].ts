@@ -152,7 +152,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             } else if (req.body && req.body['encrypt'] ){
                 console.log( req.body['encrypt']);
                 const r = lark.generateChallenge(req.body,{encryptKey: app.config['appEncryptKey']});
-                res.end(JSON.stringify({challenge:r.challenge}));
+                res.end(JSON.stringify(r.challenge));
             }
             else{
                 const dispatcher = eventDispatcher(app);
