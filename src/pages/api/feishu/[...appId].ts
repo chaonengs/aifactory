@@ -37,7 +37,8 @@ const getFeishuUser = async (client: lark.Client, userId: string) => {
 
 const createMessage = async (feishuClient: lark.Client, feishuData: {}, app: App & { aiResource: AIResource }) => {
     console.log(feishuData);
-  const message = feishuData.message.content;
+  const messageJsonString = feishuData.message.content;
+  const message = JSON.parse(messageJsonString).text;
   const aiResult = await (await OpenAIChatComletion(OpenAIModels[OpenAIModelID.GPT_3_5], message, 1, app.aiResource.apiKey, false)).json()
   const feishuSender = await getFeishuUser(feishuClient, feishuData.sender.sender_id.union_id);
   await prisma.$transaction([
@@ -146,12 +147,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (r.isChallenge) {
           res.end(JSON.stringify(r.challenge));
         } else {
+            res.end('ok');
           const dispatcher = eventDispatcher(app);
           const data = Object.assign(Object.create({
             headers: req.headers,
         }), req.body);
           const result = await dispatcher.invoke(data);
-          res.end(result);
+        //   res.end(result);
         }
       }
     }
