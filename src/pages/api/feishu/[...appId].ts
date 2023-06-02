@@ -39,21 +39,21 @@ const createMessage = async (feishuClient: lark.Client, feishuData: {}, app: App
     console.log(feishuData);
   const message = feishuData.message.content;
   const aiResult = await (await OpenAIChatComletion(OpenAIModels[OpenAIModelID.GPT_3_5], message, 1, app.aiResource.apiKey, false)).json()
-  const feishuSender = await getFeishuUser(feishuClient, aiResult.data.sender.sender_id);
+  const feishuSender = await getFeishuUser(feishuClient, feishuData.sender.sender_id);
   await prisma.$transaction([
     prisma.message.create({
         data:{
             senderUnionId: feishuSender?.union_id as string,
             sender: feishuSender?.name ? feishuSender.name : (feishuData.sender.sender_id as string),
-          content: message,
-          answer: aiResult.choices[0].message.content,
-          appId: app.id,
-          usage: {
-            create:{
-              aiResourceId: app.aiResourceId,
-              promptTokens: aiResult.usage.prompt_tokens as number,
-              completionTokens: aiResult.usage.completion_tokens as number,
-              totalTokens: aiResult.usage.total_tokens as number
+            content: message,
+            answer: aiResult.choices[0].message.content,
+            appId: app.id,
+            usage: {
+                create:{
+                aiResourceId: app.aiResourceId,
+                promptTokens: aiResult.usage.prompt_tokens as number,
+                completionTokens: aiResult.usage.completion_tokens as number,
+                totalTokens: aiResult.usage.total_tokens as number
             }
           }
         }

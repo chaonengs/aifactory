@@ -20,9 +20,7 @@ const findApp = async (id: string) => {
 
 
 const createMessage = async (message: string, app: App & { aiResource: AIResource }) => {
-  let aiResult;
-  
-  aiResult = await (await OpenAIChatComletion(OpenAIModels[OpenAIModelID.GPT_3_5], message, 1, app.aiResource.apiKey, false)).json()
+  const aiResult = await (await OpenAIChatComletion(OpenAIModels[OpenAIModelID.GPT_3_5], message, 1, app.aiResource.apiKey, false)).json()
   await prisma.$transaction([
     prisma.message.create({
       data:{

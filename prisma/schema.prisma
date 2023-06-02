@@ -83,7 +83,7 @@ model Usage {
   message          Message    @relation(fields: [messageId], references: [id])
   messageId        String     @unique
   aiResource       AIResource @relation(fields: [aiResourceId], references: [id])
-  aiResourceId     String     @unique
+  aiResourceId     String     
   promptTokens     Int
   completionTokens Int
   totalTokens      Int
