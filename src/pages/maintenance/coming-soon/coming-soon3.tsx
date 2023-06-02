@@ -84,7 +84,7 @@ const CardMediaPurple = styled('img')({
 
 // ===========================|| COMING SOON 2 ||=========================== //
 
-const Market = () => {
+const ComingSoon3 = () => {
   const theme = useTheme();
   const time = new Date();
   time.setSeconds(time.getSeconds() + 3600 * 24 * 2 - 3600 * 15.5);
@@ -134,6 +134,7 @@ const Market = () => {
                 </Grid>
               </TimerWrapper>
             </Grid>
+
           </Grid>
         </CardContent>
       </ComingSoonCard>
@@ -141,9 +142,8 @@ const Market = () => {
   );
 };
 
-Market.getLayout = function getLayout(page: ReactElement) {
-  return <Layout variant={LAYOUT.main}>{page}</Layout>;
+ComingSoon3.getLayout = function getLayout(page: ReactElement) {
+  return <Layout variant={LAYOUT.minimal}>{page}</Layout>;
 };
 
-
-export default Market;
+export default ComingSoon3;

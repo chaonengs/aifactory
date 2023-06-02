@@ -111,9 +111,12 @@ model AIResource {
   id             String       @id @default(cuid())
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId String
+  type           String       @default("openai")
   name           String
   model          String
   apiKey         String
+  tokenUsed      Int          @default(0)
+  tokenRemains   Int          @default(0)
 
   usages Usage[]
   apps   App[]
@@ -125,7 +128,7 @@ model App {
   id              String       @id @default(cuid())
   organization    Organization @relation(fields: [organizationId], references: [id])
   organizationId  String
-  cuid            String       @unique @default(cuid())
+  name            String?
   appType         String
   aiResource      AIResource   @relation(fields: [aiResourceId], references: [id])
   aiResourceId    String

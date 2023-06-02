@@ -49,19 +49,26 @@ export const authOptions: NextAuthOptions = {
   ],
   events: {
     async createUser(authuser) {
-      const org = await prisma.organization.findFirst({
+      const org = await prisma.organization.findUnique({
         where: {
-          ownerId: authuser.user.id
+          id: authuser.user.id
         }
       })
       if(org === null || org === undefined){
         await prisma.organization.create({
           data: {
+            id: authuser.user.id,
             ownerId: authuser.user.id,
             name: authuser.user.name as string
           }
         })
       }
+    }
+  },
+  callbacks: {
+    async session({ session, token, user }) {
+      session.user.id = user.id
+      return session
     }
   }
     // FeiShuProvider({

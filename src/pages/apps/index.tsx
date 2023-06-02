@@ -1,7 +1,7 @@
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
-import { Button, Card, CardActions, CardContent, Paper, Stack, Typography } from '@mui/material';
+import { Button, Card, CardActions, CardContent, Paper, Skeleton, Stack, Typography } from '@mui/material';
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
 import { styled, useTheme } from '@mui/material/styles';
@@ -17,11 +17,18 @@ import MainCard from 'ui-component/cards/MainCard';
 import { DataGridPremium } from '@mui/x-data-grid-premium';
 import Grid from '@mui/material/Unstable_Grid2'; // Grid version 2
 import AppCard from 'components/application/aifactory/AppCard';
+import {useOrganization} from 'feed';
+import { useSession} from "next-auth/react"
+import { height } from '@mui/system';
+
 
 const MyApps = () => {
   const theme = useTheme();
-
   const [tabValue, setTabValue] = React.useState('openai');
+  const [apps, setApps] = React.useState([]);
+  const { data: session } = useSession()
+
+  const {organization} = useOrganization(session?.user.id);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
     setTabValue(newValue);
@@ -40,9 +47,20 @@ const MyApps = () => {
         }
       >
         <Grid container spacing={2}>
-          <Grid xs={3}>
-          <AppCard/>
-          </Grid>
+          {
+            organization ? (<Grid xs={3}>
+              {organization.apps.map((app)=>{
+                return <AppCard app={app} key={app.id}/>
+              })}
+            
+            </Grid>):
+            (
+              <Grid xs={12}>
+                <Skeleton animation="wave" sx={{height: 300}} />
+              </Grid>
+            )
+          }
+
 
         </Grid>
       </MainCard>

@@ -45,7 +45,7 @@ const menus = {
           id: 'sensitive-words',
           title: <FormattedMessage id="sensitive-words" />,
           type: 'item',
-          url: '/messages/sensitive',
+          url: '/messages/sensitives',
           icon: IconSquareAsterisk,
           breadcrumbs: false
         }
@@ -61,7 +61,7 @@ const menus = {
           id: 'my-apps',
           title: <FormattedMessage id="my-apps" />,
           type: 'item',
-          url: '/apps/my',
+          url: '/apps',
           icon: IconAsset,
           breadcrumbs: false
         },
@@ -96,7 +96,7 @@ const messages = {
       id: 'sensitive-words',
       title: <FormattedMessage id="sensitive-words" />,
       type: 'item',
-      url: '/messages/sensitive',
+      url: '/messages/sensitives',
       icon: IconSquareAsterisk,
       breadcrumbs: false
     }
