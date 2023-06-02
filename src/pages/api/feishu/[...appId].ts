@@ -147,7 +147,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (r.isChallenge) {
           res.end(JSON.stringify(r.challenge));
         } else {
-            res.end('ok');
+            res.send('ok');
+            console.log('res sended');
           const dispatcher = eventDispatcher(app);
           const data = Object.assign(Object.create({
             headers: req.headers,
