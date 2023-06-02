@@ -2,6 +2,8 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, App, Prisma, AIResource } from '@prisma/client';
 import * as lark from '@larksuiteoapi/node-sdk';
 import { chat, createConfiguration } from 'utils/server/openai';
+import { OpenAIChatComletion } from 'utils/server';
+import { OpenAIModelID, OpenAIModels } from 'types/openai';
 
 const prisma = new PrismaClient();
 
@@ -34,43 +36,43 @@ const getFeishuUser = async (client: lark.Client, userId: string) => {
 };
 
 const createMessage = async (feishuClient: lark.Client, feishuData: {}, app: App & { aiResource: AIResource }) => {
-  const messageContent = feishuData.message.content;
-  const aiResult = await chat(createConfiguration(app), messageContent, app.aiResource.model as string);
+  const message = feishuData.message.content;
+  const aiResult = await (await OpenAIChatComletion(OpenAIModels[OpenAIModelID.GPT_3_5], message, 1, app.aiResource.apiKey, false)).json()
   const feishuSender = await getFeishuUser(feishuClient, aiResult.data.sender.sender_id);
   await prisma.$transaction([
-    prisma.usage.create({
-      data: {
-        message: {
-          create: {
+    prisma.message.create({
+        data:{
             senderUnionId: feishuSender?.union_id as string,
             sender: feishuSender?.name ? feishuSender.name : (feishuData.sender.sender_id as string),
-            content: feishuData.message.content as string,
-            answer: aiResult.data.choices[0].text,
-            appId: app.id
+          content: message,
+          answer: aiResult.choices[0].message.content,
+          appId: app.id,
+          usage: {
+            create:{
+              aiResourceId: app.aiResourceId,
+              promptTokens: aiResult.usage.prompt_tokens as number,
+              completionTokens: aiResult.usage.completion_tokens as number,
+              totalTokens: aiResult.usage.total_tokens as number
+            }
           }
-        },
-        aiResourceId: app.aiResourceId,
-        promptTokens: aiResult.data.usage.prompt_tokens as number,
-        completionTokens: aiResult.data.usage.completion_tokens as number,
-        totalTokens: aiResult.data.usage.total_tokens as number
-      }
-    }),
+        }
+      }),
     prisma.aIResource.update({
       where: { id: app.aiResourceId },
       data: {
-        tokenRemains: app.aiResource.tokenRemains - aiResult.data.usage.total_tokens,
-        tokenUsed: app.aiResource.tokenUsed + aiResult.data.usage.total_tokens
+        tokenRemains: app.aiResource.tokenRemains - aiResult.usage.total_tokens,
+        tokenUsed: app.aiResource.tokenUsed + aiResult.usage.total_tokens
       }
     }),
     prisma.app.update({
       where: { id: app.id },
       data: {
-        tokenUsed: app.tokenUsed + aiResult.data.usage.total_tokens
+        tokenUsed: app.tokenUsed + aiResult.usage.total_tokens
       }
     })
   ]);
 
-  return aiResult.data.choices[0].text;
+  return aiResult.choices[0].message.content;
 };
 
 const eventDispatcher = (app: App & { aiResource: AIResource }) => {

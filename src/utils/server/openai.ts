@@ -16,13 +16,14 @@ const chat = (configuration: any, prompt:string, model:string) => {
     prompt: prompt,
   });
 
+
+
   return completion;
 }
 
-const createConfiguration = (app:App) =>{
-  const config = app.config as Prisma.JsonObject;
+const createConfiguration = (apiKey: string) =>{
   return new Configuration({
-    apiKey: config['apiKey'] as string,
+    apiKey: apiKey
   });
 }
 
