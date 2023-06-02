@@ -77,7 +77,7 @@ const createMessage = async (feishuClient: lark.Client, feishuData: {}, app: App
   return aiResult.choices[0].message.content;
 };
 
-const eventDispatcher = async (app: App & { aiResource: AIResource }) => {
+const eventDispatcher =  (app: App & { aiResource: AIResource }) => {
   if (app.config === null) {
     throw Error('App is not configed');
   }
