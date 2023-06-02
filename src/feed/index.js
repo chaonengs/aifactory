@@ -34,7 +34,17 @@ function useAIResource(id) {
   }
 }
 
-export {useOrganization, useApp, useAIResource}
+function useMessages() {
+  const { data, error, isLoading } = useSWR(`/api/rest/messages`, fetcher)
+ 
+  return {
+    messages: data,
+    isLoading,
+    isError: error
+  }
+}
+
+export {useOrganization, useApp, useAIResource, useMessages}
 
 
  
