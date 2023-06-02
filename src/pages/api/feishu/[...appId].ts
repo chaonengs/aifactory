@@ -77,7 +77,7 @@ const createMessage = async (feishuClient: lark.Client, feishuData: {}, app: App
   return aiResult.choices[0].message.content;
 };
 
-const eventDispatcher = (app: App & { aiResource: AIResource }) => {
+const eventDispatcher = async (app: App & { aiResource: AIResource }) => {
   if (app.config === null) {
     throw Error('App is not configed');
   }
@@ -147,13 +147,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (r.isChallenge) {
           res.end(JSON.stringify(r.challenge));
         } else {
-            res.send('ok');
-            console.log('res sended');
+
           const dispatcher = eventDispatcher(app);
           const data = Object.assign(Object.create({
             headers: req.headers,
         }), req.body);
-          const result = await dispatcher.invoke(data);
+          const result = dispatcher.invoke(data);
+
+          res.send('ok');
+          console.log('res sended');
         //   res.end(result);
         }
       }
