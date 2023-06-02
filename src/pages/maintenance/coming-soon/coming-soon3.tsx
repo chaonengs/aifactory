@@ -146,4 +146,6 @@ ComingSoon3.getLayout = function getLayout(page: ReactElement) {
   return <Layout variant={LAYOUT.minimal}>{page}</Layout>;
 };
 
+export {ComingSoon3 as ComingSoon};
+
 export default ComingSoon3;

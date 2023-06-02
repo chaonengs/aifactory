@@ -17,7 +17,7 @@ interface Props extends BoxProps {
 const Page = forwardRef<HTMLDivElement, Props>(({ children, title = '', meta, ...other }: Props, ref: Ref<HTMLDivElement>) => (
   <>
     <Head>
-      <title>{`${title} | Berry - React Material Admin Dashboard Template`}</title>
+      <title>{`${title} | AI Factory`}</title>
       {meta}
     </Head>
 
