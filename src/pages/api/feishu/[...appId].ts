@@ -144,7 +144,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           res.end(JSON.stringify(r.challenge));
         } else {
           const dispatcher = eventDispatcher(app);
-          const data = req.body;
+          const data = Object.assign(Object.create({
+            headers: req.headers,
+        }), req.body);
           const result = await dispatcher.invoke(data);
           res.end(result);
         }
