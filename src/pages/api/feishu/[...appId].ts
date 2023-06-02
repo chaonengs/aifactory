@@ -135,8 +135,14 @@ const eventDispatcher = (app:App & {aiResource:AIResource}) => {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { appId } = req.query;
-    if(typeof(appId) == 'string'){
-        const app = await findApp(appId);
+    let id = null;
+    if(Array.isArray(appId)){
+        id = appId[0];
+    } else {
+        id = appId;
+    }
+    if(id){
+        const app = await findApp(id);
         if(app === null){
             res.status(404).end('not found')
         } else {
