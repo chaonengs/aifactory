@@ -36,6 +36,7 @@ const getFeishuUser = async (client: lark.Client, userId: string) => {
 };
 
 const createMessage = async (feishuClient: lark.Client, feishuData: {}, app: App & { aiResource: AIResource }) => {
+    console.log(feishuData);
   const message = feishuData.message.content;
   const aiResult = await (await OpenAIChatComletion(OpenAIModels[OpenAIModelID.GPT_3_5], message, 1, app.aiResource.apiKey, false)).json()
   const feishuSender = await getFeishuUser(feishuClient, aiResult.data.sender.sender_id);
