@@ -111,6 +111,7 @@ const eventDispatcher = (app: App & { aiResource: AIResource }) => {
         return res;
       } else {
         return { name: 'im.message.receive_v1', data };
+        data.message.message_id
         JSON.parse(data.message.content).text
         const answer = await createMessage(client, data, app);
         const chatId = data.message.chat_id;
@@ -197,6 +198,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
           const event = await dispatcher.invoke(data);
           if (event.name === 'im.message.receive_v1') {
+            const feishuMessage = await prisma.feiShuMessage.findUnique({where:{id:event.data.message.message_id}});
+            if(feishuMessage?.processing){
+                res.status(400).end();
+                return
+            }
+            if(feishuMessage && !feishuMessage.processing){
+                res.status(20).end('ok');
+                return
+            }
+            
             let sendresult = await client.im.message.create({
               params: {
                 receive_id_type: 'chat_id'
@@ -208,6 +219,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               }
             });
             res.write(JSON.stringify(sendresult));
+
+            await prisma.feiShuMessage.create({data:{
+                id: event.data.message.message_id,
+                content: JSON.parse(event.data.message.content),
+                processing: true
+            }})
+
             const question =  JSON.parse(event.data.message.content).text;
 
             const stream = await OpenAI(
@@ -233,19 +251,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 } else {
                     airesult = decoder.decode(data);
                 }
-                const cardResult = await client.im.message.patch({
-                    path: {
-                      message_id: sendresult.data?.message_id as string
-                    },
-                    data: {
-                      content: messageCard(airesult),
-                    }
-                  });
+                if(completionTokens/5 === 0){
+                    const cardResult = await client.im.message.patch({
+                        path: {
+                          message_id: sendresult.data?.message_id as string
+                        },
+                        data: {
+                          content: messageCard(airesult),
+                        }
+                      });
+                }
+
                 res.write(airesult);
               });
               stream.on('end', async () => {
                 const feishuSender = await getFeishuUser(client, event.data.sender.sender_id.union_id);
                 await createMessage(question, airesult, feishuSender?.name || feishuSender?.en_name || feishuSender?.union_id || 'anonymous', feishuSender?.union_id || 'anonymous', encode(question).length, completionTokens, app);
+                await prisma.feiShuMessage.update({
+                    where: { id: event.data.message.message_id },
+                    data: {
+                        processing: false
+                    }
+                  }),
+
                 res.end();
               });
           }

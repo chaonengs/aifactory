@@ -140,3 +140,9 @@ model App {
   @@index([organizationId])
   @@index([aiResourceId])
 }
+
+model FeiShuMessage {
+  id String @id
+  content Json
+  processing Boolean 
+}
