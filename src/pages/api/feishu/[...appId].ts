@@ -182,7 +182,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 msg_type: 'text'
               }
             });
-            res.write(sendresult);
+            res.write(JSON.stringify(sendresult));
             const question =  JSON.parse(event.data.message.content).text;
 
             const stream = await OpenAI(
@@ -218,7 +218,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                       msg_type: 'text'
                     }
                   });
-                res.write(data);
+                res.write(airesult);
               });
               stream.on('end', async () => {
                 const feishuSender = await getFeishuUser(client, event.data.sender.sender_id.union_id);
