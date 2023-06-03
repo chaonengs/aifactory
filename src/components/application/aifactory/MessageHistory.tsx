@@ -3,7 +3,8 @@ import Box from '@mui/material/Box';
 import { DataGrid, GridColDef, GridValueGetterParams } from '@mui/x-data-grid';
 import { useMessages } from 'feed';
 import flatten from 'flat';
-import { Skeleton } from '@mui/material';
+import { Skeleton, styled } from '@mui/material';
+import TextareaAutosize from '@mui/base/TextareaAutosize';
 
 
 const columns:GridColDef[] = [
@@ -47,27 +48,33 @@ const columns:GridColDef[] = [
   },
 ];
 
+const StyledTextarea = styled(TextareaAutosize)(
+  ({ theme }) => `
+  width: '100%'
+  `,
+  );
 
 
 export default function MessageHistory() {
-  const messages = useMessages();
+  const {messages} = useMessages();
   return (
     <Box sx={{  width:'100%' }}>
       { messages? 
-      (<DataGrid
-        rows={flatten(messages)}
-        columns={columns}
-        initialState={{
-          pagination:{
-            paginationModel:{
-              pageSize:10,
-            },
-          },
-        }}
-        pageSizeOptions={[5]}
-        checkboxSelection
-        disableRowSelectionOnClick
-      />) :
+      (<StyledTextarea defaultValue={JSON.stringify(messages)} disabled ></StyledTextarea>) :
+      // (<DataGrid
+      //   rows={flatten(messages)}
+      //   columns={columns}
+      //   initialState={{
+      //     pagination:{
+      //       paginationModel:{
+      //         pageSize:10,
+      //       },
+      //     },
+      //   }}
+      //   pageSizeOptions={[5]}
+      //   checkboxSelection
+      //   disableRowSelectionOnClick
+      // />) :
       (
           <Skeleton animation="wave" sx={{ height: 300 }} />
       )

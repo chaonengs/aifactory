@@ -35,7 +35,7 @@ function useAIResource(id) {
 }
 
 function useMessages() {
-  const { data, error, isLoading } = useSWR(`/api/rest/messages`, fetcher)
+  const { data, error, isLoading } = useSWR(`/api/rest/messages?include=usage`, fetcher)
  
   return {
     messages: data,
