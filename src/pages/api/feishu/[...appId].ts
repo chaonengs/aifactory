@@ -130,6 +130,31 @@ const eventDispatcher = (app: App & { aiResource: AIResource }) => {
   });
 };
 
+
+const messageCard = (message:string) => {
+    const card = {
+        "config": {
+          "wide_screen_mode": true
+        },
+        "elements": [
+          {
+            "tag": "div",
+            "text": {
+              "content": message,
+              "tag": "plain_text"
+            }
+          }
+        ],
+        "header": {
+          "template": "blue",
+          "title": {
+            "content": "AI助理",
+            "tag": "plain_text"
+          }
+        }
+      };
+    return JSON.stringify(card)
+} 
 // const sendFeishuMessage()
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -214,7 +239,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     },
                     data: {
                       receive_id: event.data.message.chat_id,
-                      content: JSON.stringify({ text: airesult }),
+                      content: messageCard(airesult),
                       msg_type: 'text'
                     }
                   });
@@ -227,7 +252,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               });
           }
 
-          res.send('ok');
+          else {
+            res.send('ok')
+          }
           //   res.end(result);
         }
       }
