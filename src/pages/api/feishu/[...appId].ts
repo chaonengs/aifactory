@@ -133,7 +133,6 @@ const eventDispatcher = (app: App & { aiResource: AIResource }) => {
 // const sendFeishuMessage()
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    console.log(req.headers);
   const { appId } = req.query;
   let id = null;
   if (Array.isArray(appId)) {
@@ -157,7 +156,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           domain: config['domain'] as string
         });
 
-        console.log(req.body['encrypt']);
         const r = lark.generateChallenge(req.body, { encryptKey: config['appEncryptKey'] as string });
         if (r.isChallenge) {
           res.end(JSON.stringify(r.challenge));
@@ -169,6 +167,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }),
             req.body
           );
+
+          console.log(data);
+
           const event = await dispatcher.invoke(data);
           if (event.name === 'im.message.receive_v1') {
             let sendresult = await client.im.message.create({
@@ -182,6 +183,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               }
             });
             res.write(sendresult);
+            const question =  JSON.parse(event.data.message.content).text;
+
             const stream = await OpenAI(
                 'chat',
                 {
@@ -189,13 +192,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                   messages: [
                     {
                       role: 'user',
-                      content: req.body
+                      content: question
                     }
                   ]
                 },
                 { apiKey: app.aiResource.apiKey, mode: 'tokens' }
               );
-              const question =  JSON.parse(event.data.message.content).text;
               let airesult;
               let completionTokens = 0;
               stream.on('data', async (data) => {
