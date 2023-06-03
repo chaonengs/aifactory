@@ -203,8 +203,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               },
               data: {
                 receive_id: event.data.message.chat_id,
-                content: JSON.stringify({ text: '正在询问OPEN AI' }),
-                msg_type: 'text'
+                content: messageCard('正在询问OpenAI'),
+                msg_type: 'interactive'
               }
             });
             res.write(JSON.stringify(sendresult));
@@ -233,14 +233,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 } else {
                     airesult = decoder.decode(data);
                 }
-                await client.im.message.create({
-                    params: {
-                      receive_id_type: 'chat_id'
+                const cardResult = await client.im.message.patch({
+                    path: {
+                      message_id: sendresult.data?.message_id as string
                     },
                     data: {
-                      receive_id: event.data.message.chat_id,
                       content: messageCard(airesult),
-                      msg_type: 'text'
                     }
                   });
                 res.write(airesult);
