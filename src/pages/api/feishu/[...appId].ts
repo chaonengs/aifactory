@@ -251,7 +251,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 } else {
                     airesult = decoder.decode(data);
                 }
-                if(completionTokens/5 === 0){
+                if(completionTokens % 5 === 0){
                     const cardResult = await client.im.message.patch({
                         path: {
                           message_id: sendresult.data?.message_id as string
@@ -265,6 +265,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 res.write(airesult);
               });
               stream.on('end', async () => {
+                const cardResult = await client.im.message.patch({
+                    path: {
+                      message_id: sendresult.data?.message_id as string
+                    },
+                    data: {
+                      content: messageCard(airesult),
+                    }
+                  });
                 const feishuSender = await getFeishuUser(client, event.data.sender.sender_id.union_id);
                 await createMessage(question, airesult, feishuSender?.name || feishuSender?.en_name || feishuSender?.union_id || 'anonymous', feishuSender?.union_id || 'anonymous', encode(question).length, completionTokens, app);
                 await prisma.feiShuMessage.update({
