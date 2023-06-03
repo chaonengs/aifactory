@@ -1,9 +1,9 @@
+import { AIResource, App, PrismaClient } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient, App, Prisma, AIResource } from '@prisma/client';
-import * as lark from '@larksuiteoapi/node-sdk';
-import { chat, createConfiguration } from 'utils/server/openai';
-import { OpenAIChatComletion } from 'utils/server';
-import { OpenAIModelID, OpenAIModels } from 'types/openai';
+import { OpenAI } from 'openai-streams/node';
+
+import { encode } from 'gpt-tokenizer';
+import { createMessage } from 'utils/db/transactions';
 
 const prisma = new PrismaClient();
 
@@ -19,60 +19,6 @@ const findApp = async (id: string) => {
 };
 
 
-const createMessage = async (message: string, app: App & { aiResource: AIResource }) => {
-  const aiResult = await (await OpenAIChatComletion(OpenAIModels[OpenAIModelID.GPT_3_5], message, 1, app.aiResource.apiKey, false)).json()
-  await prisma.$transaction([
-    prisma.message.create({
-      data:{
-        senderUnionId: 'anonymous',
-        sender: 'anonymous',
-        content: message,
-        answer: aiResult.choices[0].message.content,
-        appId: app.id,
-        usage: {
-          create:{
-            aiResourceId: app.aiResourceId,
-            promptTokens: aiResult.usage.prompt_tokens as number,
-            completionTokens: aiResult.usage.completion_tokens as number,
-            totalTokens: aiResult.usage.total_tokens as number
-          }
-        }
-      }
-    }),
-    // prisma.usage.create({
-    //   data: {
-    //     message: {
-    //       create: {
-    //         senderUnionId: 'anonymous',
-    //         sender: 'anonymous',
-    //         content: message,
-    //         answer: aiResult.choices[0].message.content,
-    //         appId: app.id
-    //       }
-    //     },
-    //     aiResourceId: app.aiResourceId,
-    //     promptTokens: aiResult.usage.prompt_tokens as number,
-    //     completionTokens: aiResult.usage.completion_tokens as number,
-    //     totalTokens: aiResult.usage.total_tokens as number
-    //   }
-    // }),
-    prisma.aIResource.update({
-      where: { id: app.aiResourceId },
-      data: {
-        tokenRemains: app.aiResource.tokenRemains - aiResult.usage.total_tokens,
-        tokenUsed: app.aiResource.tokenUsed + aiResult.usage.total_tokens
-      }
-    }),
-    prisma.app.update({
-      where: { id: app.id },
-      data: {
-        tokenUsed: app.tokenUsed + aiResult.usage.total_tokens
-      }
-    })
-  ]);
-
-  return aiResult.choices[0].message.content;
-};
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { appId } = req.query;
@@ -87,8 +33,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (app === null) {
       res.status(404).end('not found');
     } else {
-        const answer = await createMessage(req.body, app)
-        res.end(answer);
+      const stream = await OpenAI(
+        'chat',
+        {
+          model: 'gpt-3.5-turbo',
+          messages: [
+            {
+              role: 'user',
+              content: req.body
+            }
+          ]
+        },
+        { apiKey: app.aiResource.apiKey, mode: 'tokens' }
+      );
+      let result;
+      let completionTokens = 0;
+      stream.on('data', (data) => {
+        const decoder = new TextDecoder();
+        completionTokens += 1;
+        if (result) {
+          result += decoder.decode(data);
+        } else {
+          result = decoder.decode(data);
+        }
+        res.write(data);
+      });
+      stream.on('end', async () => {
+        await createMessage(req.body, result, 'anonymous', 'anonymous', encode(req.body).length, completionTokens, app);
+        res.end();
+      });
+      // stream.pipe(res);
+      // stream.on
+      // res.end();
     }
   } else {
     res.status(404).end('not found');

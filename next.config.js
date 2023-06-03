@@ -26,6 +26,15 @@ const nextConfig = {
     // !! WARN !!
     ignoreBuildErrors: true,
   },
+  webpack(config, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack },) {
+    config.experiments = {
+      asyncWebAssembly: true,
+      layers: true,
+    };
+
+    return config;
+  },
+  
     async redirects() {
     return [
       {

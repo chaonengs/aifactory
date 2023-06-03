@@ -1,4 +1,4 @@
-import { OPENAI_API_TYPE } from '../utils/app/const';
+import { OPENAI_API_TYPE } from 'utils/server/const';
 
 export interface OpenAIModel {
   id: string;

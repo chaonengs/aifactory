@@ -1,23 +1,34 @@
-import { UserProfile } from 'types/user-profile';
+import { OpenAIModel } from './openai';
 
-export type History = {
-  from?: string;
-  to?: string;
-  time?: string;
-  text?: string;
-};
-
-export interface ChatHistory {
-  id?: number;
-  from?: string;
-  to?: string;
-  text: string;
-  time?: string;
+export interface Message {
+  role: Role;
+  content: string;
 }
 
-export interface ChatStateProps {
-  chats: ChatHistory[];
-  user: UserProfile;
-  users: UserProfile[];
-  error: object | string | null;
+export type Role = 'assistant' | 'user';
+
+export interface ChatBody {
+  model: OpenAIModel;
+  messages: [];
+  key: string;
+  prompt: string;
+  temperature: number;
+}
+
+export interface VectorIndexBody {
+  context: string;
+  vector: string | null;
+  query: string;
+}
+
+export interface Conversation {
+  id: string;
+  name: string;
+  messages: Message[];
+  model: OpenAIModel;
+  prompt: string;
+  temperature: number;
+  folderId: string | null;
+  resumeFileName: string | null;
+  resumeFileTitle: string | null;
 }

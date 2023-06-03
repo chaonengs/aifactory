@@ -1,4 +1,4 @@
-import { Message } from 'types/openaichat';
+import { Message } from 'types/chat';
 import { OpenAIModel } from 'types/openai';
 
 import { AZURE_DEPLOYMENT_ID, OPENAI_API_HOST, OPENAI_API_TYPE, OPENAI_API_VERSION, OPENAI_ORGANIZATION } from './const';
@@ -25,9 +25,10 @@ export class OpenAIError extends Error {
 
 export const OpenAIChatComletion = (
   model: OpenAIModel,
-  prompt: string,
+  systemPrompt: string,
   temperature : number,
   key: string,
+  messages: Message[],
   stream: boolean = true,
 )  => {
   let url = `${OPENAI_API_HOST}/v1/chat/completions`;
@@ -51,10 +52,11 @@ export const OpenAIChatComletion = (
     body: JSON.stringify({
       ...(OPENAI_API_TYPE === 'openai' && {model: model.id}),
       messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
+        // {
+        //   role: 'system',
+        //   content: systemPrompt,
+        // },
+        ...messages,
       ],
       // max_tokens: 1024,
       temperature: temperature,
