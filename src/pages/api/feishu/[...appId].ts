@@ -262,5 +262,5 @@ const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {cons
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  return withFireAndForget(handleRequest)
+  handleRequest(req, res);
 }
