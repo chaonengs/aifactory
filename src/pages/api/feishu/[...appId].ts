@@ -136,7 +136,7 @@ const handleFeishuMessage = async (client:lark.Client, event:ReceiveMessageEvent
     await prisma.feiShuMessage.create({data:{
         id: event.data.message.message_id,
         content: JSON.parse(event.data.message.content),
-        processing: true
+        processing: true,
         createdAt: event.data.message.create_time,
     }})
 
