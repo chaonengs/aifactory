@@ -26,7 +26,8 @@ const createMessage = async (
               completionTokens: completionTokens,
               totalTokens: propmtTokens + completionTokens
             }
-          }
+          },
+          organizationId: app.organizationId,
         }
       }),
       prisma.aIResource.update({

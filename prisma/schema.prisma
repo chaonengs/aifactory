@@ -74,7 +74,7 @@ model Organization {
   ownerId     String
   aiResources AIResource[]
   apps        App[]
-
+  messages Message[]
   @@index([ownerId])
 }
 
@@ -102,7 +102,10 @@ model Message {
   app           App      @relation(fields: [appId], references: [id])
   appId         String
   usage         Usage?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId String?
 
+  @@index([organizationId])
   @@index([appId])
   @@index([senderUnionId])
 }

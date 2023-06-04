@@ -16,11 +16,17 @@ import React, { ReactElement } from 'react';
 import MainCard from 'ui-component/cards/MainCard';
 import { DataGridPremium } from '@mui/x-data-grid-premium';
 import MessageHistory from 'components/application/aifactory/MessageHistory';
+import { useMessages } from 'feed';
+import { useSession } from 'next-auth/react';
+import { Message } from '@prisma/client';
+
 
 const History = () => {
   const theme = useTheme();
 
   const [tabValue, setTabValue] = React.useState('openai');
+  const { data: session } = useSession()
+  const {messages} = useMessages(session?.user.id);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
     setTabValue(newValue);
@@ -37,7 +43,7 @@ const History = () => {
           </Stack>
         }
       >
-<MessageHistory />
+      <MessageHistory messages={messages} />
       </MainCard>
     </Page>
   );

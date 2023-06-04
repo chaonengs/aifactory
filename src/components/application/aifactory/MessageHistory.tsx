@@ -5,6 +5,7 @@ import { useMessages } from 'feed';
 import flatten from 'flat';
 import { Skeleton, styled } from '@mui/material';
 import TextareaAutosize from '@mui/base/TextareaAutosize';
+import { Message } from '@prisma/client';
 
 
 const columns:GridColDef[] = [
@@ -55,8 +56,7 @@ const StyledTextarea = styled(TextareaAutosize)(
   );
 
 
-export default function MessageHistory() {
-  const {messages} = useMessages();
+export default function MessageHistory( {messages}) {
   return (
     <Box sx={{  width:'100%' }}>
       { messages? 

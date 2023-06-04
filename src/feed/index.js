@@ -34,8 +34,9 @@ function useAIResource(id) {
   }
 }
 
-function useMessages() {
-  const { data, error, isLoading } = useSWR(`/api/rest/messages?include=usage`, fetcher)
+function useMessages(organizationId) {
+  const url = `/api/rest/messages?where={"organizationId":{"$eq":"${organizationId}"}}&include=usage`
+  const { data, error, isLoading } = useSWR(url, fetcher)
  
   return {
     messages: data,
