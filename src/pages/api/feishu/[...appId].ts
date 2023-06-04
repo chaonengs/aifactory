@@ -189,8 +189,7 @@ const handleFeishuMessage = async (client:lark.Client, event:ReceiveMessageEvent
     await prisma.feiShuMessage.create({data:{
       id: event.data.message.message_id,
       appId: app.id,
-      //@ts-ignore
-      content: event.data as Prisma.JsonObject,
+      data: event.data,
       eventName: event.name,
       processing: true,
       createdAt: new Date(Number(event.data.message.create_time)),
@@ -198,7 +197,8 @@ const handleFeishuMessage = async (client:lark.Client, event:ReceiveMessageEvent
 
     
     await MessageQueue.enqueue(
-      messageId, // job to be enqueued
+      {id: event.data.message.message_id}
+      , // job to be enqueued
       { delay: "1s" } // scheduling options
     )
 
