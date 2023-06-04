@@ -6,6 +6,7 @@ import { OpenAIModelID, OpenAIModels } from 'types/openai';
 import { createMessage } from 'utils/db/transactions';
 import { encode } from 'gpt-tokenizer';
 import { OpenAI } from 'openai-streams/node';
+import { ReceiveMessageEvent, Sender, User } from 'types/feishu';
 
 const prisma = new PrismaClient();
 
@@ -37,48 +38,6 @@ const getFeishuUser = async (client: lark.Client, userId: string) => {
   return res.data?.user;
 };
 
-// const createMessage = async (feishuClient: lark.Client, feishuData: {}, app: App & { aiResource: AIResource }) => {
-//   console.log(feishuData);
-//   const messageJsonString = feishuData.message.content;
-//   const message = JSON.parse(messageJsonString).text;
-//   const aiResult = await (await OpenAIChatComletion(OpenAIModels[OpenAIModelID.GPT_3_5], message, 1, app.aiResource.apiKey, false)).json();
-//   const feishuSender = await getFeishuUser(feishuClient, feishuData.sender.sender_id.union_id);
-//   await prisma.$transaction([
-//     prisma.message.create({
-//       data: {
-//         senderUnionId: feishuSender?.union_id as string,
-//         sender: feishuSender?.name ? feishuSender.name : (feishuData.sender.sender_id.union_id as string),
-//         content: message,
-//         answer: aiResult.choices[0].message.content,
-//         appId: app.id,
-//         usage: {
-//           create: {
-//             aiResourceId: app.aiResourceId,
-//             promptTokens: aiResult.usage.prompt_tokens as number,
-//             completionTokens: aiResult.usage.completion_tokens as number,
-//             totalTokens: aiResult.usage.total_tokens as number
-//           }
-//         }
-//       }
-//     }),
-//     prisma.aIResource.update({
-//       where: { id: app.aiResourceId },
-//       data: {
-//         tokenRemains: app.aiResource.tokenRemains - aiResult.usage.total_tokens,
-//         tokenUsed: app.aiResource.tokenUsed + aiResult.usage.total_tokens
-//       }
-//     }),
-//     prisma.app.update({
-//       where: { id: app.id },
-//       data: {
-//         tokenUsed: app.tokenUsed + aiResult.usage.total_tokens
-//       }
-//     })
-//   ]);
-
-//   return aiResult.choices[0].message.content;
-// };
-
 const eventDispatcher = (app: App & { aiResource: AIResource }) => {
   if (app.config === null) {
     throw Error('App is not configed');
@@ -98,12 +57,11 @@ const eventDispatcher = (app: App & { aiResource: AIResource }) => {
     'im.message.receive_v1': async (data) => {
       if (app.aiResource.tokenRemains <= 0) {
         const chatId = data.message.chat_id;
-        const res = await client.im.message.create({
-          params: {
-            receive_id_type: 'chat_id'
+        const res = await client.im.message.reply({
+          path: {
+            message_id: data.message.message_id
           },
           data: {
-            receive_id: chatId,
             content: JSON.stringify({ text: 'Token已耗尽，请联系相关人员添加Token' }),
             msg_type: 'text'
           }
@@ -111,28 +69,13 @@ const eventDispatcher = (app: App & { aiResource: AIResource }) => {
         return res;
       } else {
         return { name: 'im.message.receive_v1', data };
-        data.message.message_id
-        JSON.parse(data.message.content).text
-        const answer = await createMessage(client, data, app);
-        const chatId = data.message.chat_id;
-        const res = await client.im.message.create({
-          params: {
-            receive_id_type: 'chat_id'
-          },
-          data: {
-            receive_id: chatId,
-            content: JSON.stringify({ text: answer }),
-            msg_type: 'text'
-          }
-        });
-        return res;
       }
     }
   });
 };
 
 
-const messageCard = (message:string) => {
+const messageCard = (title:string, message:string, error:string|null|undefined = null) => {
     const card = {
         "config": {
           "wide_screen_mode": true
@@ -149,14 +92,141 @@ const messageCard = (message:string) => {
         "header": {
           "template": "blue",
           "title": {
-            "content": "AI助理",
+            "content": title,
             "tag": "plain_text"
           }
         }
       };
+
+    if(error){
+        card.elements.push({
+            "tag": "div",
+            "text": {
+              "content": error,
+              "tag": "plain_text"
+            }
+        })
+    }
     return JSON.stringify(card)
 } 
 // const sendFeishuMessage()
+
+const handleFeishuMessage = async (client:lark.Client, event:ReceiveMessageEvent, app: App & { aiResource: AIResource }, res:NextApiResponse) => {
+    const feishuMessage = await prisma.feiShuMessage.findUnique({where:{id:event.data.message.message_id}});
+    if(feishuMessage?.processing){
+        res.status(400).end();
+        return
+    }
+    if(feishuMessage && !feishuMessage.processing){
+        res.status(20).end('ok');
+        return
+    }
+    
+    let sendresult = await client.im.message.reply({
+        path: {
+            message_id: event.data.message.message_id
+            },
+        data: {
+        content: messageCard('正在询问OpenAI', '...'),
+        msg_type: 'interactive'
+        }
+    });
+    res.write(JSON.stringify(sendresult));
+
+    await prisma.feiShuMessage.create({data:{
+        id: event.data.message.message_id,
+        content: JSON.parse(event.data.message.content),
+        processing: true
+    }})
+
+    const question =  JSON.parse(event.data.message.content).text;
+    let airesult:string = '';
+    let completionTokens = 0;
+    let feishuSender: User | null | undefined = null;
+    if(event.data.sender.sender_id?.union_id){
+        const u =   await getFeishuUser(client, event.data.sender.sender_id.union_id)
+        if(u){
+            feishuSender = u as User;
+        }
+    }
+
+    try{
+        const stream = await OpenAI(
+            'chat',
+            {
+            model: 'gpt-3.5-turbo',
+            messages: [
+                {
+                role: 'user',
+                content: question
+                }
+            ]
+            },
+            { apiKey: app.aiResource.apiKey, mode: 'tokens' }
+        );
+
+        stream.on('data', async (data) => {
+            const decoder = new TextDecoder();
+            completionTokens += 1;
+            if (airesult) {
+                airesult += decoder.decode(data);
+            } else {
+                airesult = decoder.decode(data);
+            }
+            if(completionTokens % 5 === 0){
+                const cardResult = await client.im.message.patch({
+                    path: {
+                    message_id: sendresult.data?.message_id as string
+                    },
+                    data: {
+                    content: messageCard('回复中', airesult),
+                    }
+                });
+            }
+
+            res.write(airesult);
+        });
+        stream.on('end', async () => {
+            const cardResult = await client.im.message.patch({
+                path: {
+                message_id: sendresult.data?.message_id as string
+                },
+                data: {
+                content: messageCard('回复结束', airesult),
+                }
+            });
+            if(event.data.sender.sender_id?.union_id){
+
+            }
+
+            await createMessage(question, airesult, feishuSender?.name || feishuSender?.en_name || feishuSender?.union_id || 'anonymous', feishuSender?.union_id || 'anonymous', encode(question).length, completionTokens, app);
+            await prisma.feiShuMessage.update({
+                where: { id: event.data.message.message_id },
+                data: {
+                    processing: false
+                }
+            }),
+
+            res.end();
+        });
+    } catch (error)
+    {
+        console.error(error);
+        await client.im.message.patch({
+            path: {
+            message_id: sendresult.data?.message_id as string
+            },
+            data: {
+            content: messageCard('未正常响应',airesult, '出现错误，请稍后再试'),
+            }
+        });
+        if(airesult && airesult !== ''){
+            await createMessage(question, airesult, feishuSender?.name || feishuSender?.en_name || feishuSender?.union_id || 'anonymous', feishuSender?.union_id || 'anonymous', encode(question).length, completionTokens, app);
+        }
+        res.end();
+    }
+
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { appId } = req.query;
@@ -194,100 +264,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             req.body
           );
 
-          console.log(data);
-
-          const event = await dispatcher.invoke(data);
+          const event = await dispatcher.invoke(data) as ReceiveMessageEvent;
           if (event.name === 'im.message.receive_v1') {
-            const feishuMessage = await prisma.feiShuMessage.findUnique({where:{id:event.data.message.message_id}});
-            if(feishuMessage?.processing){
-                res.status(400).end();
-                return
-            }
-            if(feishuMessage && !feishuMessage.processing){
-                res.status(20).end('ok');
-                return
-            }
-            
-            let sendresult = await client.im.message.create({
-              params: {
-                receive_id_type: 'chat_id'
-              },
-              data: {
-                receive_id: event.data.message.chat_id,
-                content: messageCard('正在询问OpenAI'),
-                msg_type: 'interactive'
-              }
-            });
-            res.write(JSON.stringify(sendresult));
-
-            await prisma.feiShuMessage.create({data:{
-                id: event.data.message.message_id,
-                content: JSON.parse(event.data.message.content),
-                processing: true
-            }})
-
-            const question =  JSON.parse(event.data.message.content).text;
-
-            const stream = await OpenAI(
-                'chat',
-                {
-                  model: 'gpt-3.5-turbo',
-                  messages: [
-                    {
-                      role: 'user',
-                      content: question
-                    }
-                  ]
-                },
-                { apiKey: app.aiResource.apiKey, mode: 'tokens' }
-              );
-              let airesult;
-              let completionTokens = 0;
-              stream.on('data', async (data) => {
-                const decoder = new TextDecoder();
-                completionTokens += 1;
-                if (airesult) {
-                    airesult += decoder.decode(data);
-                } else {
-                    airesult = decoder.decode(data);
-                }
-                if(completionTokens % 5 === 0){
-                    const cardResult = await client.im.message.patch({
-                        path: {
-                          message_id: sendresult.data?.message_id as string
-                        },
-                        data: {
-                          content: messageCard(airesult),
-                        }
-                      });
-                }
-
-                res.write(airesult);
-              });
-              stream.on('end', async () => {
-                const cardResult = await client.im.message.patch({
-                    path: {
-                      message_id: sendresult.data?.message_id as string
-                    },
-                    data: {
-                      content: messageCard(airesult),
-                    }
-                  });
-                const feishuSender = await getFeishuUser(client, event.data.sender.sender_id.union_id);
-                await createMessage(question, airesult, feishuSender?.name || feishuSender?.en_name || feishuSender?.union_id || 'anonymous', feishuSender?.union_id || 'anonymous', encode(question).length, completionTokens, app);
-                await prisma.feiShuMessage.update({
-                    where: { id: event.data.message.message_id },
-                    data: {
-                        processing: false
-                    }
-                  }),
-
-                res.end();
-              });
+            handleFeishuMessage(client,event,app, res);
           }
 
           else {
-            res.send('ok')
+            res.end('ok')
           }
           //   res.end(result);
         }
