@@ -7,6 +7,7 @@ import { OpenAI } from 'openai-streams/node';
 import { ReceiveMessageEvent, Sender, User } from 'types/feishu';
 import { withFireAndForget } from 'utils/handlers';
 import  MessageQueue  from "pages/api/queues/messages";
+import { Queue } from 'quirrel/next';
 
 const prisma = new PrismaClient();
 
@@ -195,6 +196,8 @@ const handleFeishuMessage = async (client:lark.Client, event:ReceiveMessageEvent
       createdAt: new Date(Number(event.data.message.create_time)),
     }})
 
+
+    // const queue = Queue(`api/process/${event.data.message.message_id}`, processFeishuMessage)
     
     await MessageQueue.enqueue(
       {id: event.data.message.message_id}
