@@ -46,6 +46,10 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GITHUB_ID as string,
       clientSecret: process.env.GITHUB_SECRET as string,
     }),
+    // FeiShuProvider({
+    //   clientId: process.env.FEISHU_APP_ID as string,
+    //   clientSecret: process.env.FEISHU_APP_SECRET as string,
+    // }),
   ],
   events: {
     async createUser(authuser) {
@@ -71,6 +75,7 @@ export const authOptions: NextAuthOptions = {
       return session
     }
   }
+
     // FeiShuProvider({
     //   clientId: process.env.FEISHU_APP_ID as string,
     //   clientSecret: process.env.FEISHU_APP_SECRET as string,

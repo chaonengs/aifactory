@@ -52,6 +52,8 @@ const ProfileSection = () => {
   const [notification, setNotification] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [open, setOpen] = useState(false);
+
+  
   /**
    * anchorRef is used on different components and specifying one type leads to other components throwing an error
    * */
@@ -164,14 +166,14 @@ const ProfileSection = () => {
                     <Box sx={{ p: 2, pb: 0 }}>
                       <Stack>
                         <Stack direction="row" spacing={0.5} alignItems="center">
-                          <Typography variant="h4">Good Morning,</Typography>
+                          <Typography variant="h4">欢迎回来,</Typography>
                           <Typography component="span" variant="h4" sx={{ fontWeight: 400 }}>
                             {session?.user?.name}
                           </Typography>
                         </Stack>
                         <Typography variant="subtitle2">Project Admin</Typography>
                       </Stack>
-                      <OutlinedInput
+                      {/* <OutlinedInput
                         sx={{ width: '100%', pr: 1, pl: 2, my: 2 }}
                         id="input-search-profile"
                         value={value}
@@ -186,14 +188,14 @@ const ProfileSection = () => {
                         inputProps={{
                           'aria-label': 'weight'
                         }}
-                      />
+                      /> */}
                       <Divider />
                     </Box>
                     <PerfectScrollbar style={{ height: '100%', maxHeight: 'calc(100vh - 250px)', overflowX: 'hidden' }}>
                       <Box sx={{ p: 2, pt: 0 }}>
-                        <UpgradePlanCard />
+                        {/* <UpgradePlanCard /> */}
                         <Divider />
-                        <Card
+                        {/* <Card
                           sx={{
                             bgcolor: theme.palette.mode === 'dark' ? theme.palette.dark[800] : theme.palette.primary.light,
                             my: 2
@@ -201,6 +203,22 @@ const ProfileSection = () => {
                         >
                           <CardContent>
                             <Grid container spacing={3} direction="column">
+                            <Grid item>
+                                <Grid item container alignItems="center" justifyContent="space-between">
+                                  <Grid item>
+                                    <Typography variant="subtitle1">深色模式</Typography>
+                                  </Grid>
+                                  <Grid item>
+                                    <Switch
+                                      color="primary"
+                                      checked={sdm}
+                                      onChange={(e) => setSdm(e.target.checked)}
+                                      name="darkmode"
+                                      size="small"
+                                    />
+                                  </Grid>
+                                </Grid>
+                              </Grid>
                               <Grid item>
                                 <Grid item container alignItems="center" justifyContent="space-between">
                                   <Grid item>
@@ -234,7 +252,7 @@ const ProfileSection = () => {
                               </Grid>
                             </Grid>
                           </CardContent>
-                        </Card>
+                        </Card> */}
                         <Divider />
                         <List
                           component="nav"
@@ -252,7 +270,7 @@ const ProfileSection = () => {
                             }
                           }}
                         >
-                          <ListItemButton
+                          {/* <ListItemButton
                             sx={{ borderRadius: `${borderRadius}px` }}
                             selected={selectedIndex === 0}
                             onClick={(event: React.MouseEvent<HTMLDivElement>) =>
@@ -293,7 +311,7 @@ const ProfileSection = () => {
                                 </Grid>
                               }
                             />
-                          </ListItemButton>
+                          </ListItemButton> */}
                           <ListItemButton sx={{ borderRadius: `${borderRadius}px` }} selected={selectedIndex === 4} onClick={handleLogout}>
                             <ListItemIcon>
                               <IconLogout stroke={1.5} size="20px" />

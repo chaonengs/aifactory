@@ -20,6 +20,30 @@ const menus = {
   type: 'group',
   children: [
     {
+      id: 'ai-apps',
+      type: 'collapse',
+      icon: IconApps,
+      title: <FormattedMessage id="ai-apps" />,
+      children: [
+        {
+          id: 'my-apps',
+          title: <FormattedMessage id="my-apps" />,
+          type: 'item',
+          url: '/apps',
+          icon: IconAsset,
+          breadcrumbs: false
+        },
+        {
+          id: 'app-market',
+          title: <FormattedMessage id="app-market" />,
+          type: 'item',
+          url: '/apps/market',
+          icon: IconBuildingStore,
+          breadcrumbs: false
+        }
+      ]
+    },
+    {
       id: 'ai-resources',
       title: <FormattedMessage id="ai-resources" />,
       type: 'item',
@@ -51,30 +75,7 @@ const menus = {
         }
       ]
     },
-    {
-      id: 'ai-apps',
-      type: 'collapse',
-      icon: IconApps,
-      title: <FormattedMessage id="ai-apps" />,
-      children: [
-        {
-          id: 'my-apps',
-          title: <FormattedMessage id="my-apps" />,
-          type: 'item',
-          url: '/apps',
-          icon: IconAsset,
-          breadcrumbs: false
-        },
-        {
-          id: 'app-market',
-          title: <FormattedMessage id="app-market" />,
-          type: 'item',
-          url: '/apps/market',
-          icon: IconBuildingStore,
-          breadcrumbs: false
-        }
-      ]
-    }
+    
   ]
 };
 

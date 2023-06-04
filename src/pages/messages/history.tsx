@@ -43,7 +43,7 @@ const History = () => {
           </Stack>
         }
       >
-      <MessageHistory messages={messages} />
+      <MessageHistory />
       </MainCard>
     </Page>
   );

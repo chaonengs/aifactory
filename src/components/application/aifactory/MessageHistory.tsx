@@ -2,50 +2,61 @@ import * as React from 'react';
 import Box from '@mui/material/Box';
 import { DataGrid, GridColDef, GridValueGetterParams } from '@mui/x-data-grid';
 import { useMessages } from 'feed';
-import flatten from 'flat';
 import { Skeleton, styled } from '@mui/material';
 import TextareaAutosize from '@mui/base/TextareaAutosize';
 import { Message } from '@prisma/client';
+import { useSession } from 'next-auth/react';
 
 
 const columns:GridColDef[] = [
-  { field:'id', headerName:'ID' },
+  // { field:'id', headerName:'ID' },
   {
     field:'appName',
     headerName:'应用名称',
+    valueGetter: (params) =>  `${params.row.app.name}`,
+    sortable: false,
   },
   {
-    field:'username',
+    field:'sender',
     headerName:'用户名称',
+    sortable: false,
+
   },
   {
-    field:'question',
+    field:'content',
     headerName:'问题',
     width:350,
+    sortable: false,
+
   },
   {
     field:'answer',
     headerName:'回答',
     width:800,
+    sortable: false,
 
-  },
-  {
-    field:'model',
-    headerName:'模型',
-    width:150,
+
   },
   {
     field:'token',
     headerName:'Token消耗',
+    valueGetter: (params) =>  `${params.row.usage.totalTokens}`,
+    sortable: false,
+
   },
   {
     field:'sensitive',
     headerName:'敏感词',
+    valueGetter: (params) =>  ` 马上上线 `,
+    sortable: false,
+
   },
   {
     field:'createdAt',
     headerName:'时间',
     width:150,
+    sortable: false,
+
   },
 ];
 
@@ -56,25 +67,37 @@ const StyledTextarea = styled(TextareaAutosize)(
   );
 
 
-export default function MessageHistory( {messages}) {
+export default function MessageHistory( ) {
+
+  const { data: session } = useSession();
+
+  const [paginationModel, setPaginationModel] = React.useState({
+    pageSize: 10,
+    page: 0,
+  });
+
+  const {data} = useMessages(session?.user.id, paginationModel.page + 1, paginationModel.pageSize);
+
+
+
   return (
     <Box sx={{  width:'100%' }}>
-      { messages? 
-      (<StyledTextarea defaultValue={JSON.stringify(messages)} disabled ></StyledTextarea>) :
-      // (<DataGrid
-      //   rows={flatten(messages)}
-      //   columns={columns}
-      //   initialState={{
-      //     pagination:{
-      //       paginationModel:{
-      //         pageSize:10,
-      //       },
-      //     },
-      //   }}
-      //   pageSizeOptions={[5]}
-      //   checkboxSelection
-      //   disableRowSelectionOnClick
-      // />) :
+      { data? 
+      // (<StyledTextarea defaultValue={JSON.stringify(messages)} disabled ></StyledTextarea>) :
+      (<DataGrid
+        disableColumnFilter 
+        columns={columns}
+        rows={data.data}
+        rowCount={data.pagination.total}
+        loading={data?.messages === null}
+        pageSizeOptions={[10,20]}
+        paginationModel={paginationModel}
+        paginationMode="server"
+        onPaginationModelChange={setPaginationModel}
+        checkboxSelection
+        disableRowSelectionOnClick
+        
+      />) :
       (
           <Skeleton animation="wave" sx={{ height: 300 }} />
       )

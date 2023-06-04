@@ -14,22 +14,20 @@ import LAYOUT from 'constant';
 import Layout from 'layout';
 import React, { ReactElement } from 'react';
 import MainCard from 'ui-component/cards/MainCard';
-import { DataGridPremium } from '@mui/x-data-grid-premium';
 import Grid from '@mui/material/Unstable_Grid2'; // Grid version 2
 import AppCard from 'components/application/aifactory/AppCard';
-import {useOrganization} from 'feed';
+import {useOrganization, useApps} from 'feed';
 import { useSession} from "next-auth/react"
-import { height } from '@mui/system';
 
 
 const MyApps = () => {
   const theme = useTheme();
   const [tabValue, setTabValue] = React.useState('openai');
-  const [apps, setApps] = React.useState([]);
+  // const [apps, setApps] = React.useState([]);
   const { data: session } = useSession()
 
   const {organization} = useOrganization(session?.user.id);
-
+  const {apps} = useApps(session?.user.id);
   const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
     setTabValue(newValue);
   };
@@ -48,8 +46,8 @@ const MyApps = () => {
       >
         <Grid container spacing={2}>
           {
-            organization ? (<Grid xs={3}>
-              {organization.apps.map((app)=>{
+            apps ? (<Grid xs={3}>
+              {apps.map((app)=>{
                 return <AppCard app={app} key={app.id}/>
               })}
             

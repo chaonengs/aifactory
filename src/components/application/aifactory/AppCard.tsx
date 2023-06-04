@@ -1,5 +1,6 @@
 import EditIcon from '@mui/icons-material/Edit';
 import ForumIcon from '@mui/icons-material/Forum';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import Card from '@mui/material/Card';
@@ -41,15 +42,25 @@ const ExpandMore = styled((props: ExpandMoreProps) => {
 
 export default function AppCard({ app }) {
   const [expanded, setExpanded] = React.useState(false);
-  const [open, setOpen] = React.useState(false);
-  const [configForm, setConfigForm] = React.useState(app.config);
+  const [configOpen, setConfigOpen] = React.useState(false);
+  const [feishuOpen, setFeishuOpen] = React.useState(false);
 
-  const handleClickOpen = () => {
-    setOpen(true);
+  const [configForm, setConfigForm] = React.useState(app.config);
+  const host = process.env.NEXTAUTH_URL;
+  const handleFeishuOpen = () => {
+    setFeishuOpen(true);
+  }
+
+  const handleConfigOpen = () => {
+    setConfigOpen(true);
   };
 
-  const handleClose = () => {
-    setOpen(false);
+  const handleConfigClose = () => {
+    setConfigOpen(false);
+  };
+
+  const handleFeishuClose = () => {
+    setFeishuOpen(false);
   };
 
   const handleFormOnChange = (event: { target: { id: string; value: string; }; }) => {
@@ -79,7 +90,7 @@ export default function AppCard({ app }) {
       body: body
     });
 
-    setOpen(false);
+    setConfigOpen(false);
   };
 
   return (
@@ -93,6 +104,9 @@ export default function AppCard({ app }) {
           }
           title={app.name || app.appType}
         />
+                <CardContent>
+          <Typography variant="body2" color="text.secondary">{app.aiResource.model}</Typography>
+        </CardContent>
         <CardMedia
           component="img"
           image="/assets/images/logos/feishu.png"
@@ -101,19 +115,20 @@ export default function AppCard({ app }) {
           width={124}
           sx={{ objectFit: 'contain' }}
         />
-        <CardContent>
-          <Typography variant="body2" color="text.secondary"></Typography>
-        </CardContent>
+
         <CardActions disableSpacing>
-          <IconButton aria-label="edit" onClick={() => handleClickOpen()}>
+          <IconButton aria-label="edit" onClick={() => handleConfigOpen()}>
             <EditIcon />
           </IconButton>
-          <IconButton aria-label="messages">
+          <IconButton aria-label="view" onClick={() => handleFeishuOpen()}>
+            <VisibilityIcon />
+          </IconButton>
+          {/* <IconButton aria-label="messages">
             <ForumIcon />
           </IconButton>
           <IconButton aria-label="usages">
             <ReceiptIcon />
-          </IconButton>
+          </IconButton> */}
           {/* <ExpandMore
           expand={expanded}
           onClick={handleExpandClick}
@@ -143,7 +158,7 @@ export default function AppCard({ app }) {
           </CardContent>
         </Collapse>
       </Card>
-      <Dialog open={open} onClose={handleClose}>
+      <Dialog open={configOpen} onClose={handleConfigOpen}>
         <DialogTitle>配置飞书机器人</DialogTitle>
         <DialogContent>
           <DialogContentText>请填写飞书机器人中的相关配置</DialogContentText>
@@ -189,59 +204,28 @@ export default function AppCard({ app }) {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>取消</Button>
+          <Button onClick={handleConfigClose}>取消</Button>
           <Button onClick={handleConfigSave}>保存</Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={open} onClose={handleClose}>
+      <Dialog open={feishuOpen} onClose={handleFeishuClose}>
         <DialogTitle>查看飞书配置</DialogTitle>
         <DialogContent>
           <DialogContentText>查看飞书URL配置</DialogContentText>
           <TextField
-            autoFocus
             margin="dense"
-            id="appdId"
+            id="callbackurl"
             label="AppId"
             fullWidth
             variant="standard"
-            onChange={handleFormOnChange}
-            value={configForm.appId}
+            sx={{minWidth:500}}
+            value={window.location.origin + '/api/feishu/' + app.id}
           />
-          <TextField
-            autoFocus
-            margin="dense"
-            id="appSecret"
-            label="AppSecret"
-            fullWidth
-            variant="standard"
-            onChange={handleFormOnChange}
-            value={configForm.appSecret}
-          />
-          <TextField
-            autoFocus
-            margin="dense"
-            id="appEncryptKey"
-            label="App Encrypt Key"
-            fullWidth
-            variant="standard"
-            onChange={handleFormOnChange}
-            value={configForm.appEncryptKey}
-          />
-          <TextField
-            autoFocus
-            margin="dense"
-            id="appVerificationToken"
-            label="App Verification Token"
-            fullWidth
-            variant="standard"
-            onChange={handleFormOnChange}
-            value={configForm.appVerificationToken}
-          />
+         
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>取消</Button>
-          <Button onClick={handleConfigSave}>保存</Button>
+          <Button onClick={handleFeishuClose}>关闭</Button>
         </DialogActions>
       </Dialog>
 

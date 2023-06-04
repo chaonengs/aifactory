@@ -51,8 +51,8 @@ export default function Feishu<P extends FeiShuProfile>(
       }
     },
     style: {
-      logo: "/assets/logs/feishu.png",
-      logoDark: "/assets/logs/feishu.png",
+      logo: "https://www.feishu.cn/favicon.ico",
+      logoDark: "https://www.feishu.cn/favicon.ico",
       bg: "#fff",
       bgDark: "#000",
       text: "#000",

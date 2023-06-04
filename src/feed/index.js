@@ -23,6 +23,16 @@ function useApp(id) {
   }
 }
 
+function useApps(organizationId) {
+  const { data, error, isLoading } = useSWR(`/api/rest/apps?where={"organizationId":{"$eq":"${organizationId}"}}&include=aiResource`, fetcher)
+ 
+  return {
+    apps: data,
+    isLoading,
+    isError: error
+  }
+}
+
 
 function useAIResource(id) {
   const { data, error, isLoading } = useSWR(`/api/rest/airesources/${id}`, fetcher)
@@ -34,18 +44,18 @@ function useAIResource(id) {
   }
 }
 
-function useMessages(organizationId) {
-  const url = `/api/rest/messages?where={"organizationId":{"$eq":"${organizationId}"}}&include=usage`
+function useMessages(organizationId, page=1, size=10) {
+  const url = `/api/rest/messages?where={"organizationId":{"$eq":"${organizationId}"}}&include=usage,app&orderBy={"createdAt":"$desc"}&page=${page}&limit=${size}`
   const { data, error, isLoading } = useSWR(url, fetcher)
  
   return {
-    messages: data,
+    data: data,
     isLoading,
     isError: error
   }
 }
 
-export {useOrganization, useApp, useAIResource, useMessages}
+export {useOrganization, useApp, useAIResource, useMessages, useApps}
 
 
  
