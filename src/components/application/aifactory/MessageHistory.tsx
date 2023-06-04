@@ -13,7 +13,9 @@ const columns:GridColDef[] = [
   {
     field:'appName',
     headerName:'应用名称',
-    valueGetter: (params) =>  `${params.row.app.name}`,
+    valueGetter: (params) =>  {
+      return params.row.app.name || params.row.app.appType
+    },
     sortable: false,
   },
   {
@@ -54,7 +56,7 @@ const columns:GridColDef[] = [
   {
     field:'createdAt',
     headerName:'时间',
-    width:150,
+    width:200,
     sortable: false,
 
   },
@@ -85,6 +87,7 @@ export default function MessageHistory( ) {
       { data? 
       // (<StyledTextarea defaultValue={JSON.stringify(messages)} disabled ></StyledTextarea>) :
       (<DataGrid
+    
         disableColumnFilter 
         columns={columns}
         rows={data.data}
@@ -94,7 +97,7 @@ export default function MessageHistory( ) {
         paginationModel={paginationModel}
         paginationMode="server"
         onPaginationModelChange={setPaginationModel}
-        checkboxSelection
+        // checkboxSelection
         disableRowSelectionOnClick
         
       />) :

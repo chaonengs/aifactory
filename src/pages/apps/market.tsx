@@ -42,7 +42,7 @@ const TimerWrapper = styled('div')({
 });
 
 const ComingSoonCard = styled(Card)({
-  minHeight: '100vh',
+  minHeight: '100%',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center'
