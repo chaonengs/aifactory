@@ -114,7 +114,7 @@ const messageCard = (title:string, message:string, error:string|null|undefined =
 const handleFeishuMessage = async (client:lark.Client, event:ReceiveMessageEvent, app: App & { aiResource: AIResource }, res:NextApiResponse) => {
     const feishuMessage = await prisma.feiShuMessage.findUnique({where:{id:event.data.message.message_id}});
     if(feishuMessage?.processing){
-        res.status(400).end();
+        res.status(400).end('messege in processing');
         return
     }
     if(feishuMessage && !feishuMessage.processing){
@@ -137,6 +137,7 @@ const handleFeishuMessage = async (client:lark.Client, event:ReceiveMessageEvent
         id: event.data.message.message_id,
         content: JSON.parse(event.data.message.content),
         processing: true
+        createdAt: event.data.message.create_time,
     }})
 
     const question =  JSON.parse(event.data.message.content).text;

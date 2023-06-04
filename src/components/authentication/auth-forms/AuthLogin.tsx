@@ -79,7 +79,7 @@ const AuthLogin = ({ ...others }) => {
               <Box sx={{ mr: { xs: 1, sm: 2 }, width: 20, height: 20, marginRight: matchDownSM ? 8 : 16 }}>
                <GitHubIcon />
               </Box>
-              Sign in with Github
+              Github登录
             </Button>
           
         </Grid>
@@ -116,7 +116,7 @@ const AuthLogin = ({ ...others }) => {
         </Grid>
         <Grid item xs={12} container alignItems="center" justifyContent="center">
           <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle1">Sign in with Email address</Typography>
+            <Typography variant="subtitle1">邮箱登录</Typography>
           </Box>
         </Grid>
       </Grid>
@@ -127,7 +127,7 @@ const AuthLogin = ({ ...others }) => {
           submit: null
         }}
         validationSchema={Yup.object().shape({
-          email: Yup.string().email('Must be a valid email').max(255).required('Email is required'),
+          email: Yup.string().email('邮箱地址不合法').max(255).required('请输入邮箱'),
         })}
         onSubmit={async (values, { setErrors, setStatus, setSubmitting }) => {
           try {
@@ -161,7 +161,7 @@ const AuthLogin = ({ ...others }) => {
         {({ errors, handleBlur, handleChange, handleSubmit, isSubmitting, touched, values }) => (
           <form noValidate onSubmit={handleSubmit} {...others}  >
             <FormControl fullWidth error={Boolean(touched.email && errors.email)} sx={{ ...theme.typography.customInput }}>
-              <InputLabel htmlFor="outlined-adornment-email-login">Email Address</InputLabel>
+              <InputLabel htmlFor="outlined-adornment-email-login">邮箱地址</InputLabel>
               <OutlinedInput
                 id="outlined-adornment-email-login"
                 type="email"
@@ -169,7 +169,7 @@ const AuthLogin = ({ ...others }) => {
                 name="email"
                 onBlur={handleBlur}
                 onChange={handleChange}
-                label="Email Address / Username"
+                label="邮箱地址"
                 inputProps={{}}
               />
               {touched.email && errors.email && (
@@ -180,14 +180,14 @@ const AuthLogin = ({ ...others }) => {
             </FormControl>
 
            
-            <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+            {/* <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
               <FormControlLabel
                 control={
                   <Checkbox checked={checked} onChange={(event) => setChecked(event.target.checked)} name="checked" color="primary" />
                 }
-                label="Remember me"
+                label="记住我"
               />
-            </Stack>
+            </Stack> */}
             {errors.submit && (
               <Box sx={{ mt: 3 }}>
                 <FormHelperText error>{errors.submit}</FormHelperText>
@@ -197,7 +197,7 @@ const AuthLogin = ({ ...others }) => {
             <Box sx={{ mt: 2 }}>
               
                 <Button disableElevation disabled={isSubmitting} fullWidth size="large" type="submit" variant="contained" color="secondary">
-                  Sign in
+                  登录
                 </Button>
               
             </Box>

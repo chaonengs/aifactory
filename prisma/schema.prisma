@@ -148,4 +148,6 @@ model FeiShuMessage {
   id String @id
   content Json
   processing Boolean 
+  createdAt DateTime @default(now())
+  recievedAt DateTime @default(now())
 }
