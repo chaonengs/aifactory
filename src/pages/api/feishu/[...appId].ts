@@ -1,17 +1,17 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, App, Prisma, AIResource } from '@prisma/client';
 import * as lark from '@larksuiteoapi/node-sdk';
-import { OpenAIChatComletion } from 'utils/server';
-import { OpenAIModelID, OpenAIModels } from 'types/openai';
 import { createMessage } from 'utils/db/transactions';
 import { encode } from 'gpt-tokenizer';
 import { OpenAI } from 'openai-streams/node';
 import { ReceiveMessageEvent, Sender, User } from 'types/feishu';
+import { withFireAndForget } from 'utils/handlers';
+import  MessageQueue  from "pages/api/queues/messages";
 
 const prisma = new PrismaClient();
 
 const findApp = async (id: string) => {
-  return await prisma.app.findUnique({
+  return await prisma.app.findUniqueOrThrow({
     where: {
       id
     },
@@ -21,22 +21,7 @@ const findApp = async (id: string) => {
   });
 };
 
-const getFeishuUser = async (client: lark.Client, userId: string) => {
-  const req = {
-    user_id_type: 'union_id',
-    department_id_type: ''
-  };
-  const res = await client.contact.user.get({
-    params: {
-      user_id_type: 'union_id',
-      department_id_type: 'department_id'
-    },
-    path: {
-      user_id: userId
-    }
-  });
-  return res.data?.user;
-};
+
 
 const eventDispatcher = (app: App & { aiResource: AIResource }) => {
   if (app.config === null) {
@@ -75,82 +60,40 @@ const eventDispatcher = (app: App & { aiResource: AIResource }) => {
 };
 
 
-const messageCard = (title:string, message:string, error:string|null|undefined = null) => {
-    const card = {
-        "config": {
-          "wide_screen_mode": true
-        },
-        "elements": [
-          {
-            "tag": "div",
-            "text": {
-              "content": message,
-              "tag": "plain_text"
-            }
-          }
-        ],
-        "header": {
-          "template": "blue",
-          "title": {
-            "content": title,
-            "tag": "plain_text"
-          }
-        }
-      };
 
-    if(error){
-        card.elements.push({
-            "tag": "div",
-            "text": {
-              "content": error,
-              "tag": "plain_text"
-            }
-        })
-    }
-    return JSON.stringify(card)
-} 
 // const sendFeishuMessage()
 
-const handleFeishuMessage = async (client:lark.Client, event:ReceiveMessageEvent, app: App & { aiResource: AIResource }, res:NextApiResponse) => {
-    const feishuMessage = await prisma.feiShuMessage.findUnique({where:{id:event.data.message.message_id}});
-    if(feishuMessage?.processing){
-        res.status(400).end('messege in processing');
-        return
-    }
-    if(feishuMessage && !feishuMessage.processing){
-        res.status(20).end('ok');
-        return
-    }
-    
-    let sendresult = await client.im.message.reply({
-        path: {
-            message_id: event.data.message.message_id
-            },
-        data: {
-        content: messageCard('正在询问OpenAI', '...'),
-        msg_type: 'interactive'
-        }
-    });
-    res.write(JSON.stringify(sendresult));
+const processFeishuMessage = async (messageId:string) => {
+  const feishuMessage = await prisma.feiShuMessage.findUniqueOrThrow({where:{id:messageId}});
+  const app = await findApp(feishuMessage.appId);
+  const config = app.config as Prisma.JsonObject;
+  const client = new lark.Client({
+    appId: config['appId'] as string,
+    appSecret: config['appSecret'] as string,
+    appType: lark.AppType.SelfBuild,
+    domain: config['domain'] as string
+  });
 
-    await prisma.feiShuMessage.create({data:{
-        id: event.data.message.message_id,
-        content: JSON.parse(event.data.message.content),
-        processing: true,
-        createdAt: event.data.message.create_time,
-    }})
+  const sendResult = await client.im.message.reply({
+    path: {
+        message_id: messageId
+        },
+      data: {
+      content: messageCard('正在询问OpenAI', '...'),
+      msg_type: 'interactive'
+      }
+  });
 
-    const question =  JSON.parse(event.data.message.content).text;
+  const question =  JSON.parse(feishuMessage.data.message.content).text;
     let airesult:string = '';
     let completionTokens = 0;
     let feishuSender: User | null | undefined = null;
-    if(event.data.sender.sender_id?.union_id){
-        const u =   await getFeishuUser(client, event.data.sender.sender_id.union_id)
+    if(feishuMessage.data.sender.sender_id?.union_id){
+        const u =   await getFeishuUser(client, feishuMessage.data.sender.sender_id.union_id)
         if(u){
             feishuSender = u as User;
         }
     }
-
     try{
         const stream = await OpenAI(
             'chat',
@@ -177,20 +120,19 @@ const handleFeishuMessage = async (client:lark.Client, event:ReceiveMessageEvent
             if(completionTokens % 5 === 0){
                 const cardResult = await client.im.message.patch({
                     path: {
-                    message_id: sendresult.data?.message_id as string
+                    message_id: sendResult.data?.message_id as string
                     },
                     data: {
                     content: messageCard('回复中', airesult),
                     }
                 });
             }
-
-            res.write(airesult);
         });
+
         stream.on('end', async () => {
             const cardResult = await client.im.message.patch({
                 path: {
-                message_id: sendresult.data?.message_id as string
+                message_id: sendResult.data?.message_id as string
                 },
                 data: {
                 content: messageCard('回复结束', airesult),
@@ -199,35 +141,72 @@ const handleFeishuMessage = async (client:lark.Client, event:ReceiveMessageEvent
 
             await createMessage(question, airesult, feishuSender?.name || feishuSender?.en_name || feishuSender?.union_id || 'anonymous', feishuSender?.union_id || 'anonymous', encode(question).length, completionTokens, app);
             await prisma.feiShuMessage.update({
-                where: { id: event.data.message.message_id },
+                where: { id: messageId },
                 data: {
                     processing: false
                 }
-            }),
-
-            res.end();
+            });
         });
-    } catch (error)
-    {
-        console.error(error);
-        await client.im.message.patch({
-            path: {
-            message_id: sendresult.data?.message_id as string
-            },
+      } catch (error)
+      {
+          console.error(error);
+          await client.im.message.patch({
+              path: {
+              message_id: sendresult.data?.message_id as string
+              },
+              data: {
+              content: messageCard('未正常响应',airesult, '出现错误，请稍后再试'),
+              }
+          });
+          if(airesult && airesult !== ''){
+              await createMessage(question, airesult, feishuSender?.name || feishuSender?.en_name || feishuSender?.union_id || 'anonymous', feishuSender?.union_id || 'anonymous', encode(question).length, completionTokens, app);
+          }
+          await prisma.feiShuMessage.update({
+            where: { id: messageId },
             data: {
-            content: messageCard('未正常响应',airesult, '出现错误，请稍后再试'),
+                processing: false
             }
         });
-        if(airesult && airesult !== ''){
-            await createMessage(question, airesult, feishuSender?.name || feishuSender?.en_name || feishuSender?.union_id || 'anonymous', feishuSender?.union_id || 'anonymous', encode(question).length, completionTokens, app);
-        }
-        res.end();
-    }
+      }
 
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { appId } = req.query;
+const handleFeishuMessage = async (client:lark.Client, event:ReceiveMessageEvent, app: App & { aiResource: AIResource }, res:NextApiResponse) => {
+    const feishuMessage = await prisma.feiShuMessage.findUnique({where:{id:event.data.message.message_id}});
+    if(feishuMessage?.processing){
+        res.status(400).end('messege in processing');
+        return
+    }
+    if(feishuMessage && !feishuMessage.processing){
+        res.end('ok');
+        return
+    }
+    const message = await prisma.message.findUnique({where: {id:event.data.message.message_id}});
+    if(message){
+      res.end('ok');
+      return;
+    }
+    await prisma.feiShuMessage.create({data:{
+      id: event.data.message.message_id,
+      appId: app.id,
+      //@ts-ignore
+      content: event.data as Prisma.JsonObject,
+      eventName: event.name,
+      processing: true,
+      createdAt: new Date(Number(event.data.message.create_time)),
+    }})
+
+    
+    await MessageQueue.enqueue(
+      messageId, // job to be enqueued
+      { delay: "1s" } // scheduling options
+    )
+
+    res.end('ok')
+
+}
+
+const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {const { appId } = req.query;
   let id = null;
   if (Array.isArray(appId)) {
     id = appId[0];
@@ -263,7 +242,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           );
 
           console.log(data);
-
+          console.log(data.headers);
           const event = await dispatcher.invoke(data) as ReceiveMessageEvent;
           if (event.name === 'im.message.receive_v1') {
             handleFeishuMessage(client,event,app, res);
@@ -279,4 +258,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } else {
     res.status(404).end('not found');
   }
+  
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  return withFireAndForget(handleRequest)
 }

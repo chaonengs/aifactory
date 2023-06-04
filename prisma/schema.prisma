@@ -74,7 +74,8 @@ model Organization {
   ownerId     String
   aiResources AIResource[]
   apps        App[]
-  messages Message[]
+  messages    Message[]
+
   @@index([ownerId])
 }
 
@@ -83,7 +84,7 @@ model Usage {
   message          Message    @relation(fields: [messageId], references: [id])
   messageId        String     @unique
   aiResource       AIResource @relation(fields: [aiResourceId], references: [id])
-  aiResourceId     String     
+  aiResourceId     String
   promptTokens     Int
   completionTokens Int
   totalTokens      Int
@@ -93,15 +94,15 @@ model Usage {
 }
 
 model Message {
-  id            String   @id @default(cuid())
-  content       String   @db.Text
-  answer        String   @db.Text
-  createdAt     DateTime @default(now())
-  senderUnionId String
-  sender        String
-  app           App      @relation(fields: [appId], references: [id])
-  appId         String
-  usage         Usage?
+  id             String        @id @default(cuid())
+  content        String        @db.Text
+  answer         String        @db.Text
+  createdAt      DateTime      @default(now())
+  senderUnionId  String
+  sender         String
+  app            App           @relation(fields: [appId], references: [id])
+  appId          String
+  usage          Usage?
   organization   Organization? @relation(fields: [organizationId], references: [id])
   organizationId String?
 
@@ -128,26 +129,32 @@ model AIResource {
 }
 
 model App {
-  id              String       @id @default(cuid())
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  id              String          @id @default(cuid())
+  organization    Organization    @relation(fields: [organizationId], references: [id])
   organizationId  String
   name            String?
   appType         String
-  aiResource      AIResource   @relation(fields: [aiResourceId], references: [id])
+  aiResource      AIResource      @relation(fields: [aiResourceId], references: [id])
   aiResourceId    String
   messages        Message[]
   tokenLimitation Int
   tokenUsed       Int
   config          Json
+  feishuMessages  FeiShuMessage[]
 
   @@index([organizationId])
   @@index([aiResourceId])
 }
 
 model FeiShuMessage {
-  id String @id
-  content Json
-  processing Boolean 
-  createdAt DateTime @default(now())
+  id         String   @id
+  data       Json
+  processing Boolean
+  createdAt  DateTime @default(now())
   recievedAt DateTime @default(now())
+  eventName  String
+  app        App      @relation(fields: [appId], references: [id])
+  appId      String
+
+  @@index([appId])
 }
