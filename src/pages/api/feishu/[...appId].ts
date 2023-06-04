@@ -195,9 +195,6 @@ const handleFeishuMessage = async (client:lark.Client, event:ReceiveMessageEvent
                 content: messageCard('回复结束', airesult),
                 }
             });
-            if(event.data.sender.sender_id?.union_id){
-
-            }
 
             await createMessage(question, airesult, feishuSender?.name || feishuSender?.en_name || feishuSender?.union_id || 'anonymous', feishuSender?.union_id || 'anonymous', encode(question).length, completionTokens, app);
             await prisma.feiShuMessage.update({
@@ -263,6 +260,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }),
             req.body
           );
+
+          console.log(data);
 
           const event = await dispatcher.invoke(data) as ReceiveMessageEvent;
           if (event.name === 'im.message.receive_v1') {
