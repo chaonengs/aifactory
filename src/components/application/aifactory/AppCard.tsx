@@ -216,7 +216,7 @@ export default function AppCard({ app }) {
           <TextField
             margin="dense"
             id="callbackurl"
-            label="AppId"
+            label="事件接收地址"
             fullWidth
             variant="standard"
             sx={{minWidth:500}}
