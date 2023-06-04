@@ -122,7 +122,7 @@ const processFeishuMessage = async (messageId:string) => {
               } else {
                   airesult = decoder.decode(data);
               }
-              if(completionTokens % 5 === 0){
+              if(completionTokens % 10 === 0){
                   const cardResult = await client.im.message.patch({
                       path: {
                       message_id: sendResult.data?.message_id as string
@@ -135,14 +135,17 @@ const processFeishuMessage = async (messageId:string) => {
           });
   
           stream.on('end', async () => {
+            setTimeout(async () => {
               const cardResult = await client.im.message.patch({
-                  path: {
-                  message_id: sendResult.data?.message_id as string
-                  },
-                  data: {
-                  content: messageCard('回复结束', airesult),
-                  }
-              });
+                path: {
+                message_id: sendResult.data?.message_id as string
+                },
+                data: {
+                content: messageCard('回复结束', airesult),
+                }
+            });
+            }, 1000);
+              
   
               await createMessage(question, airesult, feishuSender?.name || feishuSender?.en_name || feishuSender?.union_id || 'anonymous', feishuSender?.union_id || 'anonymous', encode(question).length, completionTokens, app);
               await prisma.feiShuMessage.update({
