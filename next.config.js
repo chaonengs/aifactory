@@ -31,7 +31,12 @@ const nextConfig = {
       asyncWebAssembly: true,
       layers: true,
     };
+    config.ignoreWarnings =  [{
+      message: /Serializing big strings/,
+    },
+    (warning) => false,
 
+  ]
     return config;
   },
   

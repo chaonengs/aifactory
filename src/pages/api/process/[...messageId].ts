@@ -1,32 +1,45 @@
-import { AIResource, App, FeiShuMessage, Prisma, PrismaClient } from '@prisma/client';
+import { AIResource, App, FeiShuMessage } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { OpenAI } from 'openai-streams/node';
 import { ApiError } from 'next/dist/server/api-utils';
 
 import { encode } from 'gpt-tokenizer';
 import { saveMessage, createProcessMessageBody } from 'utils/db/transactions';
-import * as lark from '@larksuiteoapi/node-sdk';
+// import * as lark from '@larksuiteoapi/node-sdk';
 import { User } from 'types/feishu';
-import  Queue  from 'pages/api/queues/db';
+import Queue from 'pages/api/queues/db';
+import { getInternalTenantAccessToken, getUser, patchMessage, replyMessage, sendMessage } from 'utils/server/feishu';
+import { access } from 'fs';
 
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient();
 
-const getFeishuUser = async (client: lark.Client, userId: string) => {
+// const getFeishuUser = async (client: lark.Client, userId: string) => {
+//   const req = {
+//     user_id_type: 'union_id',
+//     department_id_type: ''
+//   };
+//   const res = await client.contact.user.get({
+//     params: {
+//       user_id_type: 'union_id',
+//       department_id_type: 'department_id'
+//     },
+//     path: {
+//       user_id: userId
+//     }
+//   });
+//   return res.data?.user;
+// };
+
+const getFeishuUser = async (accessToken:string, userId: string) => {
   const req = {
     user_id_type: 'union_id',
     department_id_type: ''
   };
-  const res = await client.contact.user.get({
-    params: {
-      user_id_type: 'union_id',
-      department_id_type: 'department_id'
-    },
-    path: {
-      user_id: userId
-    }
-  });
+  const res = await (await getUser(accessToken, userId, 'union_id')).json();
   return res.data?.user;
 };
+
+
 
 const messageCard = (title: string, message: string, status: string, error: string | null | undefined = null) => {
   const card = {
@@ -47,10 +60,10 @@ const messageCard = (title: string, message: string, status: string, error: stri
           content: `[${status}]`,
           tag: 'plain_text'
         }
-      },
+      }
     ],
     header: {
-      template: status === '回复中' ? 'green' : (status === '回复完成' ? 'blue' : status === '错误中止' ? 'red' : 'blue' ),
+      template: status === '回复中' ? 'green' : status === '回复完成' ? 'blue' : status === '错误中止' ? 'red' : 'blue',
       title: {
         content: title,
         tag: 'plain_text'
@@ -70,84 +83,130 @@ const messageCard = (title: string, message: string, status: string, error: stri
   return JSON.stringify(card);
 };
 
-const trySendOrUpdateFeishuCard = async (client:lark.Client, title:string, message:string, status:string, error:string|null, replayMessageId:string|null, cardMessageId:string|null) =>{
-  if (replayMessageId){
-    const repliedMessage = await client.im.message.reply({
-      path: {
-        message_id: replayMessageId
-      },
-      data: {
+// const trySendOrUpdateFeishuCard = async (client:lark.Client, title:string, message:string, status:string, error:string|null, replayMessageId:string|null, cardMessageId:string|null) =>{
+//   if (replayMessageId){
+//     const repliedMessage = await client.im.message.reply({
+//       path: {
+//         message_id: replayMessageId
+//       },
+//       data: {
+//         content: messageCard(title, message, status, error),
+//         msg_type: 'interactive'
+//       }
+//     });
+
+//     //@ts-ignore
+//     if (repliedMessage.code > 0) {
+//       throw new ApiError(500, `code: ${repliedMessage.code} : ${repliedMessage.msg}`);
+//     }
+//     return repliedMessage.data?.message_id;
+//   }
+//   if (cardMessageId){
+//     const updatedMessage = await client.im.message.patch({
+//       path: {
+//         message_id: cardMessageId
+//       },
+//       data: {
+//         content: messageCard(title, message, status, error),
+//       }
+//     });
+
+//     //@ts-ignore
+//     if (updatedMessage.code > 0) {
+//       throw new ApiError(500, `code: ${updatedMessage.code} : ${updatedMessage.msg}`);
+//     }
+//     return updatedMessage.data;
+//   }
+
+// }
+
+const trySendOrUpdateFeishuCard = async (
+  accessToken: string,
+  title: string,
+  message: string,
+  status: string,
+  error: string | null,
+  replayMessageId: string | null,
+  cardMessageId: string | null
+) => {
+  if (replayMessageId) {
+    const repliedMessage = await (await replyMessage(
+      replayMessageId,
+      {
         content: messageCard(title, message, status, error),
         msg_type: 'interactive'
-      }
-    });
-  
+      },
+      accessToken
+    )).json();
+
     //@ts-ignore
     if (repliedMessage.code > 0) {
       throw new ApiError(500, `code: ${repliedMessage.code} : ${repliedMessage.msg}`);
     }
     return repliedMessage.data?.message_id;
   }
-  if (cardMessageId){
-    const updatedMessage = await client.im.message.patch({
-      path: {
-        message_id: cardMessageId
-      },
-      data: {
-        content: messageCard(title, message, status, error),
-      }
-    });
-
+  if (cardMessageId) {
+    const updatedMessage = await (await patchMessage(cardMessageId, {
+      content: messageCard(title, message, status, error)
+    }, accessToken)).json();
     //@ts-ignore
     if (updatedMessage.code > 0) {
       throw new ApiError(500, `code: ${updatedMessage.code} : ${updatedMessage.msg}`);
     }
     return updatedMessage.data;
   }
+};
 
-}
+// const processFeishuMessageById = async (messageId: string) => {
+//   const feishuMessage = await prisma.feiShuMessage.findUniqueOrThrow({ where: { id: messageId } });
+//   const app = await prisma.app.findUniqueOrThrow({
+//     where: {
+//       id: feishuMessage.appId
+//     },
+//     include: {
+//       aiResource: true
+//     }
+//   });
 
-const processFeishuMessageById = async (messageId: string) => {
-  const feishuMessage = await prisma.feiShuMessage.findUniqueOrThrow({ where: { id: messageId } });
-  const app = await prisma.app.findUniqueOrThrow({
-    where: {
-      id: feishuMessage.appId
-    },
-    include: {
-      aiResource: true
-    }
-  });
-  return processFeishuMessage(feishuMessage, app);
-}
+//     const config = app.config as Prisma.JsonObject;
+//   const client = new lark.Client({
+//     appId: config['appId'] as string,
+//     appSecret: config['appSecret'] as string,
+//     appType: lark.AppType.SelfBuild,
+//     domain: config['domain'] as string
+//   });
+//   const accessToken = await client.tokenManager.getTenantAccessToken();
+//   return processFeishuMessage(feishuMessage, app);
+// };
 
+const processFeishuMessage = async (feishuMessage: FeiShuMessage, app: App & { aiResource: AIResource }) => {
+  // const config = app.config as Prisma.JsonObject;
+  // const client = new lark.Client({
+  //   appId: config['appId'] as string,
+  //   appSecret: config['appSecret'] as string,
+  //   appType: lark.AppType.SelfBuild,
+  //   domain: config['domain'] as string
+  // });
 
-const processFeishuMessage = async (feishuMessage:FeiShuMessage, app:App&{aiResource:AIResource}) => {
-  const config = app.config as Prisma.JsonObject;
-  const client = new lark.Client({
-    appId: config['appId'] as string,
-    appSecret: config['appSecret'] as string,
-    appType: lark.AppType.SelfBuild,
-    domain: config['domain'] as string
-  });
-
+  const accessToken = (await (await getInternalTenantAccessToken(app.config.appId, app.config.appSecret)).json()).tenant_access_token;
 
   //@ts-ignore
   const question = JSON.parse(feishuMessage.data.message.content).text;
   let airesult: string = '';
   let completionTokens = 0;
   let feishuSender: User | null | undefined = null;
-    //@ts-ignore
+  //@ts-ignore
 
   if (feishuMessage.data.sender.sender_id?.union_id) {
-      //@ts-ignore
+    //@ts-ignore
 
-    const u = await getFeishuUser(client, feishuMessage.data.sender.sender_id.union_id);
+    const u = await getFeishuUser(accessToken, feishuMessage.data.sender.sender_id.union_id);
     if (u) {
       feishuSender = u as User;
     }
   }
 
-  const repliedMessageId = await trySendOrUpdateFeishuCard(client, 'AI助理', '...', '回复中', null, feishuMessage.id, null);
+  const repliedMessageId = await trySendOrUpdateFeishuCard(accessToken, 'AI助理', '...', '回复中', null, feishuMessage.id, null);
 
   try {
     const stream = await OpenAI(
@@ -175,17 +234,17 @@ const processFeishuMessage = async (feishuMessage:FeiShuMessage, app:App&{aiReso
         airesult = decoder.decode(chunk);
       }
       if (Date.now() - lastSendAt > 500) {
-        trySendOrUpdateFeishuCard(client, 'AI助理', airesult, '回复中', null, null, repliedMessageId);
+        trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复中', null, null, repliedMessageId);
         lastSendAt = Date.now();
       }
     }
 
     setTimeout(async () => {
-      trySendOrUpdateFeishuCard(client, 'AI助理', airesult, '回复完成', null, null, repliedMessageId);
+      trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复完成', null, null, repliedMessageId);
     }, 500);
   } catch (err) {
     console.error(err);
-    trySendOrUpdateFeishuCard(client, 'AI助理', airesult, '错误中止', null, null, repliedMessageId);
+    trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '错误中止', null, null, repliedMessageId);
   }
 
   if (airesult && airesult !== '') {
@@ -201,38 +260,35 @@ const processFeishuMessage = async (feishuMessage:FeiShuMessage, app:App&{aiReso
 
     await Queue.enqueue(
       {
-        type:'save',
+        type: 'save',
         data: processMessageBody,
-        feishuMessageId: null,
-      }
-      ,
+        feishuMessageId: null
+      },
       { delay: 1 }
-    )
+    );
   }
 
   await Queue.enqueue(
     {
-      type:'finish',
+      type: 'finish',
       data: null,
-      feishuMessageId: feishuMessage.id,
-    }
-    ,
+      feishuMessageId: feishuMessage.id
+    },
     { delay: 1 }
-  )
-  
+  );
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { messageId } = req.query;
-  let id = null;
-  if (Array.isArray(messageId)) {
-    id = messageId[0];
-  } else {
-    id = messageId;
-  }
+  // const { messageId } = req.query;
+  // let id = null;
+  // if (Array.isArray(messageId)) {
+  //   id = messageId[0];
+  // } else {
+  //   id = messageId;
+  // }
 
-  await processFeishuMessageById(id as string);
+  // await processFeishuMessageById(id as string);
   res.end('ok');
 }
 
-export { processFeishuMessage, processFeishuMessageById };
+export { processFeishuMessage };
