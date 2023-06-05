@@ -1,5 +1,5 @@
 import { Queue } from 'quirrel/next';
-import { processFeishuMessage, processFeishuMessageById } from '../process/[...messageId]';
+import { processFeishuMessage } from '../process/[...messageId]';
 import { AIResource, App, FeiShuMessage } from '@prisma/client';
 
 export interface MessageQueueBody {

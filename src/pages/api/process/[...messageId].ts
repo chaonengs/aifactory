@@ -1,4 +1,4 @@
-import { AIResource, App, FeiShuMessage } from '@prisma/client';
+// import { AIResource, App, FeiShuMessage } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { OpenAI } from 'openai-streams/node';
 import { ApiError } from 'next/dist/server/api-utils';
@@ -179,7 +179,7 @@ const trySendOrUpdateFeishuCard = async (
 //   return processFeishuMessage(feishuMessage, app);
 // };
 
-const processFeishuMessage = async (feishuMessage: FeiShuMessage, app: App & { aiResource: AIResource }) => {
+const processFeishuMessage = async (feishuMessage, app) => {
   // const config = app.config as Prisma.JsonObject;
   // const client = new lark.Client({
   //   appId: config['appId'] as string,
