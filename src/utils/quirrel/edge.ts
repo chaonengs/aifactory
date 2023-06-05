@@ -18,6 +18,7 @@ export function Queue<Payload>(
   });
 
   async function edgeHandler(req: NextApiRequest) {
+    console.log(req);
     const response = await quirrel.respondTo(req.body, req.headers);
     console.log(response);
     return new Response(
