@@ -1,13 +1,13 @@
-import { AIResource, App, Prisma, PrismaClient } from '@prisma/client';
+import { AIResource, App, FeiShuMessage, Prisma, PrismaClient } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { OpenAI } from 'openai-streams/node';
 import { ApiError } from 'next/dist/server/api-utils';
 
 import { encode } from 'gpt-tokenizer';
-import { createMessage } from 'utils/db/transactions';
+import { saveMessage, createProcessMessageBody } from 'utils/db/transactions';
 import * as lark from '@larksuiteoapi/node-sdk';
 import { User } from 'types/feishu';
-import { send } from 'process';
+import  Queue  from 'pages/api/queues/db';
 
 const prisma = new PrismaClient();
 
@@ -107,7 +107,7 @@ const trySendOrUpdateFeishuCard = async (client:lark.Client, title:string, messa
 
 }
 
-const processFeishuMessage = async (messageId: string) => {
+const processFeishuMessageById = async (messageId: string) => {
   const feishuMessage = await prisma.feiShuMessage.findUniqueOrThrow({ where: { id: messageId } });
   const app = await prisma.app.findUniqueOrThrow({
     where: {
@@ -117,6 +117,11 @@ const processFeishuMessage = async (messageId: string) => {
       aiResource: true
     }
   });
+  return processFeishuMessage(feishuMessage, app);
+}
+
+
+const processFeishuMessage = async (feishuMessage:FeiShuMessage, app:App&{aiResource:AIResource}) => {
   const config = app.config as Prisma.JsonObject;
   const client = new lark.Client({
     appId: config['appId'] as string,
@@ -142,7 +147,7 @@ const processFeishuMessage = async (messageId: string) => {
     }
   }
 
-  const repliedMessageId = await trySendOrUpdateFeishuCard(client, 'AI助理', '...', '回复中', null, messageId, null);
+  const repliedMessageId = await trySendOrUpdateFeishuCard(client, 'AI助理', '...', '回复中', null, feishuMessage.id, null);
 
   try {
     const stream = await OpenAI(
@@ -171,6 +176,7 @@ const processFeishuMessage = async (messageId: string) => {
       }
       if (Date.now() - lastSendAt > 500) {
         trySendOrUpdateFeishuCard(client, 'AI助理', airesult, '回复中', null, null, repliedMessageId);
+        lastSendAt = Date.now();
       }
     }
 
@@ -183,7 +189,7 @@ const processFeishuMessage = async (messageId: string) => {
   }
 
   if (airesult && airesult !== '') {
-    await createMessage(
+    const processMessageBody = createProcessMessageBody(
       question,
       airesult,
       feishuSender?.name || feishuSender?.en_name || feishuSender?.union_id || 'anonymous',
@@ -192,80 +198,29 @@ const processFeishuMessage = async (messageId: string) => {
       completionTokens,
       app
     );
+
+    await Queue.enqueue(
+      {
+        type:'save',
+        data: processMessageBody,
+        feishuMessageId: null,
+      }
+      ,
+      { delay: 1 }
+    )
   }
-  await prisma.feiShuMessage.update({
-    where: { id: messageId },
-    data: {
-      processing: false
+
+  await Queue.enqueue(
+    {
+      type:'finish',
+      data: null,
+      feishuMessageId: feishuMessage.id,
     }
-  });
+    ,
+    { delay: 1 }
+  )
+  
 };
-
-// console.log(airesult)
-// stream.on('data', async (data) => {
-//     const decoder = new TextDecoder();
-//     completionTokens += 1;
-//     if (airesult) {
-//         airesult += decoder.decode(data);
-//     } else {
-//         airesult = decoder.decode(data);
-//     }
-//     if(completionTokens % 10 === 0){
-//         const cardResult = await client.im.message.patch({
-//             path: {
-//             message_id: repliedMessage.data?.message_id as string
-//             },
-//             data: {
-//             content: messageCard('回复中', airesult),
-//             }
-//         });
-//     }
-// });
-
-// stream.on('end', async () => {
-//   setTimeout(async () => {
-//     const cardResult = await client.im.message.patch({
-//       path: {
-//       message_id: repliedMessage.data?.message_id as string
-//       },
-//       data: {
-//       content: messageCard('回复结束', airesult),
-//       }
-//   });
-//   }, 1000);
-
-//     await createMessage(question, airesult, feishuSender?.name || feishuSender?.en_name || feishuSender?.union_id || 'anonymous', feishuSender?.union_id || 'anonymous', encode(question).length, completionTokens, app);
-//     await prisma.feiShuMessage.update({
-//         where: { id: messageId },
-//         data: {
-//             processing: false
-//         }
-//     });
-// });
-
-// } catch (error)
-// {
-//     console.error(error);
-//     await client.im.message.patch({
-//         path: {
-//         message_id: repliedMessage.data?.message_id as string
-//         },
-//         data: {
-//         content: messageCard('未正常响应',airesult, '出现错误，请稍后再试'),
-//         }
-//     });
-//     if(airesult && airesult !== ''){
-//         await createMessage(question, airesult, feishuSender?.name || feishuSender?.en_name || feishuSender?.union_id || 'anonymous', feishuSender?.union_id || 'anonymous', encode(question).length, completionTokens, app);
-//     }
-//     await prisma.feiShuMessage.update({
-//       where: { id: messageId },
-//       data: {
-//           processing: false
-//       }
-//   });
-// }
-
-// }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { messageId } = req.query;
@@ -276,8 +231,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     id = messageId;
   }
 
-  await processFeishuMessage(id as string);
+  await processFeishuMessageById(id as string);
   res.end('ok');
 }
 
-export { processFeishuMessage };
+export { processFeishuMessage, processFeishuMessageById };
