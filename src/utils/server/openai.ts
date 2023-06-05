@@ -68,10 +68,10 @@ export const OpenAIStream = async (
   temperature: number,
   key: string,
   messages: Message[],
-  onDataHandler: ((text: string) => {}) | null = null,
-  onDoneHandler: ((text: string) => {}) | null = null,
-  onErrorHandler: ((error: any) => {}) | null = null,
-  onCompleteHandler: ((text: string, error: any) => {}) | null = null
+  onDataHandler: ((text: string) => void) | null = null,
+  onDoneHandler: ((text: string) => void) | null = null,
+  onErrorHandler: ((error: any)=> void)| null = null,
+  onCompleteHandler: ((text: string, error: any) => void) | null = null
 ) => {
   const res = await OpenAIChatComletion(model, systemPrompt, temperature, key, messages);
 
@@ -87,6 +87,8 @@ export const OpenAIStream = async (
     }
   }
 
+
+
   const result = new ReadableStream({
     async start(controller) {
       let result = '';
@@ -94,19 +96,25 @@ export const OpenAIStream = async (
       const onParse = (event: ParsedEvent | ReconnectInterval) => {
         if (event.type === 'event') {
           const data = event.data;
-
+            if (event.data === '[DONE]'){
+                controller.close();
+              if (onDoneHandler) {
+                 onDoneHandler(result);
+              }
+              return;
+            }
           try {
             const json = JSON.parse(data);
             if (json.choices[0].finish_reason != null) {
               controller.close();
               if (onDoneHandler) {
-                onDoneHandler(result);
+                 onDoneHandler(result);
               }
               return;
             }
             const text = json.choices[0].delta.content;
             if (onDataHandler) {
-              onDataHandler(text);
+               onDataHandler(text);
             }
             result += text;
             const queue = encoder.encode(text);
@@ -114,7 +122,7 @@ export const OpenAIStream = async (
           } catch (e) {
             error = e;
             if (onErrorHandler) {
-              onErrorHandler(e);
+             onErrorHandler(e);
             }
             controller.error(e);
           }
@@ -122,13 +130,14 @@ export const OpenAIStream = async (
       };
 
       const parser = createParser(onParse);
+      
 
       for await (const chunk of res.body as any) {
-        parser.feed(decoder.decode(chunk));
+         parser.feed(decoder.decode(chunk));
       }
 
       if (onCompleteHandler) {
-        onCompleteHandler(result, error);
+        await onCompleteHandler(result, error);
       }
     }
   });

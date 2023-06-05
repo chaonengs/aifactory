@@ -25,13 +25,14 @@ import { IncomingHttpHeaders, IncomingMessage } from "http";
   const { id, count, retry, nextRepetition, exclusive } = JSON.parse((_a = headers["x-quirrel-meta"]) !== null && _a !== void 0 ? _a : "{}");
   this.logger.receivedJob(this.route, payload);
   try {
-      return await this.handler(payload, {
+      const stream =  await this.handler(payload, {
           id,
           count,
           retry,
           nextRepetition,
           exclusive,
       });
+      return new Response(stream);
       // return {
       //     status: 200,
       //     headers: {},
@@ -40,11 +41,7 @@ import { IncomingHttpHeaders, IncomingMessage } from "http";
   }
   catch (error) {
       this.logger.processingError(this.route, payload, error);
-      return {
-          status: 500,
-          headers: {},
-          body: String(error),
-      };
+      return new Response(String(error),  { status: 500 });
   }
 }
 
@@ -66,7 +63,9 @@ export function Queue<Payload>(
   });
 
   
-  QuirrelClient.prototype.respondTo = respondTo;
+  // QuirrelClient.prototype.respondTo = respondTo;
+  quirrel.respondTo = respondTo;
+
   async function edgeHandler(req: NextRequest) {
     let body = await req.json();
     let headers : { [key: string]: any } = {};
@@ -80,14 +79,9 @@ export function Queue<Payload>(
     console.log(JSON.stringify(headers));
     const response = await quirrel.respondTo(JSON.stringify(body), headers);
     console.log(response);
-    return new Response(
-      response.body,
-      {
-        status:response.status,
-        headers:response.headers
-      }
-    )
+    return response;
   }
+
 
   edgeHandler.enqueue = (payload: Payload, options: EnqueueJobOptions) =>
     quirrel.enqueue(payload, options);

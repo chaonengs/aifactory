@@ -9,7 +9,7 @@ export interface MessageQueueBody {
 export default Queue(
   'api/queues/messages', // 👈 the route it's reachable on
   async (messageQueueBody: MessageQueueBody) => {
-    await processFeishuMessage(messageQueueBody.feishuMessage, messageQueueBody.app);
+    return await processFeishuMessage(messageQueueBody.feishuMessage, messageQueueBody.app);
   }
 );
 
