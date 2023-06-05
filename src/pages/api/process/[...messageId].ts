@@ -1,11 +1,13 @@
 import { AIResource, App, Prisma, PrismaClient } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { OpenAI } from 'openai-streams/node';
+import { ApiError } from 'next/dist/server/api-utils';
 
 import { encode } from 'gpt-tokenizer';
 import { createMessage } from 'utils/db/transactions';
 import * as lark from '@larksuiteoapi/node-sdk';
 import { User } from 'types/feishu';
+import { send } from 'process';
 
 const prisma = new PrismaClient();
 
@@ -26,7 +28,7 @@ const getFeishuUser = async (client: lark.Client, userId: string) => {
   return res.data?.user;
 };
 
-const messageCard = (title: string, message: string, error: string | null | undefined = null) => {
+const messageCard = (title: string, message: string, status: string, error: string | null | undefined = null) => {
   const card = {
     config: {
       wide_screen_mode: true
@@ -38,10 +40,17 @@ const messageCard = (title: string, message: string, error: string | null | unde
           content: message,
           tag: 'plain_text'
         }
-      }
+      },
+      {
+        tag: 'div',
+        text: {
+          content: `[${status}]`,
+          tag: 'plain_text'
+        }
+      },
     ],
     header: {
-      template: 'blue',
+      template: status === '回复中' ? 'green' : (status === '回复完成' ? 'blue' : status === '错误中止' ? 'red' : 'blue' ),
       title: {
         content: title,
         tag: 'plain_text'
@@ -61,6 +70,43 @@ const messageCard = (title: string, message: string, error: string | null | unde
   return JSON.stringify(card);
 };
 
+const trySendOrUpdateFeishuCard = async (client:lark.Client, title:string, message:string, status:string, error:string|null, replayMessageId:string|null, cardMessageId:string|null) =>{
+  if (replayMessageId){
+    const repliedMessage = await client.im.message.reply({
+      path: {
+        message_id: replayMessageId
+      },
+      data: {
+        content: messageCard(title, message, status, error),
+        msg_type: 'interactive'
+      }
+    });
+  
+    //@ts-ignore
+    if (repliedMessage.code > 0) {
+      throw new ApiError(500, `code: ${repliedMessage.code} : ${repliedMessage.msg}`);
+    }
+    return repliedMessage.data?.message_id;
+  }
+  if (cardMessageId){
+    const updatedMessage = await client.im.message.patch({
+      path: {
+        message_id: cardMessageId
+      },
+      data: {
+        content: messageCard(title, message, status, error),
+      }
+    });
+
+    //@ts-ignore
+    if (repliedMessage.code > 0) {
+      throw new ApiError(500, `code: ${updatedMessage.code} : ${updatedMessage.msg}`);
+    }
+    return updatedMessage.data;
+  }
+
+}
+
 const processFeishuMessage = async (messageId: string) => {
   const feishuMessage = await prisma.feiShuMessage.findUniqueOrThrow({ where: { id: messageId } });
   const app = await prisma.app.findUniqueOrThrow({
@@ -79,26 +125,25 @@ const processFeishuMessage = async (messageId: string) => {
     domain: config['domain'] as string
   });
 
-  const sendResult = await client.im.message.reply({
-    path: {
-      message_id: messageId
-    },
-    data: {
-      content: messageCard('正在询问OpenAI', '...'),
-      msg_type: 'interactive'
-    }
-  });
 
+  //@ts-ignore
   const question = JSON.parse(feishuMessage.data.message.content).text;
   let airesult: string = '';
   let completionTokens = 0;
   let feishuSender: User | null | undefined = null;
+    //@ts-ignore
+
   if (feishuMessage.data.sender.sender_id?.union_id) {
+      //@ts-ignore
+
     const u = await getFeishuUser(client, feishuMessage.data.sender.sender_id.union_id);
     if (u) {
       feishuSender = u as User;
     }
   }
+
+  const repliedMessageId = await trySendOrUpdateFeishuCard(client, 'AI助理', '...', '回复中', null, messageId, null);
+
   try {
     const stream = await OpenAI(
       'chat',
@@ -113,6 +158,8 @@ const processFeishuMessage = async (messageId: string) => {
       },
       { apiKey: app.aiResource.apiKey, mode: 'tokens' }
     );
+    const startedAt = Date.now();
+    let lastSendAt = 0;
 
     for await (const chunk of stream) {
       const decoder = new TextDecoder();
@@ -122,38 +169,17 @@ const processFeishuMessage = async (messageId: string) => {
       } else {
         airesult = decoder.decode(chunk);
       }
-      if (completionTokens % 10 === 0) {
-        const cardResult = await client.im.message.patch({
-          path: {
-            message_id: sendResult.data?.message_id as string
-          },
-          data: {
-            content: messageCard('回复中', airesult)
-          }
-        });
+      if (Date.now() - lastSendAt > 500) {
+        trySendOrUpdateFeishuCard(client, 'AI助理', airesult, '回复中', null, null, repliedMessageId);
       }
     }
 
     setTimeout(async () => {
-      const cardResult = await client.im.message.patch({
-        path: {
-          message_id: sendResult.data?.message_id as string
-        },
-        data: {
-          content: messageCard('回复结束', airesult)
-        }
-      });
-    }, 1000);
+      trySendOrUpdateFeishuCard(client, 'AI助理', airesult, '回复完成', null, null, repliedMessageId);
+    }, 500);
   } catch (err) {
     console.error(err);
-    await client.im.message.patch({
-      path: {
-        message_id: sendResult.data?.message_id as string
-      },
-      data: {
-        content: messageCard('未正常响应', airesult, '出现错误，请稍后再试')
-      }
-    });
+    trySendOrUpdateFeishuCard(client, 'AI助理', airesult, '错误中止', null, null, repliedMessageId);
   }
 
   if (airesult && airesult !== '') {
@@ -187,7 +213,7 @@ const processFeishuMessage = async (messageId: string) => {
 //     if(completionTokens % 10 === 0){
 //         const cardResult = await client.im.message.patch({
 //             path: {
-//             message_id: sendResult.data?.message_id as string
+//             message_id: repliedMessage.data?.message_id as string
 //             },
 //             data: {
 //             content: messageCard('回复中', airesult),
@@ -200,7 +226,7 @@ const processFeishuMessage = async (messageId: string) => {
 //   setTimeout(async () => {
 //     const cardResult = await client.im.message.patch({
 //       path: {
-//       message_id: sendResult.data?.message_id as string
+//       message_id: repliedMessage.data?.message_id as string
 //       },
 //       data: {
 //       content: messageCard('回复结束', airesult),
@@ -222,7 +248,7 @@ const processFeishuMessage = async (messageId: string) => {
 //     console.error(error);
 //     await client.im.message.patch({
 //         path: {
-//         message_id: sendResult.data?.message_id as string
+//         message_id: repliedMessage.data?.message_id as string
 //         },
 //         data: {
 //         content: messageCard('未正常响应',airesult, '出现错误，请稍后再试'),
