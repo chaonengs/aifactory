@@ -289,6 +289,7 @@ const processFeishuMessage = async (feishuMessage, app) => {
     }
   );
 
+  return openaiStream;
   //   for await (const chunk of stream) {
   //     const decoder = new TextDecoder();
   //     completionTokens += 1;
