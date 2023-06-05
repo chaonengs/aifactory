@@ -99,7 +99,7 @@ const trySendOrUpdateFeishuCard = async (client:lark.Client, title:string, messa
     });
 
     //@ts-ignore
-    if (repliedMessage.code > 0) {
+    if (updatedMessage.code > 0) {
       throw new ApiError(500, `code: ${updatedMessage.code} : ${updatedMessage.msg}`);
     }
     return updatedMessage.data;
