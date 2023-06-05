@@ -130,12 +130,13 @@ const trySendOrUpdateFeishuCard = async (
 ) => {
   if (replayMessageId) {
     const repliedMessage = await (await replyMessage(
+      accessToken,
       replayMessageId,
       {
         content: messageCard(title, message, status, error),
         msg_type: 'interactive'
-      },
-      accessToken
+      }
+      
     )).json();
 
     //@ts-ignore
@@ -145,9 +146,9 @@ const trySendOrUpdateFeishuCard = async (
     return repliedMessage.data?.message_id;
   }
   if (cardMessageId) {
-    const updatedMessage = await (await patchMessage(cardMessageId, {
+    const updatedMessage = await (await patchMessage(accessToken, cardMessageId, {
       content: messageCard(title, message, status, error)
-    }, accessToken)).json();
+    },)).json();
     //@ts-ignore
     if (updatedMessage.code > 0) {
       throw new ApiError(500, `code: ${updatedMessage.code} : ${updatedMessage.msg}`);

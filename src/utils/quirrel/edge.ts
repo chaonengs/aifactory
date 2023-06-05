@@ -29,7 +29,7 @@ export function Queue<Payload>(
       headers[k] = v;
     })
     console.log(JSON.stringify(headers));
-    const response = await quirrel.respondTo(body, headers);
+    const response = await quirrel.respondTo(JSON.stringify(body), headers);
     console.log(response);
     return new Response(
       response.body,
