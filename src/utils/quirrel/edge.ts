@@ -25,18 +25,18 @@ import { IncomingHttpHeaders, IncomingMessage } from "http";
   const { id, count, retry, nextRepetition, exclusive } = JSON.parse((_a = headers["x-quirrel-meta"]) !== null && _a !== void 0 ? _a : "{}");
   this.logger.receivedJob(this.route, payload);
   try {
-      await this.handler(payload, {
+      return await this.handler(payload, {
           id,
           count,
           retry,
           nextRepetition,
           exclusive,
       });
-      return {
-          status: 200,
-          headers: {},
-          body: "OK",
-      };
+      // return {
+      //     status: 200,
+      //     headers: {},
+      //     body: "OK",
+      // };
   }
   catch (error) {
       this.logger.processingError(this.route, payload, error);
