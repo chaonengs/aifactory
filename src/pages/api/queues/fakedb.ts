@@ -1,4 +1,4 @@
-import { Queue } from "quirrel/next"
+import { Queue } from "quirrel/vercel"
 // import {  finishFeishuProcess, saveMessage } from "utils/db/transactions";
 import { ProcessMessageBody } from "types/queue";
 
