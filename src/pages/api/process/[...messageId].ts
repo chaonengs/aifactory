@@ -9,6 +9,8 @@ import { createProcessMessageBody } from 'utils/db/helper';
 import { User } from 'types/feishu';
 import Queue from 'pages/api/queues/fakedb';
 import { getInternalTenantAccessToken, getUser, patchMessage, replyMessage, sendMessage } from 'utils/server/feishu';
+import { OpenAIStream } from 'utils/server/openai';
+import { OpenAIModelID, OpenAIModels } from 'types/openai';
 
 // const prisma = new PrismaClient();
 
@@ -29,7 +31,7 @@ import { getInternalTenantAccessToken, getUser, patchMessage, replyMessage, send
 //   return res.data?.user;
 // };
 
-const getFeishuUser = async (accessToken:string, userId: string) => {
+const getFeishuUser = async (accessToken: string, userId: string) => {
   const req = {
     user_id_type: 'union_id',
     department_id_type: ''
@@ -37,8 +39,6 @@ const getFeishuUser = async (accessToken:string, userId: string) => {
   const res = await (await getUser(accessToken, userId, 'union_id')).json();
   return res.data?.user;
 };
-
-
 
 const messageCard = (title: string, message: string, status: string, error: string | null | undefined = null) => {
   const card = {
@@ -129,15 +129,12 @@ const trySendOrUpdateFeishuCard = async (
   cardMessageId: string | null
 ) => {
   if (replayMessageId) {
-    const repliedMessage = await (await replyMessage(
-      accessToken,
-      replayMessageId,
-      {
+    const repliedMessage = await (
+      await replyMessage(accessToken, replayMessageId, {
         content: messageCard(title, message, status, error),
         msg_type: 'interactive'
-      }
-      
-    )).json();
+      })
+    ).json();
 
     //@ts-ignore
     if (repliedMessage.code > 0) {
@@ -146,9 +143,11 @@ const trySendOrUpdateFeishuCard = async (
     return repliedMessage.data?.message_id;
   }
   if (cardMessageId) {
-    const updatedMessage = await (await patchMessage(accessToken, cardMessageId, {
-      content: messageCard(title, message, status, error)
-    },)).json();
+    const updatedMessage = await (
+      await patchMessage(accessToken, cardMessageId, {
+        content: messageCard(title, message, status, error)
+      })
+    ).json();
     //@ts-ignore
     if (updatedMessage.code > 0) {
       throw new ApiError(500, `code: ${updatedMessage.code} : ${updatedMessage.msg}`);
@@ -179,74 +178,7 @@ const trySendOrUpdateFeishuCard = async (
 //   return processFeishuMessage(feishuMessage, app);
 // };
 
-const processFeishuMessage = async (feishuMessage, app) => {
-  // const config = app.config as Prisma.JsonObject;
-  // const client = new lark.Client({
-  //   appId: config['appId'] as string,
-  //   appSecret: config['appSecret'] as string,
-  //   appType: lark.AppType.SelfBuild,
-  //   domain: config['domain'] as string
-  // });
-
-  const accessToken = (await (await getInternalTenantAccessToken(app.config.appId, app.config.appSecret)).json()).tenant_access_token;
-
-  //@ts-ignore
-  const question = JSON.parse(feishuMessage.data.message.content).text;
-  let airesult: string = '';
-  let completionTokens = 0;
-  let feishuSender: User | null | undefined = null;
-  //@ts-ignore
-
-  if (feishuMessage.data.sender.sender_id?.union_id) {
-    //@ts-ignore
-
-    const u = await getFeishuUser(accessToken, feishuMessage.data.sender.sender_id.union_id);
-    if (u) {
-      feishuSender = u as User;
-    }
-  }
-
-  const repliedMessageId = await trySendOrUpdateFeishuCard(accessToken, 'AI助理', '...', '回复中', null, feishuMessage.id, null);
-
-  try {
-    const stream = await OpenAI(
-      'chat',
-      {
-        model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'user',
-            content: question
-          }
-        ]
-      },
-      { apiKey: app.aiResource.apiKey, mode: 'tokens' }
-    );
-    const startedAt = Date.now();
-    let lastSendAt = 0;
-
-    for await (const chunk of stream) {
-      const decoder = new TextDecoder();
-      completionTokens += 1;
-      if (airesult) {
-        airesult += decoder.decode(chunk);
-      } else {
-        airesult = decoder.decode(chunk);
-      }
-      if (Date.now() - lastSendAt > 500) {
-        trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复中', null, null, repliedMessageId);
-        lastSendAt = Date.now();
-      }
-    }
-
-    setTimeout(async () => {
-      trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复完成', null, null, repliedMessageId);
-    }, 500);
-  } catch (err) {
-    console.error(err);
-    trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '错误中止', null, null, repliedMessageId);
-  }
-
+const completeQuery = async ({ airesult, question, feishuSender, completionTokens, app, feishuMessage }) => {
   if (airesult && airesult !== '') {
     const processMessageBody = createProcessMessageBody(
       question,
@@ -276,6 +208,108 @@ const processFeishuMessage = async (feishuMessage, app) => {
     },
     { delay: 1 }
   );
+};
+
+const processFeishuMessage = async (feishuMessage, app) => {
+  // const config = app.config as Prisma.JsonObject;
+  // const client = new lark.Client({
+  //   appId: config['appId'] as string,
+  //   appSecret: config['appSecret'] as string,
+  //   appType: lark.AppType.SelfBuild,
+  //   domain: config['domain'] as string
+  // });
+
+  const accessToken = (await (await getInternalTenantAccessToken(app.config.appId, app.config.appSecret)).json()).tenant_access_token;
+
+  //@ts-ignore
+  const question = JSON.parse(feishuMessage.data.message.content).text;
+  let airesult: string = '';
+  let completionTokens = 0;
+  let feishuSender: User | null | undefined = null;
+  //@ts-ignore
+
+  if (feishuMessage.data.sender.sender_id?.union_id) {
+    //@ts-ignore
+
+    const u = await getFeishuUser(accessToken, feishuMessage.data.sender.sender_id.union_id);
+    if (u) {
+      feishuSender = u as User;
+    }
+  }
+
+  const repliedMessageId = await trySendOrUpdateFeishuCard(accessToken, 'AI助理', '...', '回复中', null, feishuMessage.id, null);
+
+  // try {
+  // const stream = await OpenAI(
+  //   'chat',
+  //   {
+  //     model: 'gpt-3.5-turbo',
+  //     messages: [
+  //       {
+  //         role: 'user',
+  //         content: question
+  //       }
+  //     ]
+  //   },
+  //   { apiKey: app.aiResource.apiKey, mode: 'tokens' }
+  // );
+
+  const startedAt = Date.now();
+  let lastSendAt = 0;
+  const openaiStream = OpenAIStream(
+    OpenAIModels[OpenAIModelID.GPT_3_5],
+    '',
+    1,
+    app.aiResource.apiKey,
+    [
+      {
+        role: 'user',
+        content: question
+      }
+    ],
+    async (text) => {
+      completionTokens += 1;
+      airesult += text;
+      if (Date.now() - lastSendAt > 500) {
+        await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复中', null, null, repliedMessageId);
+        lastSendAt = Date.now();
+      }
+    },
+    async (text) => {
+      setTimeout(async () => {
+        await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复完成', null, null, repliedMessageId);
+      }, 500);
+    },
+    async (e) => {
+      console.error(e);
+      await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '错误中止', null, null, repliedMessageId);
+    },
+    async (text, e) => {
+      await completeQuery({ airesult, question, feishuSender, completionTokens, app, feishuMessage });
+    }
+  );
+
+  //   for await (const chunk of stream) {
+  //     const decoder = new TextDecoder();
+  //     completionTokens += 1;
+  //     if (airesult) {
+  //       airesult += decoder.decode(chunk);
+  //     } else {
+  //       airesult = decoder.decode(chunk);
+  //     }
+  //     if (Date.now() - lastSendAt > 500) {
+  //       trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复中', null, null, repliedMessageId);
+  //       lastSendAt = Date.now();
+  //     }
+  //   }
+
+  //   setTimeout(async () => {
+  //     trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复完成', null, null, repliedMessageId);
+  //   }, 500);
+  // } catch (err) {
+  //   console.error(err);
+  //   trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '错误中止', null, null, repliedMessageId);
+  // }
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

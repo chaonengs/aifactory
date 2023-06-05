@@ -34,7 +34,7 @@ const nextConfig = {
     config.ignoreWarnings =  [{
       message: /Serializing big strings/,
     },
-    (warning) => false,
+    (warning) => false  ,
 
   ]
     return config;
