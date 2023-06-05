@@ -1,6 +1,5 @@
-import { Queue } from 'quirrel/vercel';
+import { Queue } from 'utils/quirrel/edge';
 import { processFeishuMessage } from '../process/[...messageId]';
-import { QuirrelClient } from 'quirrel/dist/esm/src/client';
 
 export interface MessageQueueBody {
   feishuMessage;
