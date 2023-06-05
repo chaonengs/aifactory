@@ -7,7 +7,7 @@ import { encode } from 'gpt-tokenizer';
 import { createProcessMessageBody } from 'utils/db/helper';
 // import * as lark from '@larksuiteoapi/node-sdk';
 import { User } from 'types/feishu';
-import Queue from 'pages/api/queues/db';
+import Queue from 'pages/api/queues/fakedb';
 import { getInternalTenantAccessToken, getUser, patchMessage, replyMessage, sendMessage } from 'utils/server/feishu';
 
 // const prisma = new PrismaClient();
