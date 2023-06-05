@@ -1,5 +1,5 @@
 import { EnqueueJobOptions, QuirrelClient, QuirrelJobHandler, QuirrelOptions } from "quirrel/client";
-import { NextApiRequest } from "next/types";
+import { NextApiRequest } from "quirrel/next";
 
 export type Queue<Payload> = Omit<
   QuirrelClient<Payload>,
@@ -19,6 +19,8 @@ export function Queue<Payload>(
 
   async function edgeHandler(req: NextApiRequest) {
     console.log(req);
+    console.log(req.body);
+    console.log(req.headers);
     const response = await quirrel.respondTo(req.body, req.headers);
     console.log(response);
     return new Response(
