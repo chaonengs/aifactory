@@ -90,13 +90,41 @@ export const OpenAIStream = async (
 
   const result = new ReadableStream({
     async start(controller) {
-      let airesult = '';
-      let e: any;
+        const SSEEvents = {
+            onError: async (error: any) => {
+              controller.error(error);
+              await onError(error);
+            },
+            onData: async (data: string) => {
+              const queue = new TextEncoder().encode(data);
+              await onData(data);
+              controller.enqueue(queue);
+            },
+            onComplete: async () => {
+            await onComplete();
+              controller.close();
+            },
+          };
 
-      for await (const chunk of res.body as any) {
-        const decoded = decoder.decode(chunk);
-        const parser = new SSEParser({onData, onError, onComplete})
-        await parser.parseSSE(decoded);
+
+      const sseParser = new SSEParser(SSEEvents);
+
+      if (res && res.body && res.ok) {
+        while (true) {
+            const { value, done } = await res.body?.getReader().read();
+            if (done) break;
+            const chunkValue = decoder.decode(value);
+            sseParser.parseSSE(chunkValue);
+      }
+  
+  
+
+
+
+    //   for await (const chunk of res.body as any) {
+    //     const decoded = decoder.decode(chunk);
+    //     const parser = new SSEParser({onData, onError, onComplete})
+    //     await parser.parseSSE(decoded);
         // const lines = decoded.split('\n').filter((line) => line.trim() !== '');
 
         // for (const line of lines) {
