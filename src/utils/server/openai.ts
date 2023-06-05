@@ -116,6 +116,8 @@ export const OpenAIStream = async (
               const queue = encoder.encode(text);
               controller.enqueue(queue);
             } catch (e) {
+            console.error(e);
+            console.error(message);
               if (onError) {
                 await onError(e);
               }
