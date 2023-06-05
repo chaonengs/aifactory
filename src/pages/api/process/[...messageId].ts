@@ -267,10 +267,10 @@ const processFeishuMessage = async (feishuMessage, app) => {
         content: question
       }
     ],
-    async (text) => {
+    async (data) => {
       completionTokens += 1;
-      if(text) {
-      airesult += text;
+      if(data) {
+      airesult += data;
         if (Date.now() - lastSendAt > 750) {
           console.log(`will send ${Date.now()} , tokens: ${completionTokens}` )
           const result = await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复中', null, null, repliedMessageId);
@@ -282,21 +282,19 @@ const processFeishuMessage = async (feishuMessage, app) => {
         }
       }
     },
-     async (text) => {
+    async (error) => {
+      console.error(error);
+      await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '错误中止', null, null, repliedMessageId);
+      await completeQuery({ airesult, question, feishuSender, completionTokens, app, feishuMessage });
+
+    },
+     async () => {
       setTimeout(async () => {
         console.log(`enter finish , tokens: ${completionTokens}` )
         await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复完成', null, null, repliedMessageId);
-      }, 500);
-    },
-     async (e) => {
-      console.error(e);
-      await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '错误中止', null, null, repliedMessageId);
-    },
-    async (text, e) => {
-      console.log(`enter complete , tokens: ${completionTokens}` )
         await completeQuery({ airesult, question, feishuSender, completionTokens, app, feishuMessage });
-        console.log(`finish complete , tokens: ${completionTokens}` )
 
+      }, 500);
     }
   );
 

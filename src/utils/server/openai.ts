@@ -4,6 +4,8 @@ import { OpenAIModel } from 'types/openai';
 import { AZURE_DEPLOYMENT_ID, OPENAI_API_HOST, OPENAI_API_TYPE, OPENAI_API_VERSION, OPENAI_ORGANIZATION } from './const';
 
 import { ParsedEvent, ReconnectInterval, createParser } from 'eventsource-parser';
+import { SSEParser } from 'utils/sse';
+import { decode } from 'punycode';
 
 export class OpenAIError extends Error {
   type: string;
@@ -68,10 +70,9 @@ export const OpenAIStream = async (
   temperature: number,
   key: string,
   messages: Message[],
-  onData: ((text: string) => Promise<void>) | null = null,
-  onDone: ((text: string) => Promise<void>) | null = null,
-  onError: ((error: any) => Promise<void>) | null = null,
-  onComplete: ((text: string, error: any) => Promise<void>) | null = null
+  onData: ((data: string) => Promise<void>) ,
+  onError: ((error: unknown) => Promise<void>) ,
+  onComplete: (() => Promise<void>)
 ) => {
   const res = await OpenAIChatComletion(model, systemPrompt, temperature, key, messages);
 
@@ -94,40 +95,42 @@ export const OpenAIStream = async (
 
       for await (const chunk of res.body as any) {
         const decoded = decoder.decode(chunk);
+        const parser = new SSEParser({onData, onError, onComplete})
+        await parser.parseSSE(decoded);
+        // const lines = decoded.split('\n').filter((line) => line.trim() !== '');
 
-        const lines = decoded.split('\n').filter((line) => line.trim() !== '');
-        for (const line of lines) {
-          const message = line.replace(/^data: /, '');
-          if (message === '[DONE]') {
-            if (onDone) {
-              await onDone(airesult);
-            }
-            if (onComplete) {
-              await onComplete(airesult, e);
-            }
-            controller.close();
-          } else {
-            try {
-              const parsed = JSON.parse(message);
-              const text = parsed.choices[0].delta.content;
-              if (onData) {
-                await onData(text);
-              }
-              const queue = encoder.encode(text);
-              controller.enqueue(queue);
-            } catch (e) {
-            console.error(e);
-            console.error(decoded);
-              if (onError) {
-                await onError(e);
-              }
-              if (onComplete) {
-                await onComplete(airesult, e);
-              }
-              controller.error(e);
-            }
-          }
-        }
+        // for (const line of lines) {
+        //   const message = line.replace(/^data: /, '');
+        //   if (message === '[DONE]') {
+        //     if (onDone) {
+        //       await onDone(airesult);
+        //     }
+        //     if (onComplete) {
+        //       await onComplete(airesult, e);
+        //     }
+        //     controller.close();
+        //   } else {
+        //     try {
+        //       const parsed = JSON.parse(message);
+        //       const text = parsed.choices[0].delta.content;
+        //       if (onData) {
+        //         await onData(text);
+        //       }
+        //       const queue = encoder.encode(text);
+        //       controller.enqueue(queue);
+        //     } catch (e) {
+        //     console.error(e);
+        //     console.error(decoded);
+        //       if (onError) {
+        //         await onError(e);
+        //       }
+        //       if (onComplete) {
+        //         await onComplete(airesult, e);
+        //       }
+        //       controller.error(e);
+        //     }
+        //   }
+        // }
       }
     }
   });
