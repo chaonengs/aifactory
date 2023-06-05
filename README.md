@@ -8,6 +8,18 @@
 * SMTP email login
 * Feishu
 
+## 代码注意事项
+已知
+* Vercel edge runtime 不限制请求时长
+* Vercel nodejs runtime, 也就是默认runtime最长请求10s， 30s，90s（根据收费版本）
+* openai 的查询往往会很长，甚至超过90s
+* edge模式不支持飞书sdk和prisma
+结论
+* 采用了quirrel queue的方式异步写入数据库
+* quirrel队列中会包含消息体和app密钥等敏感信息，但queue对消息是有加密传输的
+* 在edge runtime中不采用飞书sdk，自己用的fetch实现
+
+
 ## 开发路线
 * 根据飞书message中的root id去创建对话，并保存，以便在OpenAI中完整提交
 * 支持添加AzureOpenAI
