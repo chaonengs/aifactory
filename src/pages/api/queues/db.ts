@@ -1,5 +1,5 @@
 import { Queue } from "quirrel/next"
-import {  finishFeishuProcess, saveMessage } from "utils/db/transactions";
+// import {  finishFeishuProcess, saveMessage } from "utils/db/transactions";
 import { ProcessMessageBody } from "types/queue";
 
 interface MessageDBSaveRequest {
@@ -12,10 +12,10 @@ interface MessageDBSaveRequest {
 export default Queue(
   "api/queues/db", // 👈 the route it's reachable on
   async ( request:MessageDBSaveRequest )=> {
-    if (request.type === 'finish' && request.feishuMessageId ){
-        await finishFeishuProcess(request.feishuMessageId );
-    } else if(request.data){
-        await saveMessage(request.data.message, request.data.app, request.data.aiResource, request.data.usage);
-    }
+    // if (request.type === 'finish' && request.feishuMessageId ){
+    //     await finishFeishuProcess(request.feishuMessageId );
+    // } else if(request.data){
+    //     await saveMessage(request.data.message, request.data.app, request.data.aiResource, request.data.usage);
+    // }
   }
 )
