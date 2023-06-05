@@ -1,6 +1,4 @@
 import { Queue } from "quirrel/next"
-import { processFeishuMessage } from "../process/[...messageId]";
-import { App, Message, Usage } from ".prisma/client";
 import {  finishFeishuProcess, saveMessage } from "utils/db/transactions";
 import { ProcessMessageBody } from "types/queue";
 

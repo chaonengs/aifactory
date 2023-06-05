@@ -4,12 +4,11 @@ import { OpenAI } from 'openai-streams/node';
 import { ApiError } from 'next/dist/server/api-utils';
 
 import { encode } from 'gpt-tokenizer';
-import { saveMessage, createProcessMessageBody } from 'utils/db/transactions';
+import { createProcessMessageBody } from 'utils/db/helper';
 // import * as lark from '@larksuiteoapi/node-sdk';
 import { User } from 'types/feishu';
 import Queue from 'pages/api/queues/db';
 import { getInternalTenantAccessToken, getUser, patchMessage, replyMessage, sendMessage } from 'utils/server/feishu';
-import { access } from 'fs';
 
 // const prisma = new PrismaClient();
 
