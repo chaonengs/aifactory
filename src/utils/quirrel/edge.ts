@@ -2,6 +2,53 @@ import { EnqueueJobOptions, QuirrelClient, QuirrelJobHandler, QuirrelOptions } f
 import { type NextRequest } from 'next/server';
 import { IncomingHttpHeaders, IncomingMessage } from "http";
 
+ async function respondTo(body, headers) {
+  var _a;
+  // if (process.env.NODE_ENV === "production") {
+  //     const signature = headers["x-quirrel-signature"];
+  //     if (typeof signature !== "string") {
+  //         return {
+  //             status: 401,
+  //             headers: {},
+  //             body: "Signature missing",
+  //         };
+  //     }
+  //     if (!this.isValidSignature(body, signature)) {
+  //         return {
+  //             status: 401,
+  //             headers: {},
+  //             body: "Signature invalid",
+  //         };
+  //     }
+  // }
+  const payload = await this.decryptAndDecodeBody(body);
+  const { id, count, retry, nextRepetition, exclusive } = JSON.parse((_a = headers["x-quirrel-meta"]) !== null && _a !== void 0 ? _a : "{}");
+  this.logger.receivedJob(this.route, payload);
+  try {
+      await this.handler(payload, {
+          id,
+          count,
+          retry,
+          nextRepetition,
+          exclusive,
+      });
+      return {
+          status: 200,
+          headers: {},
+          body: "OK",
+      };
+  }
+  catch (error) {
+      this.logger.processingError(this.route, payload, error);
+      return {
+          status: 500,
+          headers: {},
+          body: String(error),
+      };
+  }
+}
+
+
 export type Queue<Payload> = Omit<
   QuirrelClient<Payload>,
   "respondTo" | "makeRequest"
@@ -18,6 +65,8 @@ export function Queue<Payload>(
     route,
   });
 
+  
+  QuirrelClient.prototype.respondTo = respondTo;
   async function edgeHandler(req: NextRequest) {
     let body = await req.json();
     let headers : { [key: string]: any } = {};
