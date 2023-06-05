@@ -1,5 +1,6 @@
-import { Queue } from "quirrel/vercel"
+import { Queue } from "utils/quirrel/edgeEnque";
 // import {  finishFeishuProcess, saveMessage } from "utils/db/transactions";
+//import { Queue } from "quirrel/next";
 import { ProcessMessageBody } from "types/queue";
 
 interface MessageDBSaveRequest {

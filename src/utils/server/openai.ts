@@ -68,10 +68,10 @@ export const OpenAIStream = async (
   temperature: number,
   key: string,
   messages: Message[],
-  onDataHandler: ((text: string) => void) | null = null,
-  onDoneHandler: ((text: string) => void) | null = null,
-  onErrorHandler: ((error: any)=> void)| null = null,
-  onCompleteHandler: ((text: string, error: any) => void) | null = null
+  onData: ((text: string) => Promise<void>) | null = null,
+  onDone: ((text: string) => Promise<void>) | null = null,
+  onError: ((error: any) => Promise<void>) | null = null,
+  onComplete: ((text: string, error: any) => Promise<void>) | null = null
 ) => {
   const res = await OpenAIChatComletion(model, systemPrompt, temperature, key, messages);
 
@@ -87,57 +87,45 @@ export const OpenAIStream = async (
     }
   }
 
-
-
   const result = new ReadableStream({
     async start(controller) {
-      let result = '';
-      let error: any;
-      const onParse = (event: ParsedEvent | ReconnectInterval) => {
-        if (event.type === 'event') {
-          const data = event.data;
-            if (event.data === '[DONE]'){
-                controller.close();
-              if (onDoneHandler) {
-                 onDoneHandler(result);
-              }
-              return;
-            }
-          try {
-            const json = JSON.parse(data);
-            if (json.choices[0].finish_reason != null) {
-              controller.close();
-              if (onDoneHandler) {
-                 onDoneHandler(result);
-              }
-              return;
-            }
-            const text = json.choices[0].delta.content;
-            if (onDataHandler) {
-               onDataHandler(text);
-            }
-            result += text;
-            const queue = encoder.encode(text);
-            controller.enqueue(queue);
-          } catch (e) {
-            error = e;
-            if (onErrorHandler) {
-             onErrorHandler(e);
-            }
-            controller.error(e);
-          }
-        }
-      };
-
-      const parser = createParser(onParse);
-      
+      let airesult = '';
+      let e: any;
 
       for await (const chunk of res.body as any) {
-         parser.feed(decoder.decode(chunk));
-      }
+        const decoded = decoder.decode(chunk);
 
-      if (onCompleteHandler) {
-        await onCompleteHandler(result, error);
+        const lines = decoded.split('\n').filter((line) => line.trim() !== '');
+        for (const line of lines) {
+          const message = line.replace(/^data: /, '');
+          if (message === '[DONE]') {
+            if (onDone) {
+              await onDone(airesult);
+            }
+            if (onComplete) {
+              await onComplete(airesult, e);
+            }
+            controller.close();
+          } else {
+            try {
+              const parsed = JSON.parse(message);
+              const text = parsed.choices[0].delta.content;
+              if (onData) {
+                await onData(text);
+              }
+              const queue = encoder.encode(text);
+              controller.enqueue(queue);
+            } catch (e) {
+              if (onError) {
+                await onError(e);
+              }
+              if (onComplete) {
+                await onComplete(airesult, e);
+              }
+              controller.error(e);
+            }
+          }
+        }
       }
     }
   });

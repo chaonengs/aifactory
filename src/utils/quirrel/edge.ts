@@ -45,6 +45,34 @@ import { IncomingHttpHeaders, IncomingMessage } from "http";
   }
 }
 
+async function enqueue(payload, options = {}) {
+  const body = await this.payloadAndOptionsToBody(payload, options);
+  if (this.oldBaseUrl && !options.override && options.id) {
+      const res = await this.fetchAgainstOld(`/${encodeURIComponent(options.id)}`);
+      if (res.status === 200) {
+          return await this.toJob(await res.json());
+      }
+  }
+  const res = await this.fetch(this.baseUrl, {
+      method: "POST",
+      headers: {
+          "Content-Type": "application/json",
+          ...this.defaultHeaders,
+      },
+      credentials: "omit",
+      body: JSON.stringify(body),
+  });
+  if (res.status === 201) {
+      if (this.oldBaseUrl && options.override && options.id) {
+          await this.fetchAgainstOld(`/${encodeURIComponent(options.id)}`, {
+              method: "DELETE",
+          });
+      }
+      return await this.toJob(await res.json());
+  }
+  throw new Error(`Unexpected response while trying to enqueue "${JSON.stringify(body)}" to ${this.applicationBaseUrl}: ${await res.text()}`);
+}
+
 
 export type Queue<Payload> = Omit<
   QuirrelClient<Payload>,
@@ -62,10 +90,13 @@ export function Queue<Payload>(
     route,
   });
 
+
+  
   
   // QuirrelClient.prototype.respondTo = respondTo;
   quirrel.respondTo = respondTo;
-
+  quirrel.enqueue = enqueue;
+  
   async function edgeHandler(req: NextRequest) {
     let body = await req.json();
     let headers : { [key: string]: any } = {};
