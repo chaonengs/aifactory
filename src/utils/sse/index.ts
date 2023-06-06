@@ -31,7 +31,7 @@ export type SSEEvents = {
         let endPos = accumulatedData.indexOf("\n\n", 0);
         if (endPos >= 0) {
           let line = accumulatedData.slice(0, endPos);
-          accumulatedData = accumulatedData.slice(endPos + 4);
+          accumulatedData = accumulatedData.slice(endPos+2);
           lines.push(line);
         } else {
           splitted = true;
@@ -52,7 +52,7 @@ export type SSEEvents = {
           }
         }  else if (lines[i].trim() === '') {}
         else {
-          this.onError(new Error('wrong data'));
+          this.onError(new Error('wrong data: line = ' + lines[i]));
         }
       }
 

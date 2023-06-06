@@ -94,6 +94,7 @@ export const OpenAIStream = async (
             onError: async (error: any) => {
               controller.error(error);
               await onError(error);
+              controller.close();
             },
             onData: async (data: string) => {
               const queue = new TextEncoder().encode(data);
