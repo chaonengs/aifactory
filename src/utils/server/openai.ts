@@ -98,7 +98,8 @@ export const OpenAIStream = async (
             onData: async (data: string) => {
               const queue = new TextEncoder().encode(data);
               await onData(data);
-              controller.enqueue(queue);
+              const encoded = encoder.encode(data);
+              controller.enqueue(encoded);
             },
             onComplete: async () => {
             await onComplete();
@@ -110,11 +111,12 @@ export const OpenAIStream = async (
       const sseParser = new SSEParser(SSEEvents);
 
       if (res && res.body && res.ok) {
+        const reader = res.body.getReader();
         while (true) {
-            const { value, done } = await res.body?.getReader().read();
+            const { value, done } = await reader.read();
             if (done) break;
             const chunkValue = decoder.decode(value);
-            sseParser.parseSSE(chunkValue);
+            await sseParser.parseSSE(chunkValue);
       }
   
   

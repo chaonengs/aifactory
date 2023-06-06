@@ -48,6 +48,7 @@ export type SSEEvents = {
     }
   //parse the data as JSON and extract the content from the JSON object. If successful, the onData callback function is called with the extracted content
     private async processEvent(data: string): Promise<string> {
+      console.log(data)
       try {
         const json = JSON.parse(data);
         const text = json.choices[0].delta?.content || "";
