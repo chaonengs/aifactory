@@ -8,13 +8,18 @@ const createProcessMessageBody = (
     propmtTokens: number,
     completionTokens: number,
     app: any,
+    conversationId: string,
+    feishuMessageId: string,
+
   ) => {
     const message = {
       senderUnionId: senderUnionId,
       sender: senderName,
       content: question,
       answer: answer,
-      appId: app.id
+      appId: app.id,
+      conversationId: conversationId,
+      feishuMessageId: feishuMessageId,
     };
   
     const usage = {
