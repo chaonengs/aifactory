@@ -1,5 +1,3 @@
-import { string } from "yup";
-
 export type SSEEvents = {
     onError: (error: unknown) =>  Promise<void>;
     onData: (data: string) =>  Promise<void>;
@@ -29,7 +27,6 @@ export type SSEEvents = {
       // let startPos = 0;
       let lines = new Array();
       let splitted = false;
-      let data = '';
       while(!splitted){
         let endPos = accumulatedData.indexOf("\n\n", 0);
         if (endPos >= 0) {
@@ -51,13 +48,11 @@ export type SSEEvents = {
             await this.onComplete();
             break;
           } else {
-            data += eventData;
+            await this.processEvent(eventData);
           }
-        } else if (lines[i] === "") {
-          if (data) {
-            await this.processEvent(data);
-            data = "";
-          }
+        }  else if (lines[i].trim() === '') {}
+        else {
+          this.onError(new Error('wrong data'));
         }
       }
 
