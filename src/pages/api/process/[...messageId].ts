@@ -11,6 +11,7 @@ import Queue from 'pages/api/queues/fakedb';
 import { getInternalTenantAccessToken, getUser, patchMessage, replyMessage, sendMessage, getChatHistory } from 'utils/server/feishu';
 import { OpenAIStream } from 'utils/server/openai';
 import { OpenAIModelID, OpenAIModels } from 'types/openai';
+import { MessageQueueBody } from '../queues/messages';
 
 // const prisma = new PrismaClient();
 
@@ -212,7 +213,7 @@ const completeQuery = async ({ airesult, question, feishuSender, promptTokens, c
   );
 };
 
-const processFeishuMessage = async (feishuMessage, history, app) => {
+const processFeishuMessage = async ( { feishuMessage, history, app }) => {
   // const config = app.config as Prisma.JsonObject;
   // const client = new lark.Client({
   //   appId: config['appId'] as string,
@@ -220,7 +221,8 @@ const processFeishuMessage = async (feishuMessage, history, app) => {
   //   appType: lark.AppType.SelfBuild,
   //   domain: config['domain'] as string
   // });
-
+  console.log(history)
+  console.log(app)
   const accessToken = (await (await getInternalTenantAccessToken(app.config.appId, app.config.appSecret)).json()).tenant_access_token;
   const question = JSON.parse(feishuMessage.data.message.content).text;
   const chatId = feishuMessage.data.message.chat_id;
@@ -256,10 +258,10 @@ const processFeishuMessage = async (feishuMessage, history, app) => {
   //   messages.unshift(message);
   // }
 
-  let converstionId = feishuMessage.data.message_id;
-  if(feishuMessage.data.message.root_id && feishuMessage.data.message.root_id != feishuMessage.data.message.message_id){
-    converstionId = feishuMessage.feishuMessage.data.message.root_id
-  }
+  // let converstionId = feishuMessage.data.message_id;
+  // if(feishuMessage.data.message.root_id && feishuMessage.data.message.root_id != feishuMessage.data.message.message_id){
+  //   converstionId = feishuMessage.feishuMessage.data.message.root_id
+  // }
   for(let i = 0; i < history.length; i++){
     const answerMessage = {
       role: 'assistant',
