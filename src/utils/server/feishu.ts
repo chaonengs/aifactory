@@ -61,4 +61,19 @@ const getUser = (accessToken, id, idType) => {
       })
 
 }
-export {sendMessage,replyMessage, patchMessage, getInternalTenantAccessToken, getUser};
+
+
+const getChatHistory = (accessToken, chatId) => {
+  const url = `https://open.feishu.cn/open-apis/im/v1/messages?container_id_type=chat&container_id=${chatId}&sort_type=ByCreateTimeDesc&page_size=50`;
+  return fetch(url, {
+      method: "GET", 
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+      },
+    })
+
+}
+
+
+export {sendMessage,replyMessage, patchMessage, getInternalTenantAccessToken, getUser, getChatHistory};

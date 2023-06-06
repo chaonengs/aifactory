@@ -257,8 +257,8 @@ const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {
             req.body
           );
 
-          console.log(data);
-          console.log(data.headers);
+          // console.log(data);
+          // console.log(data.headers);
           const event = (await dispatcher.invoke(data)) as ReceiveMessageEvent;
           if (event.name === 'im.message.receive_v1') {
             handleFeishuMessage(client, event, app, res);
