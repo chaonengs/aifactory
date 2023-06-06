@@ -116,7 +116,7 @@ export const OpenAIStream = async (
             const { value, done } = await reader.read();
             if (done) break;
             const chunkValue = decoder.decode(value);
-            await sseParser.parseSSE(chunkValue);
+            sseParser.parseSSE(chunkValue);
       }
   
   

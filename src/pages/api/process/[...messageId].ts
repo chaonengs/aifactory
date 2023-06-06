@@ -273,8 +273,8 @@ const processFeishuMessage = async (feishuMessage, app) => {
       airesult += data;
         if (Date.now() - lastSendAt > 750) {
           console.log(`will send ${Date.now()} , tokens: ${completionTokens}` )
-          const result = await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复中', null, null, repliedMessageId);
           lastSendAt = Date.now();
+          const result = await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复中', null, null, repliedMessageId);
           console.log(`sended ${Date.now()} , tokens: ${completionTokens}` )
 
         } else {
