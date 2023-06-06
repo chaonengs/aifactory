@@ -12,6 +12,8 @@ const saveMessage = async (message: Message, app: App, aiResource: AIResource, u
         content: message.content,
         answer: message.answer,
         appId: app.id,
+        feishuMessageId: message.feishuMessageId,
+        conversationId: message.conversationId,
         usage: {
           create: {
             aiResourceId: usage.aiResourceId,

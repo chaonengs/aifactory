@@ -3,6 +3,7 @@ import { processFeishuMessage } from '../process/[...messageId]';
 
 export interface MessageQueueBody {
   feishuMessage;
+  history;
   app;
 }
 

@@ -93,6 +93,12 @@ model Usage {
   @@index([aiResourceId])
 }
 
+// model Converstion {
+//   id string @id
+//   feishuMessageId string @id
+//   systemMessageId string @
+// }
+
 model Message {
   id             String        @id @default(cuid())
   content        String        @db.Text
@@ -105,7 +111,11 @@ model Message {
   usage          Usage?
   organization   Organization? @relation(fields: [organizationId], references: [id])
   organizationId String?
+  conversationId  String?
+  feishuMessageId String?
 
+  @@index([feishuMessageId])
+  @@index([conversationId])
   @@index([organizationId])
   @@index([appId])
   @@index([senderUnionId])

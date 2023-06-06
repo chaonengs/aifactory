@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient, App, Prisma, AIResource } from '@prisma/client';
+import { PrismaClient, App, Prisma, AIResource, Message } from '@prisma/client';
 import * as lark from '@larksuiteoapi/node-sdk';
 // import { createMessage } from 'utils/db/transactions';
 import { encode } from 'gpt-tokenizer';
@@ -211,11 +211,24 @@ const handleFeishuMessage = async (
     }
   });
 
+
+  let history:Message[] = [];
+  if(event.data.message.root_id && event.data.message.root_id != event.data.message.message_id){
+    history = await prisma.message.findMany({where:{
+      conversationId: event.data.message.root_id
+    },
+    orderBy: [{
+      createdAt:'desc'
+    }],
+    take: 50,
+  });
+  }
+
   // const queue = Queue(`api/process/${event.data.message.message_id}`, processFeishuMessage)
 
   await MessageQueue.enqueue(
-    { feishuMessage: feishuMessage, app: app }, // job to be enqueued
-    { delay: '1s' } // scheduling options
+    { feishuMessage: feishuMessage, history: history, app: app }, // job to be enqueued
+    { delay: 100 } // scheduling options
   );
 
   res.end('ok');

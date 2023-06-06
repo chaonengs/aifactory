@@ -187,7 +187,9 @@ const completeQuery = async ({ airesult, question, feishuSender, promptTokens, c
       feishuSender?.union_id || 'anonymous',
       promptTokens,
       completionTokens,
-      app
+      app,
+      feishuMessage.data.message.root_id || feishuMessage.data.message.message_id,
+      feishuMessage.data.message.message_id,
     );
 
     await Queue.enqueue(
@@ -210,7 +212,7 @@ const completeQuery = async ({ airesult, question, feishuSender, promptTokens, c
   );
 };
 
-const processFeishuMessage = async (feishuMessage, app) => {
+const processFeishuMessage = async (feishuMessage, history, app) => {
   // const config = app.config as Prisma.JsonObject;
   // const client = new lark.Client({
   //   appId: config['appId'] as string,
@@ -226,35 +228,68 @@ const processFeishuMessage = async (feishuMessage, app) => {
   const senderType = feishuMessage.data.sender.sender_type;
   const messages = new Array();
   let promptTokens = 0;
-  if(chatType === 'group'){
-    const chatHistory = (await(await getChatHistory(accessToken, chatId)).json()).data.items;
-    for(let i = 0; i < chatHistory.length; i++){
-      const text = JSON.parse(chatHistory[i].body.content).text;
-      const textTokens = encode(text).length;
-      if(promptTokens + textTokens > 2000){
-        break;
-      } else {
-        promptTokens += textTokens;
-        const message = {
-          role: chatHistory[i].sender.sender_type === 'app' ? 'assistant' : 'user',
-          content: text,
-        }
-        messages.unshift(message);
-      }
-    }
+  // if(chatType === 'group'){
+  //   const chatHistory = (await(await getChatHistory(accessToken, chatId)).json()).data.items;
+  //   for(let i = 0; i < chatHistory.length; i++){
+  //     const text = JSON.parse(chatHistory[i].body.content).text;
+  //     const textTokens = encode(text).length;
+  //     if(promptTokens + textTokens > 2000){
+  //       break;
+  //     } else {
+  //       promptTokens += textTokens;
+  //       const message = {
+  //         role: chatHistory[i].sender.sender_type === 'app' ? 'assistant' : 'user',
+  //         content: text,
+  //       }
+  //       messages.unshift(message);
+  //     }
+  //   }
+  // }
+  // if (chatType === 'p2p'){
+  //   const text = JSON.parse(feishuMessage.data.message.content).text;
+  //   const textTokens = encode(text).length;
+  //   promptTokens += textTokens;
+  //   const message = {
+  //     role: 'user',
+  //     content: text,
+  //   }
+  //   messages.unshift(message);
+  // }
+
+  let converstionId = feishuMessage.data.message_id;
+  if(feishuMessage.data.message.root_id && feishuMessage.data.message.root_id != feishuMessage.data.message.message_id){
+    converstionId = feishuMessage.feishuMessage.data.message.root_id
   }
-  if (chatType === 'p2p'){
-    const text = JSON.parse(feishuMessage.data.message.content).text;
-    const textTokens = encode(text).length;
-    promptTokens += textTokens;
-    const message = {
+  for(let i = 0; i < history.length; i++){
+    const answerMessage = {
+      role: 'assistant',
+      content: history[i].answer,
+    }
+    const answerTokens = encode(answerMessage.content).length;
+    if(promptTokens + answerTokens > 2000) {
+      break;
+    }
+    promptTokens += answerTokens;
+    messages.unshift(answerMessage);
+
+    const contentMessage = {
       role: 'user',
-      content: text,
+      content: history[i].content,
     }
-    messages.unshift(message);
+    const conentTokens = encode(contentMessage.content).length;
+    if(promptTokens + conentTokens > 2000) {
+      break;
+    }
+    promptTokens += conentTokens;
+    messages.unshift(contentMessage);
   }
 
+  const message = {
+    role: 'user',
+    content: JSON.parse(feishuMessage.data.message.content).text,
+  }
 
+  messages.push(message);
 
   //@ts-ignore
   // const question = JSON.parse(feishuMessage.data.message.content).text;
