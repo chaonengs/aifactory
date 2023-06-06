@@ -109,7 +109,6 @@ export function Queue<Payload>(
     })
     console.log(JSON.stringify(headers));
     const response = await quirrel.respondTo(JSON.stringify(body), headers);
-    console.log(response);
     return response;
   }
 

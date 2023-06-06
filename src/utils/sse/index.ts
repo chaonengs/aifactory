@@ -34,6 +34,7 @@ export type SSEEvents = {
         let endPos = accumulatedData.indexOf("\n\n", 0);
         if (endPos >= 0) {
           let line = accumulatedData.slice(0, endPos);
+          accumulatedData = accumulatedData.slice(endPos + 4);
           lines.push(line);
         } else {
           splitted = true;
@@ -42,6 +43,7 @@ export type SSEEvents = {
       }
 
       for(let i = 0; i < lines.length; i++){
+        console.log('line: ' + lines[i])
         if (lines[i].startsWith("data:")) {
           const eventData = lines[i].slice(5).trim();
   

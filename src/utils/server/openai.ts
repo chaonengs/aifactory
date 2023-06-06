@@ -114,13 +114,13 @@ export const OpenAIStream = async (
         const reader = res.body.getReader();
         while (true) {
             const { value, done } = await reader.read();
-            console.log(value)
-            console.log(done)
+            // console.log(value)
+            // console.log(done)
 
             if (done) break;
             const chunkValue = decoder.decode(value);
             console.log(chunkValue)
-            sseParser.parseSSE(chunkValue);
+            await sseParser.parseSSE(chunkValue);
       }
   
   
