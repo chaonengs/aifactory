@@ -289,13 +289,10 @@ const processFeishuMessage = async (feishuMessage, app) => {
 
     },
      async () => {
-      setTimeout(async () => {
         console.log(`enter finish , tokens: ${completionTokens}` )
         await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复完成', null, null, repliedMessageId);
         await completeQuery({ airesult, question, feishuSender, completionTokens, app, feishuMessage });
-
-      }, 500);
-    }
+      }
   );
 
   return openaiStream;
