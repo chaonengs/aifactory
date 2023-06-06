@@ -40,7 +40,7 @@ export type SSEEvents = {
       }
 
       for(let i = 0; i < lines.length; i++){
-        console.log('line: ' + lines[i])
+        // console.log('line: ' + lines[i])
         if (lines[i].startsWith("data:")) {
           const eventData = lines[i].slice(5).trim();
   

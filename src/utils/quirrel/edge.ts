@@ -100,14 +100,14 @@ export function Queue<Payload>(
   async function edgeHandler(req: NextRequest) {
     let body = await req.json();
     let headers : { [key: string]: any } = {};
-    console.log(JSON.stringify(body));
+    // console.log(JSON.stringify(body));
     // for (const [header, value] of Object.entries(req.headers)) {
     //   headers[header] = value;
     // }
     req.headers.forEach((v,k,p) => {
       headers[k] = v;
     })
-    console.log(JSON.stringify(headers));
+    // console.log(JSON.stringify(headers));
     const response = await quirrel.respondTo(JSON.stringify(body), headers);
     return response;
   }
