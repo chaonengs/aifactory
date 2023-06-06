@@ -222,7 +222,7 @@ const processFeishuMessage = async (feishuMessage, app) => {
   const accessToken = (await (await getInternalTenantAccessToken(app.config.appId, app.config.appSecret)).json()).tenant_access_token;
   const question = JSON.parse(feishuMessage.data.message.content).text;
   const chatId = feishuMessage.data.message.chat_id;
-  const chatType = feishuMessage.data.messsage.chat_type;
+  const chatType = feishuMessage.data.message.chat_type;
   const senderType = feishuMessage.data.sender.sender_type;
   const messages = new Array();
   let promptTokens = 0;
