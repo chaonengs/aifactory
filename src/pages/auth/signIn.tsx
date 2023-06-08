@@ -40,7 +40,7 @@ const SignIn = () => {
                         <Grid item>
                           <Stack alignItems="center" justifyContent="center" spacing={1}>
                             <Typography color={theme.palette.secondary.main} gutterBottom variant={matchDownSM ? 'h3' : 'h2'}>
-                              欢迎来到 AI Factory
+                              欢迎你
                             </Typography>
                             <Typography variant="caption" fontSize="16px" textAlign={matchDownSM ? 'center' : 'inherit'}>
                               {/* 请登录 */}

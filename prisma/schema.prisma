@@ -10,8 +10,10 @@ generator typegraphql {
 }
 
 datasource db {
-  provider     = "mysql"
-  url          = env("DATABASE_URL")
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+
   // Since you are using planetscale, comment it if you are not
   relationMode = "prisma"
 }
@@ -75,6 +77,7 @@ model Organization {
   aiResources AIResource[]
   apps        App[]
   messages    Message[]
+  apiKeys     APIKey[]
 
   @@index([ownerId])
 }
@@ -100,17 +103,17 @@ model Usage {
 // }
 
 model Message {
-  id             String        @id @default(cuid())
-  content        String        @db.Text
-  answer         String        @db.Text
-  createdAt      DateTime      @default(now())
-  senderUnionId  String
-  sender         String
-  app            App           @relation(fields: [appId], references: [id])
-  appId          String
-  usage          Usage?
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  organizationId String?
+  id              String        @id @default(cuid())
+  content         String        @db.Text
+  answer          String        @db.Text
+  createdAt       DateTime      @default(now())
+  senderUnionId   String
+  sender          String
+  app             App           @relation(fields: [appId], references: [id])
+  appId           String
+  usage           Usage?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  organizationId  String?
   conversationId  String?
   feishuMessageId String?
 
@@ -121,19 +124,35 @@ model Message {
   @@index([senderUnionId])
 }
 
+enum AIResourceType {
+  OPENAI
+  AZ_OPENAI
+  SELF_HOST_OPENAI
+}
+
 model AIResource {
-  id             String       @id @default(cuid())
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  id             String         @id @default(cuid())
+  organization   Organization   @relation(fields: [organizationId], references: [id])
   organizationId String
-  type           String       @default("openai")
+  type           AIResourceType @default(OPENAI)
   name           String
   model          String
   apiKey         String
-  tokenUsed      Int          @default(0)
-  tokenRemains   Int          @default(0)
+  tokenUsed      Int            @default(0)
+  tokenRemains   Int            @default(0)
+  hostUrl        String?
 
   usages Usage[]
   apps   App[]
+
+  @@index([organizationId])
+}
+
+model APIKey {
+  id             String       @id @default(uuid())
+  expired        DateTime
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
 
   @@index([organizationId])
 }

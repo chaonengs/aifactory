@@ -5,6 +5,7 @@ import EmailProvider from "next-auth/providers/email"
 import FeiShuProvider from 'nextauth/providers/feishu';
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import type { OAuthConfig } from "next-auth/providers"
+import { sendVerificationRequest } from 'nextauth/providers/email';
 
 const prisma = new PrismaClient();
 
@@ -29,6 +30,10 @@ const prisma = new PrismaClient();
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
+  pages: {
+    signIn: '/auth/signin',
+    verifyRequest: '/auth/verify-request', 
+  },
   providers: [
     EmailProvider({
       server: {
@@ -39,7 +44,9 @@ export const authOptions: NextAuthOptions = {
           pass: process.env.EMAIL_SERVER_PASSWORD
         }
       },
-      from: process.env.EMAIL_FROM
+      from: process.env.EMAIL_FROM,
+
+      sendVerificationRequest: sendVerificationRequest,
       // maxAge: 24 * 60 * 60, // How long email links are valid for (default 24h)
     }),
     GithubProvider({
@@ -53,6 +60,20 @@ export const authOptions: NextAuthOptions = {
   ],
   events: {
     async createUser(authuser) {
+      const regex = /@\S+\.\S+/gm;
+      if(!authuser.user.name && authuser.user.email) {
+        authuser.user.name = authuser.user.email.replace(regex, '');
+        const user = await prisma.user.update({
+          where: {
+            id: authuser.user.id
+          },
+          data: {
+            name: authuser.user.name
+          }
+        })
+        
+      }
+
       const org = await prisma.organization.findUnique({
         where: {
           id: authuser.user.id
@@ -62,7 +83,9 @@ export const authOptions: NextAuthOptions = {
         await prisma.organization.create({
           data: {
             id: authuser.user.id,
-            ownerId: authuser.user.id,
+            owner: {
+              connect: {id: authuser.user.id}
+            },
             name: authuser.user.name as string
           }
         })
