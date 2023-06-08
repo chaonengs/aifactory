@@ -1,7 +1,7 @@
 import { Queue } from 'utils/quirrel/edge';
 import { processFeishuMessage } from '../process/[...messageId]';
 
-export interface MessageQueueBody {
+export type MessageQueueBody = {
   feishuMessage;
   history;
   app;

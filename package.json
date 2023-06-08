@@ -71,6 +71,7 @@
     "nodemailer": "^6.9.3",
     "openai": "^3.2.1",
     "openai-streams": "^5.7.0",
+    "otplib": "^12.0.1",
     "quirrel": "^1.13.4",
     "react": "^18.2.0",
     "react-apexcharts": "^1.4.0",

@@ -9,28 +9,9 @@ import { createProcessMessageBody } from 'utils/db/helper';
 import { User } from 'types/feishu';
 import Queue from 'pages/api/queues/fakedb';
 import { getInternalTenantAccessToken, getUser, patchMessage, replyMessage, sendMessage, getChatHistory } from 'utils/server/feishu';
-import { OpenAIStream } from 'utils/server/openai';
+import { OpenAIRequest, OpenAIStream } from 'utils/server/openai';
 import { OpenAIModelID, OpenAIModels } from 'types/openai';
 import { MessageQueueBody } from '../queues/messages';
-
-// const prisma = new PrismaClient();
-
-// const getFeishuUser = async (client: lark.Client, userId: string) => {
-//   const req = {
-//     user_id_type: 'union_id',
-//     department_id_type: ''
-//   };
-//   const res = await client.contact.user.get({
-//     params: {
-//       user_id_type: 'union_id',
-//       department_id_type: 'department_id'
-//     },
-//     path: {
-//       user_id: userId
-//     }
-//   });
-//   return res.data?.user;
-// };
 
 const getFeishuUser = async (accessToken: string, userId: string) => {
   const req = {
@@ -83,42 +64,7 @@ const messageCard = (title: string, message: string, status: string, error: stri
   return JSON.stringify(card);
 };
 
-// const trySendOrUpdateFeishuCard = async (client:lark.Client, title:string, message:string, status:string, error:string|null, replayMessageId:string|null, cardMessageId:string|null) =>{
-//   if (replayMessageId){
-//     const repliedMessage = await client.im.message.reply({
-//       path: {
-//         message_id: replayMessageId
-//       },
-//       data: {
-//         content: messageCard(title, message, status, error),
-//         msg_type: 'interactive'
-//       }
-//     });
 
-//     //@ts-ignore
-//     if (repliedMessage.code > 0) {
-//       throw new ApiError(500, `code: ${repliedMessage.code} : ${repliedMessage.msg}`);
-//     }
-//     return repliedMessage.data?.message_id;
-//   }
-//   if (cardMessageId){
-//     const updatedMessage = await client.im.message.patch({
-//       path: {
-//         message_id: cardMessageId
-//       },
-//       data: {
-//         content: messageCard(title, message, status, error),
-//       }
-//     });
-
-//     //@ts-ignore
-//     if (updatedMessage.code > 0) {
-//       throw new ApiError(500, `code: ${updatedMessage.code} : ${updatedMessage.msg}`);
-//     }
-//     return updatedMessage.data;
-//   }
-
-// }
 
 const trySendOrUpdateFeishuCard = async (
   accessToken: string,
@@ -221,8 +167,6 @@ const processFeishuMessage = async ( { feishuMessage, history, app }) => {
   //   appType: lark.AppType.SelfBuild,
   //   domain: config['domain'] as string
   // });
-  console.log(history)
-  console.log(app)
   const accessToken = (await (await getInternalTenantAccessToken(app.config.appId, app.config.appSecret)).json()).tenant_access_token;
   const question = JSON.parse(feishuMessage.data.message.content).text;
   const chatId = feishuMessage.data.message.chat_id;
@@ -313,24 +257,21 @@ const processFeishuMessage = async ( { feishuMessage, history, app }) => {
 
   const startedAt = Date.now();
   let lastSendAt = 0;
+  const params: OpenAIRequest = {
+    model: OpenAIModels[OpenAIModelID.GPT_3_5],
+    key: app.aiResource.apiKey,
+    messages: messages,
+  }
   const openaiStream = OpenAIStream(
-    OpenAIModels[OpenAIModelID.GPT_3_5],
-    '',
-    1,
-    app.aiResource.apiKey,
-    messages,
+    params,
     async (data) => {
       completionTokens += 1;
       if(data) {
       airesult += data;
         if (Date.now() - lastSendAt > 750) {
-          // console.log(`will send ${Date.now()} , tokens: ${completionTokens}` )
           const result = await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复中', null, null, repliedMessageId);
           lastSendAt = Date.now();
-          // console.log(`sended ${Date.now()} , tokens: ${completionTokens}` )
-
         } else {
-          // console.log(`skipped ${Date.now()}, tokens: ${completionTokens}` )
         }
       }
     },
@@ -352,16 +293,6 @@ const processFeishuMessage = async ( { feishuMessage, history, app }) => {
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // const { messageId } = req.query;
-  // let id = null;
-  // if (Array.isArray(messageId)) {
-  //   id = messageId[0];
-  // } else {
-  //   id = messageId;
-  // }
-
-  // await processFeishuMessageById(id as string);
-  // req.headers
   res.end('ok');
 }
 

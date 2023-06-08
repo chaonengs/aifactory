@@ -1,11 +1,12 @@
 import { Message } from 'types/chat';
-import { OpenAIModel } from 'types/openai';
+import { OpenAIModel, OpenAIModelID, OpenAIModels } from 'types/openai';
 
 import { AZURE_DEPLOYMENT_ID, OPENAI_API_HOST, OPENAI_API_TYPE, OPENAI_API_VERSION, OPENAI_ORGANIZATION } from './const';
 
 import { ParsedEvent, ReconnectInterval, createParser } from 'eventsource-parser';
 import { SSEParser } from 'utils/sse';
 import { decode } from 'punycode';
+import { number } from 'yup';
 
 export class OpenAIError extends Error {
   type: string;
@@ -21,60 +22,136 @@ export class OpenAIError extends Error {
   }
 }
 
-export const OpenAIChatComletion = (
-  model: OpenAIModel,
-  systemPrompt: string,
-  temperature: number,
-  key: string,
-  messages: Message[],
-  stream: boolean = true
-) => {
-  let url = `${OPENAI_API_HOST}/v1/chat/completions`;
-  if (OPENAI_API_TYPE === 'azure') {
-    url = `${OPENAI_API_HOST}/openai/deployments/${AZURE_DEPLOYMENT_ID}/chat/completions?api-version=${OPENAI_API_VERSION}`;
+export type OpenAIRequest = {
+  hostUrl: string | undefined | null;
+  apiType: string | undefined | null;
+  apiVersion: string | undefined | null;
+  model: OpenAIModel | undefined | null;
+  systemPrompt: string | undefined | null;
+  temperature: number | undefined | null;
+  key: string;
+  messages: Message[];
+  stream: boolean | undefined | null;
+  maxTokens: number  | undefined | null;
+  promptMaxTokens: number  | undefined | null;
+}
+
+const createOpenAIRequest = (request:any) => {
+  let url = request.hostUrl;
+  let apiType = request.apiType;
+  if (!apiType){
+    apiType = 'OPENAI'
   }
+  if(!request.apiType || request.apiType === 'OPENAI'){
+    url = url || process.env.OPENAI_API_HOST || 'https://api.openai.com';
+    url = `${url}/v1/chat/completions`;
+  }
+  else if (request.apiType === 'AZ_OPENAI'){
+    url = url || process.env.AZ_OPENAI_API_HOST;
+    let apiVerison  = request.apiVersion || 'api-version=2023-03-15-preview'
+    url = `${url}/chat/completions?api-version=${request.apiVersion}`;
+  }
+    
+  if(!url){
+    throw new Error('OpenAI Url not set');
+  }
+
+  let model = OpenAIModels[OpenAIModelID.GPT_3_5];
+  const temperature = request.temperature === null ? (
+    process.env.DEFUALT_TEMPERATURE === null || process.env.DEFUALT_TEMPERATURE === '' ? 1.0 :
+    Number.parseFloat(process.env.DEFUALT_TEMPERATURE as string)) : request.temperature;
+
+  let stream = request.stream;
+  if(stream === null || stream === undefined){
+    stream = true;
+  }
+  // const openAiRequest: OpenAIRequest = {
+  //   hostUrl: url,
+  //   apiType: apiType,
+  //   stream: stream,
+  //   model:model,
+  //   temperature: temperature,
+  //   key:request.key,
+  //   maxTokens: request.maxTokens,
+  //   promptMaxTokens: 
+
+  // };
+
+}
+
+export const OpenAIChatComletion = (request : OpenAIRequest) => {
+
+  let url = request.hostUrl;
+  let apiType = request.apiType;
+  if (!apiType){
+    apiType = 'OPENAI'
+  }
+  if(!request.apiType || request.apiType === 'OPENAI'){
+    url = url || process.env.DEFAULT_OPENAI_URL || 'https://api.openai.com';
+    url = `${url}/v1/chat/completions`;
+  }
+  else if (request.apiType === 'AZ_OPENAI'){
+    url = url || process.env.DEFAULT_AZ_OPENAI_URL;
+    let apiVersion  = request.apiVersion || '2023-03-15-preview'
+    url = `${url}/chat/completions?api-version=${apiVersion}`;
+  }
+    
+  if(!url){
+    throw new Error('OpenAI Url not set');
+  }
+
+  let model = OpenAIModels[OpenAIModelID.GPT_3_5];
+  const temperature = request.temperature === null ? (
+    process.env.DEFUALT_TEMPERATURE === null || process.env.DEFUALT_TEMPERATURE === '' ? 1.0 :
+    Number.parseFloat(process.env.DEFUALT_TEMPERATURE as string)) : request.temperature;
+
+  let stream = request.stream;
+  if(stream === null || stream === undefined){
+    stream = true;
+  }
+  
   return fetch(url, {
     headers: {
       'Content-Type': 'application/json',
-      ...(OPENAI_API_TYPE === 'openai' && {
-        Authorization: `Bearer ${key ? key : process.env.OPENAI_API_KEY}`
+      ...(apiType === 'OPENAI' && {
+        Authorization: `Bearer ${request.key ? request.key : process.env.DEFAULT_OPENAI_API_KEY}`
       }),
-      ...(OPENAI_API_TYPE === 'azure' && {
-        'api-key': `${key ? key : process.env.OPENAI_API_KEY}`
+      ...(apiType === 'AZ_OPENAI' && {
+        'api-key': `${request.key ? request.key : process.env.DEFAULT_AZ_OPENAI_API_KEY}`
       }),
-      ...(OPENAI_API_TYPE === 'openai' &&
+      ...(apiType === 'SELF_HOST_OPENAI' && {
+        Authorization: `Bearer ${request.key ? request.key : process.env.DEFAULT_OPENAI_API_KEY}`
+      }),
+      ...(apiType === 'openai' &&
         OPENAI_ORGANIZATION && {
           'OpenAI-Organization': OPENAI_ORGANIZATION
         })
     },
     method: 'POST',
     body: JSON.stringify({
-      ...(OPENAI_API_TYPE === 'openai' && { model: model.id }),
+      ...(apiType === 'openai' && { model: model.id }),
+      ...(request.maxTokens && {max_tokens: request.maxTokens}),
       messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        ...messages
+        // {
+        //   role: 'system',
+        //   content: systemPrompt
+        // },
+        ...request.messages
       ],
       // max_tokens: 1024,
       temperature: temperature,
-      stream: stream
+      stream: stream,
     })
   });
 };
 
 export const OpenAIStream = async (
-  model: OpenAIModel,
-  systemPrompt: string,
-  temperature: number,
-  key: string,
-  messages: Message[],
+  param: OpenAIRequest,
   onData: ((data: string) => Promise<void>) ,
   onError: ((error: unknown) => Promise<void>) ,
   onComplete: (() => Promise<void>)
 ) => {
-  const res = await OpenAIChatComletion(model, systemPrompt, temperature, key, messages);
+  const res = await OpenAIChatComletion(param);
 
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
