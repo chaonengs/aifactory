@@ -1,17 +1,18 @@
-// import { AIResource, App, FeiShuMessage } from '@prisma/client';
-import { NextApiRequest, NextApiResponse } from 'next';
-import { OpenAI } from 'openai-streams/node';
 import { ApiError } from 'next/dist/server/api-utils';
 
 import { encode } from 'gpt-tokenizer';
 import { createProcessMessageBody } from 'utils/db/helper';
-// import * as lark from '@larksuiteoapi/node-sdk';
 import { User } from 'types/feishu';
-import Queue from 'pages/api/queues/fakedb';
 import { getInternalTenantAccessToken, getUser, patchMessage, replyMessage, sendMessage, getChatHistory } from 'utils/server/feishu';
 import { OpenAIRequest, OpenAIStream } from 'utils/server/openai';
 import { OpenAIModelID, OpenAIModels } from 'types/openai';
-import { MessageQueueBody } from '../queues/messages';
+import { Message, FeiShuMessage, App } from '.prisma/client/edge';
+
+export type MessageQueueBody = {
+    feishuMessage:FeiShuMessage;
+    history: Message[];
+    app: App;
+  }
 
 const getFeishuUser = async (accessToken: string, userId: string) => {
   const req = {
@@ -65,7 +66,6 @@ const messageCard = (title: string, message: string, status: string, error: stri
 };
 
 
-
 const trySendOrUpdateFeishuCard = async (
   accessToken: string,
   title: string,
@@ -103,31 +103,10 @@ const trySendOrUpdateFeishuCard = async (
   }
 };
 
-// const processFeishuMessageById = async (messageId: string) => {
-//   const feishuMessage = await prisma.feiShuMessage.findUniqueOrThrow({ where: { id: messageId } });
-//   const app = await prisma.app.findUniqueOrThrow({
-//     where: {
-//       id: feishuMessage.appId
-//     },
-//     include: {
-//       aiResource: true
-//     }
-//   });
-
-//     const config = app.config as Prisma.JsonObject;
-//   const client = new lark.Client({
-//     appId: config['appId'] as string,
-//     appSecret: config['appSecret'] as string,
-//     appType: lark.AppType.SelfBuild,
-//     domain: config['domain'] as string
-//   });
-//   const accessToken = await client.tokenManager.getTenantAccessToken();
-//   return processFeishuMessage(feishuMessage, app);
-// };
-
-const completeQuery = async ({ airesult, question, feishuSender, promptTokens, completionTokens, app, feishuMessage }) => {
+const finish = async ({ airesult, question, feishuSender, promptTokens, completionTokens, app, feishuMessage }) => {
+  let data = null;
   if (airesult && airesult !== '') {
-    const processMessageBody = createProcessMessageBody(
+    data = createProcessMessageBody(
       question,
       airesult,
       feishuSender?.name || feishuSender?.en_name || feishuSender?.union_id || 'anonymous',
@@ -138,35 +117,13 @@ const completeQuery = async ({ airesult, question, feishuSender, promptTokens, c
       feishuMessage.data.message.root_id || feishuMessage.data.message.message_id,
       feishuMessage.data.message.message_id,
     );
-
-    await Queue.enqueue(
-      {
-        type: 'save',
-        data: processMessageBody,
-        feishuMessageId: null
-      },
-      { delay: 1 }
-    );
   }
 
-  await Queue.enqueue(
-    {
-      type: 'finish',
-      data: null,
-      feishuMessageId: feishuMessage.id
-    },
-    { delay: 1 }
-  );
+  const url = `${process.env.QUIRREL_BASE_URL}/api/db/saveFeiShuResult`;
+  await fetch(url, {method:'POST', body:JSON.stringify({feishuMessageId: feishuMessage.data.message.message_id, data})});
 };
 
-const processFeishuMessage = async ( { feishuMessage, history, app }) => {
-  // const config = app.config as Prisma.JsonObject;
-  // const client = new lark.Client({
-  //   appId: config['appId'] as string,
-  //   appSecret: config['appSecret'] as string,
-  //   appType: lark.AppType.SelfBuild,
-  //   domain: config['domain'] as string
-  // });
+const processMessage = async ( { feishuMessage, history, app } : MessageQueueBody) => {
   const accessToken = (await (await getInternalTenantAccessToken(app.config.appId, app.config.appSecret)).json()).tenant_access_token;
   const question = JSON.parse(feishuMessage.data.message.content).text;
   const chatId = feishuMessage.data.message.chat_id;
@@ -174,38 +131,7 @@ const processFeishuMessage = async ( { feishuMessage, history, app }) => {
   const senderType = feishuMessage.data.sender.sender_type;
   const messages = new Array();
   let promptTokens = 0;
-  // if(chatType === 'group'){
-  //   const chatHistory = (await(await getChatHistory(accessToken, chatId)).json()).data.items;
-  //   for(let i = 0; i < chatHistory.length; i++){
-  //     const text = JSON.parse(chatHistory[i].body.content).text;
-  //     const textTokens = encode(text).length;
-  //     if(promptTokens + textTokens > 2000){
-  //       break;
-  //     } else {
-  //       promptTokens += textTokens;
-  //       const message = {
-  //         role: chatHistory[i].sender.sender_type === 'app' ? 'assistant' : 'user',
-  //         content: text,
-  //       }
-  //       messages.unshift(message);
-  //     }
-  //   }
-  // }
-  // if (chatType === 'p2p'){
-  //   const text = JSON.parse(feishuMessage.data.message.content).text;
-  //   const textTokens = encode(text).length;
-  //   promptTokens += textTokens;
-  //   const message = {
-  //     role: 'user',
-  //     content: text,
-  //   }
-  //   messages.unshift(message);
-  // }
 
-  // let converstionId = feishuMessage.data.message_id;
-  // if(feishuMessage.data.message.root_id && feishuMessage.data.message.root_id != feishuMessage.data.message.message_id){
-  //   converstionId = feishuMessage.feishuMessage.data.message.root_id
-  // }
   for(let i = 0; i < history.length; i++){
     const answerMessage = {
       role: 'assistant',
@@ -255,7 +181,6 @@ const processFeishuMessage = async ( { feishuMessage, history, app }) => {
 
   const repliedMessageId = await trySendOrUpdateFeishuCard(accessToken, 'AI助理', '...', '回复中', null, feishuMessage.id, null);
 
-  const startedAt = Date.now();
   let lastSendAt = 0;
   const params: OpenAIRequest = {
     model: OpenAIModels[OpenAIModelID.GPT_3_5],
@@ -278,22 +203,16 @@ const processFeishuMessage = async ( { feishuMessage, history, app }) => {
     async (error) => {
       console.error(error);
       await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '错误中止', null, null, repliedMessageId);
-      await completeQuery({ airesult, question, feishuSender, promptTokens, completionTokens, app, feishuMessage });
+      await finish({ airesult, question, feishuSender, promptTokens, completionTokens, app, feishuMessage });
 
     },
      async () => {
         // console.log(`enter finish , tokens: ${completionTokens}` )
         await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复完成', null, null, repliedMessageId);
-        await completeQuery({ airesult, question, feishuSender, promptTokens, completionTokens, app, feishuMessage });
+        await finish({ airesult, question, feishuSender, promptTokens, completionTokens, app, feishuMessage });
       }
   );
-
   return openaiStream;
-  
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  res.end('ok');
-}
-
-export { processFeishuMessage };
+export { processMessage };

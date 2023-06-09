@@ -8,6 +8,15 @@
 * SMTP email login
 * Feishu
 
+## Prisma Data Proxy
+为了解决Edge Runtime下调用数据库的问题
+* 镜像 loxxo/aifactory-prisma-data-proxy:0.2.0
+* env
+** DATABASE_URL
+** DATA_PROXY_API_KEY=randomstring
+### fly.io
+
+
 ## 代码注意事项
 已知
 * Vercel edge runtime 不限制请求时长

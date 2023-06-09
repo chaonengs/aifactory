@@ -19,21 +19,18 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       prismaClient: prismaClient,
     }),
   })
-  
-    if (req.headers['totp']) {
-      const secret = process.env.REST_TOTP_SECRET;
-      if(totp.check(req.headers['totp'], process.env.REST_TOTP_SECRET)){
-        return nextCrudHandler(req, res)
-      }
+
+  if(process.env.DEVELOPMENT_MODE === 'true'){
+    return nextCrudHandler(req,res);
+  }
+  if (req.headers['totp']) {
+    const secret = process.env.REST_TOTP_SECRET;
+    if(totp.check(req.headers['totp'], process.env.REST_TOTP_SECRET)){
+      return nextCrudHandler(req, res)
     }
+  }
 
-    const session = await getServerSession(req, res, authOptions)
-    if (!session) {
-        res.status(401).json({ message: "You must be logged in." });
-        return;
-      }
-    
-
-  return nextCrudHandler(req, res)
+  res.status(401).send('not permitted');
+  return;
 }
 export default handler

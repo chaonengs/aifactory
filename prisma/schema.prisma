@@ -13,6 +13,7 @@ datasource db {
   provider          = "mysql"
   url               = env("DATABASE_URL")
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+  directUrl         = env("DIRECT_URL")
 
   // Since you are using planetscale, comment it if you are not
   relationMode = "prisma"

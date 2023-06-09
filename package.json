@@ -1,6 +1,6 @@
 {
   "name": "aifactory",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@apollo/server": "^4.7.1",
+    "@as-integrations/next": "^2.0.0",
     "@auth/core": "^0.7.1",
     "@auth0/auth0-spa-js": "^2.0.5",
     "@babel/preset-react": "^7.22.3",
