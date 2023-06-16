@@ -19,8 +19,6 @@ export default async function handler(req: Request): Promise<Response> {
   }
   const res = await OpenAIChatComletion(params);
   return res;
-
-  
 };
 
 

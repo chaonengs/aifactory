@@ -19,7 +19,8 @@ const initialState: CustomizationProps = {
   onChangeContainer: () => {},
   onChangeFontFamily: () => {},
   onChangeBorderRadius: () => {},
-  onChangeOutlinedField: () => {}
+  onChangeOutlinedField: () => {},
+  onChangeOrganization: () => {},
 };
 
 // ==============================|| CONFIG CONTEXT & PROVIDER ||============================== //
@@ -31,14 +32,15 @@ type ConfigProviderProps = {
 };
 
 function ConfigProvider({ children }: ConfigProviderProps) {
-  const [config, setConfig] = useLocalStorage('berry-config', {
+  const [config, setConfig] = useLocalStorage('aifactory', {
     fontFamily: initialState.fontFamily,
     borderRadius: initialState.borderRadius,
     outlinedFilled: initialState.outlinedFilled,
     navType: initialState.navType,
     presetColor: initialState.presetColor,
     locale: initialState.locale,
-    rtlLayout: initialState.rtlLayout
+    rtlLayout: initialState.rtlLayout,
+    organization:initialState.organization,
   });
 
   const onChangeMenuType = (navType: PaletteMode) => {
@@ -97,6 +99,13 @@ function ConfigProvider({ children }: ConfigProviderProps) {
     });
   };
 
+  const onChangeOrganization = (organization: string) => {
+    setConfig({
+      ...config,
+      organization
+    });
+  };
+
   return (
     <ConfigContext.Provider
       value={{
@@ -108,7 +117,8 @@ function ConfigProvider({ children }: ConfigProviderProps) {
         onChangeContainer,
         onChangeFontFamily,
         onChangeBorderRadius,
-        onChangeOutlinedField
+        onChangeOutlinedField,
+        onChangeOrganization,
       }}
     >
       {children}

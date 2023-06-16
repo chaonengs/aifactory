@@ -13,6 +13,16 @@ function useOrganization (id) {
 }
 
 
+export function useOrganizationUsers(userId) {
+  const { data, error, isLoading } = useSWR(`/api/rest/organizationUsers?where={"userId":{"$eq":"${userId}"}}&include=organization`, fetcher)
+  return {
+    organizationUsers: data,
+    isLoading,
+    isError: error
+  }
+}
+
+
 function useApp(id) {
   const { data, error, isLoading } = useSWR(`/api/rest/apps/${id}`, fetcher)
  

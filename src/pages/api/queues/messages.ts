@@ -1,5 +1,5 @@
 import { Queue } from 'utils/quirrel/edge';
-import { MessageQueueBody, processMessage } from 'processer/feishubot';
+import { MessageQueueBody, processMessage } from 'processers/feishubot';
 
 
 export default Queue(

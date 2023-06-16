@@ -2,26 +2,35 @@
 这是一个Next.js项目，可以部署到Vercel，依赖和使用的云服务包括
 * Vercel，你需要了解Next.js在Vercel上的运行方式，特别是Serverless的服务方式
 * PlanetScale
-* Quirrel, Deployed on Fly.io and Upstash redis
-* Prisma， 数据库ORM系统，支持Migration
+* Quirrel(https://quirrel.dev/), Deployed on Fly.io and Upstash redis
+* Prisma， 数据库ORM系统，支持Migrate, 务必看完Migrate方法和PlannetScale上的实践
 * Github Oauth
 * SMTP email login
-* Feishu
+* Feishu 开放平台
 
-## Prisma Data Proxy
-为了解决Edge Runtime下调用数据库的问题
-* 镜像 loxxo/aifactory-prisma-data-proxy:0.2.0
-* env
-** DATABASE_URL
-** DATA_PROXY_API_KEY=randomstring
+
+
 ### fly.io
+* 当前部署了quirrel
+* ~~部署了Prisma Data Proxy测试项目，实际代码中没有用到，可以忽略~~
+
+## ~~Prisma Data Proxy~~
+~~为了解决Edge Runtime下调用数据库的问题~~
+* ~~镜像 loxxo/aifactory-pdp:0.2.0~~
+* ~~镜像有问题，工作不正常~~
 
 ## 如何开发新的机器人
 * 在/pages/api目录下新建一个文件夹，比如 dingtalk
 * dingtalk下新建[...appId].ts, 在此实现你的逻辑
 * 新建一个表保存原始dingtalk的报文，和标记是否已处理
 * 新建一个支持edge runtime下的消息处理器，位于/processers中，比如/processers/dingtalk.ts, 去处理的主要逻辑，包括询问OPENAI, dingtalk中发送消息等逻辑，要求通过ReadableStream的形式持续输出，不然可能会导致超时
-* 在pages/api/queues/messages.ts中接受你在/pages/api/dingtalk/[...appId].ts中发送的queue请求，并使用你的处理器去处理消息
+* 在pages/api/queues/messages.ts中接受你在/pages/api/dingtalk/[...appId].ts中发送的queue请求，并使用你的处理器去处理消息、
+
+### 操作数据库
+* 如果你的机器人需要新增数据库表，请采用Prisma Migrate的方式，提供Migration文件
+
+### 分支管理
+* Main 和 Dev 分支都是被保护的，请新建分支后提交PR
 
 
 ## 代码注意事项
@@ -38,9 +47,9 @@
 
 
 ## 开发路线
-* 根据飞书message中的root id去创建对话，并保存，以便在OpenAI中完整提交
-* 支持添加AzureOpenAI
-* 支持选择App的模型和温度
+* ~~根据飞书message中的root id去创建对话，并保存，以便在OpenAI中完整提交~~
+* ~~支持添加AzureOpenAI~~
+* ~~支持选择App的模型和温度~~
 * 支持团队管理
 * 支持用户使用自己的API KEY
 * 支持飞书登录和更多第三方登录

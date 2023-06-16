@@ -8,6 +8,7 @@ export type ConfigProps = {
   presetColor: string;
   locale: string;
   rtlLayout: boolean;
+  organization: string;
 };
 
 export type CustomizationProps = {
@@ -19,6 +20,7 @@ export type CustomizationProps = {
   locale: string;
   rtlLayout: boolean;
   container: boolean;
+  organization: string;
   onChangeMenuType: (navType: PaletteMode) => void;
   onChangePresetColor: (presetColor: string) => void;
   onChangeLocale: (locale: string) => void;
@@ -27,4 +29,5 @@ export type CustomizationProps = {
   onChangeFontFamily: (fontFamily: string) => void;
   onChangeBorderRadius: (event: Event, newValue: number | number[]) => void;
   onChangeOutlinedField: (outlinedFilled: boolean) => void;
+  onChangeOrganization: (organization:string) => void;
 };

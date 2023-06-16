@@ -16,8 +16,9 @@ import React, { ReactElement } from 'react';
 import MainCard from 'ui-component/cards/MainCard';
 import Grid from '@mui/material/Unstable_Grid2'; // Grid version 2
 import AppCard from 'components/application/aifactory/AppCard';
-import {useOrganization, useApps} from 'feed';
+import { useApps} from 'feed';
 import { useSession} from "next-auth/react"
+import useConfig from 'hooks/useConfig';
 
 
 const MyApps = () => {
@@ -26,8 +27,9 @@ const MyApps = () => {
   // const [apps, setApps] = React.useState([]);
   const { data: session } = useSession()
 
-  const {organization} = useOrganization(session?.user.id);
-  const {apps} = useApps(session?.user.id);
+  // const {organization} = useOrganization(session?.user.id);
+  const {organization} = useConfig();
+  const {apps} = useApps(organization);
   const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
     setTabValue(newValue);
   };

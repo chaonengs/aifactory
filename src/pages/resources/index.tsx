@@ -1,105 +1,154 @@
-import TabContext from '@mui/lab/TabContext';
-import TabList from '@mui/lab/TabList';
-import TabPanel from '@mui/lab/TabPanel';
+import AddIcon from '@mui/icons-material/Add';
 import {
   Button,
   Dialog,
   DialogActions,
-  DialogContent, 
+  DialogContent,
   DialogContentText,
   DialogTitle,
   Divider,
+  MenuItem,
+  Select,
   Skeleton,
   Stack,
   Typography
 } from '@mui/material';
 import Box from '@mui/material/Box';
-import Tab from '@mui/material/Tab';
 import { useTheme } from '@mui/material/styles';
-import AddIcon from '@mui/icons-material/Add';
 
 // project imports
-import ResourceList from 'components/application/aifactory/ResourceList';
+import { AIResource } from '@prisma/client';
+import AIResourceDialog from 'components/application/aifactory/AIResourceDialog';
+import ResourceCard from 'components/application/aifactory/ResourceCard';
+import {
+  deleteResource
+} from 'components/application/aifactory/ResourceForm';
 import Page from 'components/ui-component/Page';
 import LAYOUT from 'constant';
-import Layout from 'layout';
-import React, { ReactElement } from 'react';
-import MainCard from 'ui-component/cards/MainCard';
-import ResourceCard from 'components/application/aifactory/ResourceCard';
-import { useSession } from 'next-auth/react';
 import { useOrganization } from 'feed';
+import useConfig from 'hooks/useConfig';
+import Layout from 'layout';
+import { useSession } from 'next-auth/react';
+import React, { ReactElement } from 'react';
+import { toast } from 'react-toastify';
+import MainCard from 'ui-component/cards/MainCard';
 
 const Resources = () => {
   const theme = useTheme();
   const { data: session } = useSession();
-  const { organization } = useOrganization(session?.user.id);
-  const [alertOpen, setAlertOpen] = React.useState(false);
+  const organizationId = useConfig().organization;
+  const { organization } = useOrganization(organizationId);
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
 
-  const [tabValue, setTabValue] = React.useState('openai');
+  const [resourceType, setResourceType] = React.useState('all');
+  const [selectedResourceId, setSelectedResourceId] = React.useState('');
+  const [selectedResource, setSelectedResource] = React.useState({} as AIResource);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
-    setTabValue(newValue);
+  const handleEditResourceOpen = () => {
+    setEditOpen(true);
   };
 
-  const handleAlertClickOpen = () => {
-    setAlertOpen(true);
+  const handleEditResourceClose = () => {
+    setEditOpen(false);
   };
 
-  const handleAlertClose = () => {
-    setAlertOpen(false);
+  const handleDeleteOpen = () => {
+    setDeleteOpen(true);
+  };
+
+  const handleDeleteClose = () => {
+    setDeleteOpen(false);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedResourceId) {
+      throw Error('none resource');
+    }
+    await toast.promise(deleteResource(selectedResourceId), {
+      pending: '删除中',
+      success: '已删除 👌',
+      error: '删除失败 🤯'
+    });
   };
 
   return (
     <Page title="Resources">
       <MainCard
         title={
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <Typography variant="h2" component="h2">
-              AI 资源
-            </Typography>
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAlertClickOpen}>
-              Add
+          <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+            <Stack flexGrow={1} direction={'row'} alignItems={'center'}>
+              <Typography variant="h2" component="h2">
+                AI 资源
+              </Typography>
+              <Box sx={{ minWidth: 120, m: 1 }}>
+                <Select
+                  labelId="resource-select-label"
+                  id="resouce-select"
+                  value={resourceType}
+                  onChange={(e) => {
+                    setResourceType(e.target.value);
+                  }}
+                >
+                  <MenuItem value="all">全部</MenuItem>
+                  <MenuItem value="openai">OpenAI</MenuItem>
+                  <MenuItem value="azopenai">Azure OpenAI</MenuItem>
+                  <MenuItem value="shopenai">平台OpenAI</MenuItem>
+                </Select>
+              </Box>
+            </Stack>
+
+            <Button variant="outlined" startIcon={<AddIcon />} onClick={handleEditResourceOpen}>
+              添加
             </Button>
-          </Stack>
+          </Box>
         }
       >
         {organization ? (
-          <TabContext value={tabValue}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-              <TabList onChange={handleTabChange} aria-label="lab API tabs example">
-                <Tab label="Open AI" value="openai" />
-                <Tab label="Azure Open AI" value="auzre-openai" />
-                <Tab label="Others" value="others" />
-              </TabList>
-            </Box>
-            <TabPanel value="openai">
-              <Stack spacing={2} divider={<Divider flexItem />}>
-                {organization.aiResources.map((resource) => {
-                  return <ResourceCard aiResource={resource} key={resource.id} />;
-                })}
-              </Stack>
-            </TabPanel>
-            <TabPanel value="auzre-openai">{/* <ResourceList /> */}</TabPanel>
-            <TabPanel value="others">{/* <ResourceList /> */}</TabPanel>
-          </TabContext>
+          <Stack spacing={2} divider={<Divider flexItem />}>
+            {organization.aiResources.map((resource) => {
+              return (
+                <ResourceCard
+                  aiResource={resource}
+                  key={resource.id}
+                  onEdit={(r) => {
+                    setSelectedResource(r);
+                    handleEditResourceOpen();
+                  }}
+                  onDelete={(r) => {
+                    setSelectedResource(r);
+                    handleDelete();
+                  }}
+                />
+              );
+            })}
+          </Stack>
         ) : (
           <Skeleton animation="wave" sx={{ height: 300 }} />
         )}
 
+        <AIResourceDialog
+          open={editOpen}
+          aiResource={selectedResource}
+          onCancel={() => {
+            setEditOpen(false);
+          }}
+          organizationId={useConfig().organization}
+        />
+
         <Dialog
-          open={alertOpen}
-          onClose={handleAlertClose}
+          open={deleteOpen}
+          onClose={handleDeleteClose}
           aria-labelledby="alert-dialog-title"
           aria-describedby="alert-dialog-description"
         >
-          <DialogTitle id="alert-dialog-title">联系客服添加资源</DialogTitle>
+          <DialogTitle id="alert-dialog-title">删除资源</DialogTitle>
           <DialogContent>
-            <DialogContentText id="alert-dialog-description">请联系客服帮你添加资源和应用</DialogContentText>
+            <DialogContentText id="alert-dialog-description">确认要删除该资源吗？无法恢复</DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleAlertClose} autoFocus>
-              OK
-            </Button>
+            <Button onClick={handleDeleteClose}>取消</Button>
+            <Button onClick={handleDelete}>删除</Button>
           </DialogActions>
         </Dialog>
       </MainCard>

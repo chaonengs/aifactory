@@ -13,7 +13,7 @@ datasource db {
   provider          = "mysql"
   url               = env("DATABASE_URL")
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
-  directUrl         = env("DIRECT_URL")
+  // directUrl         = env("DIRECT_URL")
 
   // Since you are using planetscale, comment it if you are not
   relationMode = "prisma"
@@ -59,7 +59,7 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
-  organizations Organization[]
+  organizations OrganizationUsers[]
 }
 
 model VerificationToken {
@@ -73,15 +73,33 @@ model VerificationToken {
 model Organization {
   id          String       @id @default(cuid())
   name        String
-  owner       User         @relation(fields: [ownerId], references: [id])
-  ownerId     String
   aiResources AIResource[]
   apps        App[]
   messages    Message[]
   apiKeys     APIKey[]
-
-  @@index([ownerId])
+  users OrganizationUsers[]
 }
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model OrganizationUsers {
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  organizationId  String
+  role Role
+
+  @@id([userId, organizationId])
+  @@index([organizationId])
+  @@index([userId])
+}
+
+
+
 
 model Usage {
   id               String     @id @default(cuid())
@@ -142,6 +160,10 @@ model AIResource {
   tokenUsed      Int            @default(0)
   tokenRemains   Int            @default(0)
   hostUrl        String?
+  builtIn        Boolean        @default(true)
+  quota          Int?
+  apiVersion     String?
+
 
   usages Usage[]
   apps   App[]

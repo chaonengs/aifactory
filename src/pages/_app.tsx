@@ -20,7 +20,11 @@ import { ConfigProvider } from '../contexts/ConfigContext';
 import { SessionProvider } from "next-auth/react"
 import { store } from '../store';
 import Snackbar from 'ui-component/extended/Snackbar';
+import React from 'react';
+import { ToastContainer, toast } from 'react-toastify';
 
+import 'react-toastify/dist/ReactToastify.css';
+import useConfig from 'hooks/useConfig';
 // types
 type LayoutProps = NextPage & {
   getLayout?: (page: ReactElement) => ReactNode;
@@ -43,6 +47,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps }, }: AppProps & 
                 <SessionProvider session={session}>
                   <>
                     {getLayout(<Component {...pageProps} />)}
+                    <ToastContainer theme={useConfig().navType || 'light'}/>
                     <Snackbar />
                   </>
                 </SessionProvider>

@@ -83,10 +83,19 @@ export const authOptions: NextAuthOptions = {
         await prisma.organization.create({
           data: {
             id: authuser.user.id,
-            owner: {
-              connect: {id: authuser.user.id}
-            },
-            name: authuser.user.name as string
+            name: authuser.user.name as string,
+            users: {
+              create: [
+                {
+                  role: 'OWNER',
+                  user: {
+                    connect: {
+                      id: authuser.user.id
+                    }
+                  }
+                }
+              ]
+            }
           }
         })
       }

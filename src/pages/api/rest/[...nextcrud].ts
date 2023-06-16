@@ -23,6 +23,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if(process.env.DEVELOPMENT_MODE === 'true'){
     return nextCrudHandler(req,res);
   }
+
+  const session = await getServerSession(req, res, authOptions)
+  if (session) {
+    return nextCrudHandler(req,res);
+  } else {
+    res.send({
+      error: "You must be signed in to view the protected content on this page.",
+    })
+  }
   if (req.headers['totp']) {
     const secret = process.env.REST_TOTP_SECRET;
     if(totp.check(req.headers['totp'], process.env.REST_TOTP_SECRET)){
