@@ -13,6 +13,7 @@ import React from 'react';
 import { AIResource } from '@prisma/client';
 import { AIResourceTypes, ResourceTypes } from 'constant';
 
+
 const ResourceCard = ({
   aiResource,
   onEdit,
@@ -85,12 +86,10 @@ const ResourceCard = ({
       </Stack>
       {aiResource.type === 'OPENAI' && (
         <Stack direction={'row'} useFlexGap flexWrap="wrap">
-          {aiResource.builtIn && (
             <Stack flexGrow={1}>
               <Typography variant="subtitle1">剩余Token</Typography>
               <Typography variant="h3">{aiResource.tokenRemains}</Typography>
             </Stack>
-          )}
           <Stack flexGrow={1}>
             <Typography variant="subtitle1">模型</Typography>
             <Typography variant="h3">{aiResource.model}</Typography>
@@ -111,12 +110,10 @@ const ResourceCard = ({
       )}
       {aiResource.type === 'AZ_OPENAI' && (
         <Stack direction={'row'} useFlexGap flexWrap="wrap">
-          {aiResource.builtIn && (
             <Stack flexGrow={1}>
               <Typography variant="subtitle1">剩余Token</Typography>
               <Typography variant="h3">{aiResource.tokenRemains}</Typography>
             </Stack>
-          )}
           <Stack flexGrow={1}>
             <Typography variant="subtitle1">API版本</Typography>
             <Typography variant="h3">{aiResource.apiVersion}</Typography>

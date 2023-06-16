@@ -1,4 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
+import { LoadingButton } from '@mui/lab';
 import {
   Button,
   Dialog,
@@ -46,11 +47,9 @@ const Resources = () => {
   const { organization } = useOrganization(organizationId);
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
-
+  const [isDeleting, setIsDeleting] = React.useState(false);
   const [resourceType, setResourceType] = React.useState('all');
-  const [selectedResourceId, setSelectedResourceId] = React.useState('');
   const [selectedResource, setSelectedResource] = React.useState(null);
-  const [aiResources, setAiResources] = React.useState(organization?.aiResources);
 
   const handleEditResourceOpen = () => {
     setEditOpen(true);
@@ -69,16 +68,19 @@ const Resources = () => {
   };
 
   const handleDelete = async () => {
-    if (!selectedResourceId) {
+    if (!selectedResource) {
       throw Error('none resource');
     }
-    await toast.promise(deleteResource(selectedResourceId), {
+    setIsDeleting(true);
+    await toast.promise(deleteResource(selectedResource.id), {
       pending: '删除中',
       success: '已删除 👌',
       error: '删除失败 🤯'
     });
     handleDeleteClose();
-    mutate(`/api/rest/organizations/${organizationId}?include=apps,aiResources`);
+    await mutate(`/api/rest/organizations/${organizationId}?include=apps,aiResources`);
+    setIsDeleting(false);
+
   };
 
   const getFormikInitial = (aiResource: AIResource | null) => {
@@ -139,7 +141,7 @@ const Resources = () => {
       >
         {organization && organization.aiResources ? (
           <Stack spacing={2} divider={<Divider flexItem />}>
-            {aiResources.map((resource) => {
+            {organization.aiResources.filter((r) => r.type === resourceType || resourceType === 'all').map((resource) => {
               return (
                 <ResourceCard
                   aiResource={resource}
@@ -150,7 +152,7 @@ const Resources = () => {
                   }}
                   onDelete={(r) => {
                     setSelectedResource(r);
-                    handleDelete();
+                    handleDeleteOpen();
                   }}
                 />
               );
@@ -162,9 +164,9 @@ const Resources = () => {
 
         <AIResourceDialog
           open={editOpen}
-          onDone={() => {
+          onDone={async () => {
             setEditOpen(false);
-            mutate(`/api/rest/organizations/${organizationId}?include=apps,aiResources`);
+            await mutate(`/api/rest/organizations/${organizationId}?include=apps,aiResources`);
           }}
           aiResource={selectedResource}
           onCancel={() => {
@@ -185,7 +187,7 @@ const Resources = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={handleDeleteClose}>取消</Button>
-            <Button onClick={handleDelete}>删除</Button>
+            <LoadingButton loading={isDeleting} onClick={handleDelete}>删除</LoadingButton>
           </DialogActions>
         </Dialog>
       </MainCard>

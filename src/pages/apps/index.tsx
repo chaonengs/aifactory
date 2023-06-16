@@ -90,7 +90,7 @@ const MyApps = () => {
       error: '创建失败 🤯'
     });
     handleCreateClose();
-    mutate(`/api/rest/apps?where={"organizationId":{"$eq":"${organization}"}}&include=aiResource`)
+    await mutate(`/api/rest/apps?where={"organizationId":{"$eq":"${organization}"}}&include=aiResource`)
   }
 
 

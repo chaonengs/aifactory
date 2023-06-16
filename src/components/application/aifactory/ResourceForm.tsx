@@ -37,6 +37,7 @@ export const ResourceSchema = Yup.object().shape({
     is: 'AZ_OPENAI',
     then: (schema) => schema.required('Azure资源必须输入API版本')
   }),
+  tokenRemains:Yup.number().positive().min(0, '剩余额度不能为负'),
   quota: Yup.number().nullable()
 });
 

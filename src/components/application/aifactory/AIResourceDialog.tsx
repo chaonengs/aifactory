@@ -33,6 +33,7 @@ const AIResourceDialog = ({aiResource, organizationId, open, onCancel, onClose, 
       builtIn: aiResource?.builtIn ||  false,
       quota:  aiResource?.quota ||  null,
       apiVersion:  aiResource?.apiVersion ||  null,
+      tokenRemains: aiResource?.tokenRemains || 0,
     },
     validationSchema: ResourceSchema,
     enableReinitialize: true,
@@ -74,6 +75,7 @@ const AIResourceDialog = ({aiResource, organizationId, open, onCancel, onClose, 
       builtIn: aiResource?.builtIn ||  false,
       quota:  aiResource?.quota ||  null,
       apiVersion:  aiResource?.apiVersion ||  null,
+      tokenRemains: aiResource?.tokenRemains || 0,
     },
     
     formik.resetForm()
@@ -182,17 +184,17 @@ const AIResourceDialog = ({aiResource, organizationId, open, onCancel, onClose, 
               error={formik.touched.apiKey && Boolean(formik.errors.apiKey)}
               helperText={formik.touched.apiKey && formik.errors.apiKey}
             />
-            {/* <TextField
+            <TextField
           fullWidth
-          id="quota"
-          name="quota"
-          label="配额"
+          id="tokenRemains"
+          name="tokenRemains"
+          label="剩余配额"
           type='number'
-          value={formik.values.quota}
+          value={formik.values.tokenRemains}
           onChange={formik.handleChange}
-          error={formik.touched.quota && Boolean(formik.errors.quota)}
-          helperText={formik.touched.quota && formik.errors.quota}
-        /> */}
+          error={formik.touched.tokenRemains && Boolean(formik.errors.tokenRemains)}
+          helperText={formik.touched.tokenRemains && formik.errors.tokenRemains}
+        />
             {/* {formik.isSubmitting && <LinearProgress />} */}
             <br />
           </Stack>
