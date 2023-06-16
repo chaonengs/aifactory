@@ -13,7 +13,15 @@ import React from 'react';
 import { AIResource } from '@prisma/client';
 import { AIResourceTypes, ResourceTypes } from 'constant';
 
-const ResourceCard = ({aiResource, onEdit, onDelete}:{aiResource:AIResource, onEdit:(aiResource: AIResource)=>void, onDelete:(aiResource: AIResource)=>void}) =>{
+const ResourceCard = ({
+  aiResource,
+  onEdit,
+  onDelete
+}: {
+  aiResource: AIResource;
+  onEdit: (aiResource: AIResource) => void;
+  onDelete: (aiResource: AIResource) => void;
+}) => {
   const Accordion = styled((props: AccordionProps) => <MuiAccordion disableGutters elevation={0} square {...props} />)(({ theme }) => ({
     border: `1px solid ${theme.palette.divider}`,
     '&:not(:last-child)': {
@@ -43,81 +51,90 @@ const ResourceCard = ({aiResource, onEdit, onDelete}:{aiResource:AIResource, onE
     setExpanded(newExpanded ? panel : false);
   };
 
-
   return (
     <Stack spacing={2} useFlexGap flexWrap="wrap">
       <Stack direction={'row'} spacing={2} alignItems={'center'}>
-        <Typography variant="h3" component="h3" >
+        <Typography variant="h3" component="h3">
           {aiResource.name}
         </Typography>
-        <Typography flexGrow={1}>
-          {AIResourceTypes[aiResource.type]}
-        </Typography>
-        { aiResource.builtIn? (<>
-          <Chip label="平台内置" color="primary" />
-        </>): 
-        (<Stack direction={'row'}>  
-          <IconButton aria-label="edit" onClick={()=>{
-            onEdit(aiResource);
-          }}>
-            <EditIcon />
-          </IconButton>
-          <IconButton aria-label="delete" onClick={()=>{
-            onDelete(aiResource);
-          }}>
-            <DeleteIcon />
-          </IconButton>
-        </Stack>)
-        }
+        <Typography flexGrow={1}>{AIResourceTypes[aiResource.type]}</Typography>
+        {aiResource.builtIn ? (
+          <>
+            <Chip label="平台内置" color="primary" />
+          </>
+        ) : (
+          <Stack direction={'row'}>
+            <IconButton
+              aria-label="edit"
+              onClick={() => {
+                onEdit(aiResource);
+              }}
+            >
+              <EditIcon />
+            </IconButton>
+            <IconButton
+              aria-label="delete"
+              onClick={() => {
+                onDelete(aiResource);
+              }}
+            >
+              <DeleteIcon />
+            </IconButton>
+          </Stack>
+        )}
       </Stack>
-      { aiResource.type === 'OPENAI' && 
-      <Stack direction={'row'} useFlexGap flexWrap="wrap">
-        <Stack flexGrow={1}>
-          <Typography variant='subtitle1'>剩余Token</Typography>
-          <Typography variant='h3'>{aiResource.tokenRemains}</Typography>
+      {aiResource.type === 'OPENAI' && (
+        <Stack direction={'row'} useFlexGap flexWrap="wrap">
+          {aiResource.builtIn && (
+            <Stack flexGrow={1}>
+              <Typography variant="subtitle1">剩余Token</Typography>
+              <Typography variant="h3">{aiResource.tokenRemains}</Typography>
+            </Stack>
+          )}
+          <Stack flexGrow={1}>
+            <Typography variant="subtitle1">模型</Typography>
+            <Typography variant="h3">{aiResource.model}</Typography>
+          </Stack>
+          <Stack flexGrow={1}>
+            <Typography variant="subtitle1">累计调用次数</Typography>
+            <Typography variant="h3">开发中</Typography>
+          </Stack>
+          <Stack flexGrow={1}>
+            <Typography variant="subtitle1">累计消耗Token</Typography>
+            <Typography variant="h3">{aiResource.tokenUsed}</Typography>
+          </Stack>
+          <Stack flexGrow={1}>
+            <Typography variant="subtitle1">使用应用</Typography>
+            <Typography variant="h3">开发中</Typography>
+          </Stack>
         </Stack>
-        <Stack flexGrow={1}>
-          <Typography  variant='subtitle1'>模型</Typography>
-          <Typography  variant='h3'>{aiResource.model}</Typography>
+      )}
+      {aiResource.type === 'AZ_OPENAI' && (
+        <Stack direction={'row'} useFlexGap flexWrap="wrap">
+          {aiResource.builtIn && (
+            <Stack flexGrow={1}>
+              <Typography variant="subtitle1">剩余Token</Typography>
+              <Typography variant="h3">{aiResource.tokenRemains}</Typography>
+            </Stack>
+          )}
+          <Stack flexGrow={1}>
+            <Typography variant="subtitle1">API版本</Typography>
+            <Typography variant="h3">{aiResource.apiVersion}</Typography>
+          </Stack>
+          <Stack flexGrow={1}>
+            <Typography variant="subtitle1">累计调用次数</Typography>
+            <Typography variant="h3">开发中</Typography>
+          </Stack>
+          <Stack flexGrow={1}>
+            <Typography variant="subtitle1">累计消耗Token</Typography>
+            <Typography variant="h3">{aiResource.tokenUsed}</Typography>
+          </Stack>
+          <Stack flexGrow={1}>
+            <Typography variant="subtitle1">使用应用</Typography>
+            <Typography variant="h3">开发中</Typography>
+          </Stack>
         </Stack>
-        <Stack flexGrow={1}>
-          <Typography variant='subtitle1'>累计调用次数</Typography>
-          <Typography  variant='h3'>开发中</Typography>
-        </Stack>
-        <Stack flexGrow={1}>
-          <Typography variant='subtitle1'>累计消耗Token</Typography>
-          <Typography variant='h3'>{aiResource.tokenUsed}</Typography>
-        </Stack>
-        <Stack flexGrow={1}>
-          <Typography variant='subtitle1'>使用应用</Typography>
-          <Typography variant='h3'>开发中</Typography>
-        </Stack>
-        </Stack>
-        }
-        { aiResource.type === 'AZ_OPENAI' && 
-      <Stack direction={'row'} useFlexGap flexWrap="wrap">
-        <Stack flexGrow={1}>
-          <Typography variant='subtitle1'>剩余Token</Typography>
-          <Typography variant='h3'>{aiResource.tokenRemains}</Typography>
-        </Stack>
-        <Stack flexGrow={1}>
-          <Typography  variant='subtitle1'>API版本</Typography>
-          <Typography  variant='h3'>{aiResource.apiVersion}</Typography>
-        </Stack>
-        <Stack flexGrow={1}>
-          <Typography variant='subtitle1'>累计调用次数</Typography>
-          <Typography  variant='h3'>开发中</Typography>
-        </Stack>
-        <Stack flexGrow={1}>
-          <Typography variant='subtitle1'>累计消耗Token</Typography>
-          <Typography variant='h3'>{aiResource.tokenUsed}</Typography>
-        </Stack>
-        <Stack flexGrow={1}>
-          <Typography variant='subtitle1'>使用应用</Typography>
-          <Typography variant='h3'>开发中</Typography>
-        </Stack>
-        </Stack>
-        }
+      )}
       {/* 
       <Accordion expanded={expanded === 'panel1'} onChange={handleChange('panel1')}>
         <AccordionSummary aria-controls="panel1d-content" id="panel1d-header">

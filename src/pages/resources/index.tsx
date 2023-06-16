@@ -21,11 +21,16 @@ import { AIResource } from '@prisma/client';
 import AIResourceDialog from 'components/application/aifactory/AIResourceDialog';
 import ResourceCard from 'components/application/aifactory/ResourceCard';
 import {
-  deleteResource
+  ResourceSchema,
+  ResourceValues,
+  createResource,
+  deleteResource,
+  updateResource
 } from 'components/application/aifactory/ResourceForm';
 import Page from 'components/ui-component/Page';
-import LAYOUT from 'constant';
+import LAYOUT, { ResourceTypes } from 'constant';
 import { useOrganization } from 'feed';
+import { useFormik } from 'formik';
 import useConfig from 'hooks/useConfig';
 import Layout from 'layout';
 import { useSession } from 'next-auth/react';
@@ -43,7 +48,8 @@ const Resources = () => {
 
   const [resourceType, setResourceType] = React.useState('all');
   const [selectedResourceId, setSelectedResourceId] = React.useState('');
-  const [selectedResource, setSelectedResource] = React.useState({} as AIResource);
+  const [selectedResource, setSelectedResource] = React.useState(null);
+  const [aiResources, setAiResources]  = React.useState(organization?.aiResources);
 
   const handleEditResourceOpen = () => {
     setEditOpen(true);
@@ -72,6 +78,22 @@ const Resources = () => {
     });
   };
 
+  const getFormikInitial = (aiResource:AIResource | null) => {
+    const values: ResourceValues = {
+      name: aiResource?.name || '',
+      type: aiResource?.type || 'OPENAI',
+      model: aiResource?.model,
+      apiKey: aiResource?.apiKey ||  '',
+      hostUrl: aiResource?.hostUrl ||  null,
+      builtIn: aiResource?.builtIn ||  false,
+      quota:  aiResource?.quota ||  null,
+      apiVersion:  aiResource?.apiVersion ||  null,
+    };
+    return values;
+  }
+
+
+
   return (
     <Page title="Resources">
       <MainCard
@@ -88,17 +110,23 @@ const Resources = () => {
                   value={resourceType}
                   onChange={(e) => {
                     setResourceType(e.target.value);
+                    setAiResources(organization.aiResources.filter(r=>r.type===e.target.value || e.target.value === 'all'));
                   }}
                 >
                   <MenuItem value="all">全部</MenuItem>
-                  <MenuItem value="openai">OpenAI</MenuItem>
-                  <MenuItem value="azopenai">Azure OpenAI</MenuItem>
-                  <MenuItem value="shopenai">平台OpenAI</MenuItem>
+                  {ResourceTypes.map((v, i) => (
+                <MenuItem key={v.code} value={v.code}>
+                  {v.name}
+                </MenuItem>
+              ))}
                 </Select>
               </Box>
             </Stack>
 
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={handleEditResourceOpen}>
+            <Button variant="outlined" startIcon={<AddIcon />} onClick={()=>{
+              setSelectedResource(null);
+              handleEditResourceOpen();
+            }}>
               添加
             </Button>
           </Box>
@@ -106,7 +134,7 @@ const Resources = () => {
       >
         {organization ? (
           <Stack spacing={2} divider={<Divider flexItem />}>
-            {organization.aiResources.map((resource) => {
+            {aiResources.map((resource) => {
               return (
                 <ResourceCard
                   aiResource={resource}

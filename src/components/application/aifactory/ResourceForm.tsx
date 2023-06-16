@@ -29,11 +29,11 @@ export const ResourceSchema = Yup.object().shape({
     then: (schema) => schema.required('API Key是必须的')
   }),
   builtIn: Yup.boolean(),
-  hostUrl: Yup.string().when('type', {
+  hostUrl: Yup.string().nullable().when('type', {
     is: 'AZ_OPENAI',
     then: (schema) => schema.required('Azure资源必须输入Url')
   }),
-  apiVersion: Yup.string().when('type', {
+  apiVersion: Yup.string().nullable().when('type', {
     is: 'AZ_OPENAI',
     then: (schema) => schema.required('Azure资源必须输入API版本')
   }),
@@ -64,7 +64,6 @@ export const createResource = (organizationId: string, formValues: ResourceValue
 export const updateResource = (id: string, formValues: ResourceValues) => {
   const url = `/api/rest/aIResources/${id}`;
   const data = {
-    organizationId: useConfig().organization,
     ...formValues
   };
   return fetch(url, {

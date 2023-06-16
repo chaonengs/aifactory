@@ -20,42 +20,32 @@ import { ResourceSchema, ResourceValues, createResource, updateResource } from '
 import { AIResource } from '@prisma/client';
 import { useEffect, useState } from 'react';
 
-const AIResourceDialog = (props: DialogProps & { aiResource: AIResource; organizationId: string; onCancel:()=>void }) => {
-  const newResourceValues: ResourceValues = {
-    name: '',
-    type: 'OPENAI',
-    model: '',
-    apiKey: '',
-    hostUrl: null,
-    builtIn: false,
-    quota: null,
-    apiVersion: null
-  };
-
-  const updateResourceValues: ResourceValues = {
-    name: props.aiResource.name,
-    type: props.aiResource.type,
-    model: props.aiResource.model,
-    apiKey: props.aiResource.apiKey,
-    hostUrl: props.aiResource.hostUrl,
-    builtIn: props.aiResource.builtIn,
-    quota: props.aiResource.quota,
-    apiVersion: props.aiResource.apiVersion,
-  };
+const AIResourceDialog = ({aiResource, organizationId, open, onCancel, onClose, ...others} :{ aiResource: AIResource | null; organizationId: string; onCancel:()=>void} & DialogProps) => {
+  
 
   const formik = useFormik({
-    initialValues: props.aiResource?.id ? updateResourceValues: newResourceValues,
+    initialValues: {
+      name: aiResource?.name || '',
+      type: aiResource?.type || 'OPENAI',
+      model: aiResource?.model,
+      apiKey: aiResource?.apiKey ||  '',
+      hostUrl: aiResource?.hostUrl ||  null,
+      builtIn: aiResource?.builtIn ||  false,
+      quota:  aiResource?.quota ||  null,
+      apiVersion:  aiResource?.apiVersion ||  null,
+    },
     validationSchema: ResourceSchema,
-
+    enableReinitialize: true,
+    
     onSubmit: async (values, { setSubmitting }) => {
-      if (props.aiResource) {
-        await toast.promise(updateResource(props.aiResource.id, values), {
+      if (aiResource) {
+        await toast.promise(updateResource(aiResource.id, values), {
           pending: '保存中',
           success: '保存成功 👌',
           error: '保存失败 🤯'
         });
       } else {
-        await toast.promise(createResource(props.organizationId, values), {
+        await toast.promise(createResource(organizationId, values), {
           pending: '保存中',
           success: '保存成功 👌',
           error: '保存失败 🤯'
@@ -65,18 +55,39 @@ const AIResourceDialog = (props: DialogProps & { aiResource: AIResource; organiz
     }
   });
 
+  const handleOnClose =  (event: {}, reason: 'backdropClick' | 'escapeKeyDown') => {
+    // formik.resetForm();
+    if(onClose){
+      onClose(event, reason);
+    }
+  }
+
+
   useEffect(() => {
-    formik.resetForm();
-  }, [props.aiResource]);
+    formik.initialValues = {
+      name: aiResource?.name || '',
+      type: aiResource?.type || 'OPENAI',
+      model: aiResource?.model,
+      apiKey: aiResource?.apiKey ||  '',
+      hostUrl: aiResource?.hostUrl ||  null,
+      builtIn: aiResource?.builtIn ||  false,
+      quota:  aiResource?.quota ||  null,
+      apiVersion:  aiResource?.apiVersion ||  null,
+    },
+    
+    formik.resetForm()
+  },[aiResource]);
+
   return (
     <Dialog
-      open={props.open}
-      onClose={props.onClose}
+      open={open}
+      onClose={handleOnClose}
+    
       aria-labelledby="resource-dialog-title"
       aria-describedby="resource-dialog-description"
       fullWidth
     >
-      <DialogTitle id="resource-dialog-title">{props.aiResource ? '编辑资源' : '新建资源'}</DialogTitle>
+      <DialogTitle id="resource-dialog-title">{aiResource ? '编辑资源' : '新建资源'}</DialogTitle>
       <DialogContent>
         <br></br>
 
@@ -188,7 +199,7 @@ const AIResourceDialog = (props: DialogProps & { aiResource: AIResource; organiz
       </DialogContent>
       <DialogActions>
         <Button onClick={()=>{
-          props.onCancel();
+          onCancel();
         }}>取消</Button>
         <LoadingButton loading={formik.isSubmitting} onClick={formik.submitForm}>
           保存
