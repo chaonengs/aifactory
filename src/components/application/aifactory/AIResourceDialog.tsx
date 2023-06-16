@@ -20,7 +20,7 @@ import { ResourceSchema, ResourceValues, createResource, updateResource } from '
 import { AIResource } from '@prisma/client';
 import { useEffect, useState } from 'react';
 
-const AIResourceDialog = ({aiResource, organizationId, open, onCancel, onClose, ...others} :{ aiResource: AIResource | null; organizationId: string; onCancel:()=>void} & DialogProps) => {
+const AIResourceDialog = ({aiResource, organizationId, open, onCancel, onClose, onDone, ...others} :{ aiResource: AIResource | null; organizationId: string; onCancel:()=>void; onDone:()=>void} & DialogProps) => {
   
 
   const formik = useFormik({
@@ -50,12 +50,13 @@ const AIResourceDialog = ({aiResource, organizationId, open, onCancel, onClose, 
           success: '保存成功 👌',
           error: '保存失败 🤯'
         });
-      }
+      }  
       setSubmitting(false);
+      onDone();
     }
   });
 
-  const handleOnClose =  (event: {}, reason: 'backdropClick' | 'escapeKeyDown') => {
+  const handleOnClose =  (event: {}, reason: 'backdropClick' | 'escapeKeyDown' ) => {
     // formik.resetForm();
     if(onClose){
       onClose(event, reason);

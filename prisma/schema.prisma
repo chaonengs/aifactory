@@ -186,12 +186,12 @@ model App {
   organizationId  String
   name            String?
   appType         String
-  aiResource      AIResource      @relation(fields: [aiResourceId], references: [id])
-  aiResourceId    String
+  aiResource      AIResource?      @relation(fields: [aiResourceId], references: [id])
+  aiResourceId    String?
   messages        Message[]
-  tokenLimitation Int
-  tokenUsed       Int
-  config          Json
+  tokenLimitation Int?
+  tokenUsed       Int             @default(0)
+  config          Json            
   feishuMessages  FeiShuMessage[]
 
   @@index([organizationId])

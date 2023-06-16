@@ -1,4 +1,5 @@
 import useSWR from 'swr'
+import { mutate } from "swr"
 
 const fetcher = (...args) => fetch(...args).then(res => res.json())
 

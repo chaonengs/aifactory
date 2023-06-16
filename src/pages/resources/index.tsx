@@ -36,6 +36,7 @@ import Layout from 'layout';
 import { useSession } from 'next-auth/react';
 import React, { ReactElement } from 'react';
 import { toast } from 'react-toastify';
+import { mutate } from 'swr';
 import MainCard from 'ui-component/cards/MainCard';
 
 const Resources = () => {
@@ -49,7 +50,7 @@ const Resources = () => {
   const [resourceType, setResourceType] = React.useState('all');
   const [selectedResourceId, setSelectedResourceId] = React.useState('');
   const [selectedResource, setSelectedResource] = React.useState(null);
-  const [aiResources, setAiResources]  = React.useState(organization?.aiResources);
+  const [aiResources, setAiResources] = React.useState(organization?.aiResources);
 
   const handleEditResourceOpen = () => {
     setEditOpen(true);
@@ -76,23 +77,23 @@ const Resources = () => {
       success: '已删除 👌',
       error: '删除失败 🤯'
     });
+    handleDeleteClose();
+    mutate(`/api/rest/organizations/${organizationId}?include=apps,aiResources`);
   };
 
-  const getFormikInitial = (aiResource:AIResource | null) => {
+  const getFormikInitial = (aiResource: AIResource | null) => {
     const values: ResourceValues = {
       name: aiResource?.name || '',
       type: aiResource?.type || 'OPENAI',
       model: aiResource?.model,
-      apiKey: aiResource?.apiKey ||  '',
-      hostUrl: aiResource?.hostUrl ||  null,
-      builtIn: aiResource?.builtIn ||  false,
-      quota:  aiResource?.quota ||  null,
-      apiVersion:  aiResource?.apiVersion ||  null,
+      apiKey: aiResource?.apiKey || '',
+      hostUrl: aiResource?.hostUrl || null,
+      builtIn: aiResource?.builtIn || false,
+      quota: aiResource?.quota || null,
+      apiVersion: aiResource?.apiVersion || null
     };
     return values;
-  }
-
-
+  };
 
   return (
     <Page title="Resources">
@@ -110,29 +111,33 @@ const Resources = () => {
                   value={resourceType}
                   onChange={(e) => {
                     setResourceType(e.target.value);
-                    setAiResources(organization.aiResources.filter(r=>r.type===e.target.value || e.target.value === 'all'));
+                    setAiResources(organization.aiResources.filter((r) => r.type === e.target.value || e.target.value === 'all'));
                   }}
                 >
                   <MenuItem value="all">全部</MenuItem>
                   {ResourceTypes.map((v, i) => (
-                <MenuItem key={v.code} value={v.code}>
-                  {v.name}
-                </MenuItem>
-              ))}
+                    <MenuItem key={v.code} value={v.code}>
+                      {v.name}
+                    </MenuItem>
+                  ))}
                 </Select>
               </Box>
             </Stack>
 
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={()=>{
-              setSelectedResource(null);
-              handleEditResourceOpen();
-            }}>
+            <Button
+              variant="outlined"
+              startIcon={<AddIcon />}
+              onClick={() => {
+                setSelectedResource(null);
+                handleEditResourceOpen();
+              }}
+            >
               添加
             </Button>
           </Box>
         }
       >
-        {organization ? (
+        {organization && organization.aiResources ? (
           <Stack spacing={2} divider={<Divider flexItem />}>
             {aiResources.map((resource) => {
               return (
@@ -157,11 +162,15 @@ const Resources = () => {
 
         <AIResourceDialog
           open={editOpen}
+          onDone={() => {
+            setEditOpen(false);
+            mutate(`/api/rest/organizations/${organizationId}?include=apps,aiResources`);
+          }}
           aiResource={selectedResource}
           onCancel={() => {
             setEditOpen(false);
           }}
-          organizationId={useConfig().organization}
+          organizationId={organizationId}
         />
 
         <Dialog

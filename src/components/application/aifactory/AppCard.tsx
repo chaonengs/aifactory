@@ -177,7 +177,7 @@ export default function AppCard({ app }) {
         />
         <CardContent>
           <Typography variant="body2" color="text.secondary">
-            {app.aiResource.name}
+            {app.aiResource?.name || app.aiResource?.type ||  "资源待配置"}
           </Typography>
         </CardContent>
         <CardMedia

@@ -55,7 +55,7 @@ const ResourceCard = ({
     <Stack spacing={2} useFlexGap flexWrap="wrap">
       <Stack direction={'row'} spacing={2} alignItems={'center'}>
         <Typography variant="h3" component="h3">
-          {aiResource.name}
+          {aiResource.name || ''}
         </Typography>
         <Typography flexGrow={1}>{AIResourceTypes[aiResource.type]}</Typography>
         {aiResource.builtIn ? (
