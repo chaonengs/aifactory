@@ -193,6 +193,7 @@ model App {
   tokenUsed       Int             @default(0)
   config          Json            
   feishuMessages  FeiShuMessage[]
+  builtIn         Boolean         @default(false)
 
   @@index([organizationId])
   @@index([aiResourceId])

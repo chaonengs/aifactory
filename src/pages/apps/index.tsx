@@ -60,6 +60,7 @@ const MyApps = () => {
       appType,
       tokenLimitation: null,
       tokenUsed: 0,
+      builtIn: false,
       // aiResource: null,
       // organization: organizationId,
       // organization:{

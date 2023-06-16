@@ -1,6 +1,7 @@
 import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import { TabContext, TabList, TabPanel,LoadingButton } from '@mui/lab';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { TabContext, TabList, TabPanel, LoadingButton } from '@mui/lab';
 import { Box, Chip, MenuItem, Stack, Tab } from '@mui/material';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -25,6 +26,7 @@ import { useFormik } from 'formik';
 import useConfig from 'hooks/useConfig';
 import * as React from 'react';
 import { toast } from 'react-toastify';
+import { mutate } from 'swr';
 
 interface ExpandMoreProps extends IconButtonProps {
   expand: boolean;
@@ -53,14 +55,30 @@ export type AppConfig = {
   };
 };
 
+export const deleteApp = (id: string) => {
+  const url = `/api/rest/apps/${id}`;
+  return fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).then((response) => {
+    if (!response.ok) {
+      return Promise.reject(response);
+    }
+    return response;
+  });
+};
+
 export default function AppCard({ app }) {
   const [expanded, setExpanded] = React.useState(false);
   const [configOpen, setConfigOpen] = React.useState(false);
   const [feishuOpen, setFeishuOpen] = React.useState(false);
-
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
   const [configForm, setConfigForm] = React.useState(app.config);
   const [configTab, setConfigTab] = React.useState('feishu');
-  const {organization} = useOrganization(useConfig().organization);
+  const { organization } = useOrganization(useConfig().organization);
   const host = process.env.NEXTAUTH_URL;
   const handleFeishuOpen = () => {
     setFeishuOpen(true);
@@ -76,6 +94,26 @@ export default function AppCard({ app }) {
 
   const handleFeishuClose = () => {
     setFeishuOpen(false);
+  };
+
+  const handleDeleteOpen = () => {
+    setDeleteOpen(true);
+  };
+
+  const handleDeleteClose = () => {
+    setDeleteOpen(false);
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    await toast.promise(deleteApp(app.id), {
+      pending: '删除中',
+      success: '已删除 👌',
+      error: '删除失败 🤯'
+    });
+    handleDeleteClose();
+    await mutate(`/api/rest/apps?where={"organizationId":{"$eq":"${organization.id}"}}&include=aiResource`)
+    setIsDeleting(false);
   };
 
   // const handleFormOnChange = (event: { target: { id: string; value: string } }) => {
@@ -98,7 +136,7 @@ export default function AppCard({ app }) {
     setConfigTab(newValue);
   };
 
-  const updateConfig = async (id:string, app:App)=> {
+  const updateConfig = async (id: string, app: App) => {
     const response = await fetch(`/api/rest/apps/${id}`, {
       headers: {
         'Content-type': 'application/json; charset=UTF-8'
@@ -110,41 +148,36 @@ export default function AppCard({ app }) {
       return Promise.reject(response);
     }
     return response;
-
   };
 
-  const appConfigInitial = (app:App): App & {config:AppConfig} => { return {
-    // ...app,
-    config: {
-      appId: (app.config as AppConfig).appId || '',
-      appSecret: (app.config as AppConfig).appSecret || '',
-      encryptKey:  (app.config as AppConfig).encryptKey || '',
-      verificationToken: (app.config as AppConfig).verificationToken || '',
-      ai:{
-        temperature: (app.config as AppConfig).ai?.temperature || 1,
-        maxCompletionTokens: (app.config as AppConfig).ai?.maxCompletionTokens || 2000,
-        maxPromptTokens: (app.config as AppConfig).ai?.maxPromptTokens || 2000,
+  const appConfigInitial = (app: App): App & { config: AppConfig } => {
+    return {
+      // ...app,
+      config: {
+        appId: (app.config as AppConfig).appId || '',
+        appSecret: (app.config as AppConfig).appSecret || '',
+        encryptKey: (app.config as AppConfig).encryptKey || '',
+        verificationToken: (app.config as AppConfig).verificationToken || '',
+        ai: {
+          temperature: (app.config as AppConfig).ai?.temperature || 1,
+          maxCompletionTokens: (app.config as AppConfig).ai?.maxCompletionTokens || 2000,
+          maxPromptTokens: (app.config as AppConfig).ai?.maxPromptTokens || 2000
+        }
       },
-    },
-    aiResourceId: app.aiResourceId
-    }
-  }
+      aiResourceId: app.aiResourceId
+    };
+  };
 
-  
   const formik = useFormik({
     initialValues: appConfigInitial(app),
     // validationSchema: ResourceSchema,
 
-    onSubmit: async (values, {setSubmitting}) => {
-
-      await toast.promise(
-        updateConfig(app.id,values),
-        {
-          pending: '保存中',
-          success: '保存成功 👌',
-          error: '保存失败 🤯'
-        }
-      )
+    onSubmit: async (values, { setSubmitting }) => {
+      await toast.promise(updateConfig(app.id, values), {
+        pending: '保存中',
+        success: '保存成功 👌',
+        error: '保存失败 🤯'
+      });
       setSubmitting(false);
       // try{
       //   const result = await updateConfig(app.id,values);
@@ -156,28 +189,32 @@ export default function AppCard({ app }) {
       //     toast('保存失败')
       //   }
       // } catch (e){
-        
+
       // } finally {
-       
+
       // }
     }
   });
 
   return (
     <>
-      <Card sx={{ maxWidth: 1000 }}  variant="outlined">
+      <Card sx={{ maxWidth: 1000 }} variant="outlined">
         <CardHeader
           action={
-            <Chip label="平台内置" color="primary" />
-
-            
+            app.builtIn ? (
+              <Chip label="平台内置" color="primary" />
+            ) : (
+              <IconButton aria-label="delete" onClick={() => handleDeleteOpen()}>
+                <DeleteIcon />
+              </IconButton>
+            )
           }
           title={app.name || app.appType}
           subheader={AppTypes[app.appType]}
         />
         <CardContent>
           <Typography variant="body2" color="text.secondary">
-            {app.aiResource?.name || app.aiResource?.type ||  "资源待配置"}
+            {app.aiResource?.name || app.aiResource?.type || '资源待配置'}
           </Typography>
         </CardContent>
         <CardMedia
@@ -282,7 +319,7 @@ export default function AppCard({ app }) {
                 />
                 <TextField
                   margin="dense"
-                  variant="standard"                  
+                  variant="standard"
                   id="verificationToken"
                   label="VerificationToken"
                   fullWidth
@@ -295,16 +332,16 @@ export default function AppCard({ app }) {
             </TabPanel>
             <TabPanel value="ai">
               <Stack>
-              <TextField
+                <TextField
                   fullWidth
                   margin="dense"
-                  variant="standard"      
+                  variant="standard"
                   type="number"
                   inputProps={{
-                    type:"number",
-                     min:0.1,
-                     step:0.1,
-                     max:1
+                    type: 'number',
+                    min: 0.1,
+                    step: 0.1,
+                    max: 1
                   }}
                   id="config.ai.temperature"
                   name="config.ai.temperature"
@@ -317,13 +354,13 @@ export default function AppCard({ app }) {
                 <TextField
                   fullWidth
                   margin="dense"
-                  variant="standard"      
+                  variant="standard"
                   type="number"
                   inputProps={{
-                    type:"number",
-                     min:1,
-                     step:1,
-                     max:4095
+                    type: 'number',
+                    min: 1,
+                    step: 1,
+                    max: 4095
                   }}
                   id="config.ai.maxPromptTokens"
                   name="config.ai.maxPromptTokens"
@@ -336,13 +373,13 @@ export default function AppCard({ app }) {
                 <TextField
                   fullWidth
                   margin="dense"
-                  variant="standard"      
+                  variant="standard"
                   type="number"
                   inputProps={{
-                    type:"number",
-                     min:1,
-                     step:1,
-                     max:4095
+                    type: 'number',
+                    min: 1,
+                    step: 1,
+                    max: 4095
                   }}
                   id="config.ai.maxCompletionTokens"
                   name="config.ai.maxCompletionTokens"
@@ -356,10 +393,10 @@ export default function AppCard({ app }) {
             </TabPanel>
             <TabPanel value="resource">
               <Stack>
-              <TextField
+                <TextField
                   fullWidth
                   margin="dense"
-                  variant="standard"      
+                  variant="standard"
                   select
                   id="aiResourceId"
                   name="aiResourceId"
@@ -369,19 +406,22 @@ export default function AppCard({ app }) {
                   error={formik.touched.aiResourceId && Boolean(formik.errors.aiResourceId)}
                   helperText={formik.touched.aiResourceId && formik.errors.aiResourceId}
                 >
-                                    {organization && organization.aiResources.map((v, i) => (
-                    <MenuItem key={v.id} value={v.id}>
-                      {v.name}
-                    </MenuItem>
-                  ))}
-                  </TextField>
+                  {organization &&
+                    organization.aiResources.map((v, i) => (
+                      <MenuItem key={v.id} value={v.id}>
+                        {v.name}
+                      </MenuItem>
+                    ))}
+                </TextField>
               </Stack>
             </TabPanel>
           </TabContext>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleConfigClose}>取消</Button>
-          <LoadingButton loading={formik.isSubmitting} onClick={formik.submitForm}>保存</LoadingButton>
+          <LoadingButton loading={formik.isSubmitting} onClick={formik.submitForm}>
+            保存
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 
@@ -401,6 +441,24 @@ export default function AppCard({ app }) {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleFeishuClose}>关闭</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={deleteOpen}
+        onClose={handleDeleteClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">删除应用</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">确认要删除该应用吗？无法恢复</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button disabled={isDeleting} onClick={handleDeleteClose}>取消</Button>
+          <LoadingButton loading={isDeleting} onClick={handleDelete}>
+            删除
+          </LoadingButton>
         </DialogActions>
       </Dialog>
     </>

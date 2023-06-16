@@ -186,7 +186,7 @@ const Resources = () => {
             <DialogContentText id="alert-dialog-description">确认要删除该资源吗？无法恢复</DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleDeleteClose}>取消</Button>
+            <Button disabled={isDeleting} onClick={handleDeleteClose}>取消</Button>
             <LoadingButton loading={isDeleting} onClick={handleDelete}>删除</LoadingButton>
           </DialogActions>
         </Dialog>
