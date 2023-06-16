@@ -31,8 +31,8 @@ const eventDispatcher = (app: App & { aiResource: AIResource }) => {
     domain: config['domain'] as string
   });
   return new lark.EventDispatcher({
-    encryptKey: config['appEncryptKey'] as string,
-    verificationToken: config['appVerificationToken'] as string
+    encryptKey: config['appEncryptKey'] || config['encryptKey']
+    verificationToken: config['appVerificationToken'] || config['verificationToken']
   }).register({
     'im.message.receive_v1': async (data) => {
       if (app.aiResource.tokenRemains <= 0) {
@@ -145,7 +145,7 @@ const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {
       domain: config['domain'] as string
     });
 
-    const r = lark.generateChallenge(req.body, { encryptKey: config['appEncryptKey'] as string });
+    const r = lark.generateChallenge(req.body, { encryptKey: config['appEncryptKey'] || config['encryptKey'] });
     if (r.isChallenge) {
       res.end(JSON.stringify(r.challenge));
     } else {
