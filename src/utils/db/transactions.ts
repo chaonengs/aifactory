@@ -10,20 +10,8 @@ const saveMessage = async (message: Message, app: App, aiResource: AIResource, u
       sensitiveWords: true
     }
   });
-  const matched = organization.sensitiveWords.filter((v,i,a)=>{
-    return message.content.includes(v.value);
-  });
+
   let transList = [];
-  matched.forEach((v,i,a)=>{
-    const t = prisma.sensitiveWordInMessage.create({
-      data: {
-        messageId: message.id,
-        sensitiveWordId: v.id,
-        plainText: v.value,
-      }
-    });
-    transList.push(t);
-  })
 
   transList.push(
     prisma.message.create({
@@ -48,7 +36,6 @@ const saveMessage = async (message: Message, app: App, aiResource: AIResource, u
     })
   );
 
-
   transList.push(
     prisma.aIResource.update({
       where: { id: aiResource.id },
@@ -66,7 +53,26 @@ const saveMessage = async (message: Message, app: App, aiResource: AIResource, u
     }
   }));
 
+  const [savedMessage,r,a] = await prisma.$transaction(transList);
+
+  const matched = organization.sensitiveWords.filter((v,i,a)=>{
+    return savedMessage.content.includes(v.value);
+  });
+
+  transList = [];
+  matched.forEach((v,i,a)=>{
+    const t = prisma.sensitiveWordInMessage.create({
+      data: {
+        messageId: savedMessage.id,
+        sensitiveWordId: v.id,
+        plainText: v.value,
+      }
+    });
+    transList.push(t);
+  })
+
   await prisma.$transaction(transList);
+
 };
 
 const finishFeishuProcess = async (feishuMessageId: string) => {
