@@ -65,7 +65,7 @@ export default function FullFeaturedCrudGrid() {
 
   };
 
-  const processRowUpdate = (newRow: GridRowModel) => {\
+  const processRowUpdate = (newRow: GridRowModel) => {
     const updatedRow = { ...newRow, isNew: false };
     return updatedRow;
 
