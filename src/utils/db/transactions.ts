@@ -1,15 +1,40 @@
+import { messageCard } from '@larksuiteoapi/node-sdk';
 import { AIResource, App, PrismaClient, Message, Usage } from '@prisma/client';
 import { ProcessMessageBody } from 'types/queue';
 
 const prisma = new PrismaClient();
 
-const saveMessage = async (message: Message, app: App, aiResource: AIResource, usage: Usage) => {
+const logSensitiveWord = async (message:Message, organizationId:string) => {
   const organization = await prisma.organization.findFirstOrThrow({
-    where: { id: app.organizationId },
+    where: { id: organizationId },
     include: {
       sensitiveWords: true
     }
   });
+
+  const matched = organization.sensitiveWords.filter((v,i,a)=>{
+    return message.content.includes(v.value);
+  });
+
+  let transList = [];
+  matched.forEach((v,i,a)=>{
+    const t = prisma.sensitiveWordInMessage.create({
+      data: {
+        messageId: message.id,
+        sensitiveWordId: v.id,
+        plainText: v.value,
+      }
+    });
+    transList.push(t);
+  })
+
+  if(transList.length > 0){
+    await prisma.$transaction(transList);
+  }
+}
+
+const saveMessage = async (message: Message, app: App, aiResource: AIResource, usage: Usage) => {
+
 
   let transList = [];
 
@@ -53,25 +78,7 @@ const saveMessage = async (message: Message, app: App, aiResource: AIResource, u
     }
   }));
 
-  const [savedMessage,r,a] = await prisma.$transaction(transList);
-
-  const matched = organization.sensitiveWords.filter((v,i,a)=>{
-    return savedMessage.content.includes(v.value);
-  });
-
-  transList = [];
-  matched.forEach((v,i,a)=>{
-    const t = prisma.sensitiveWordInMessage.create({
-      data: {
-        messageId: savedMessage.id,
-        sensitiveWordId: v.id,
-        plainText: v.value,
-      }
-    });
-    transList.push(t);
-  })
-
-  await prisma.$transaction(transList);
+  return await prisma.$transaction(transList);
 
 };
 
@@ -83,4 +90,4 @@ const finishFeishuProcess = async (feishuMessageId: string) => {
     }
   });
 };
-export { saveMessage, finishFeishuProcess };
+export { logSensitiveWord, saveMessage, finishFeishuProcess };

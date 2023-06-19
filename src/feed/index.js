@@ -94,7 +94,7 @@ export function useAIResource(id) {
 }
 
 export function usePagedMessages(organizationId, page=1, size=10) {
-  const url = `/api/rest/messages?where={"organizationId":{"$eq":"${organizationId}"}}&include=usage,app&orderBy={"createdAt":"$desc"}&page=${page}&limit=${size}`
+  const url = `/api/rest/messages?where={"organizationId":{"$eq":"${organizationId}"}}&include=usage,sensitiveWords,app&orderBy={"createdAt":"$desc"}&page=${page}&limit=${size}`
   const { data, error, isLoading } = useSWR(url, fetcher)
  
   return {

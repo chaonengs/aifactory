@@ -1,6 +1,6 @@
 import { AIResource, App, Message, Usage } from "@prisma/client";
 import { NextApiRequest, NextApiResponse } from "next";
-import {  finishFeishuProcess, saveMessage } from "utils/db/transactions";
+import {  finishFeishuProcess, logSensitiveWord, saveMessage } from "utils/db/transactions";
 
 export type ProcessMessageBody = {
     app: App;
@@ -19,7 +19,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const saveQuest = JSON.parse(req.body) as MessageDBSaveRequest;
     await finishFeishuProcess(saveQuest.feishuMessageId );
     if(saveQuest.data){
-        await saveMessage(saveQuest.data.message, saveQuest.data.app, saveQuest.data.aiResource, saveQuest.data.usage);
+        const [m, r, a] = await saveMessage(saveQuest.data.message, saveQuest.data.app, saveQuest.data.aiResource, saveQuest.data.usage);
+        await logSensitiveWord(m as Message, (a as App).organizationId);
     }
     await finishFeishuProcess(saveQuest.feishuMessageId );
 }
