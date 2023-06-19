@@ -39,7 +39,7 @@ const columns: GridColDef[] = [
   {
     field: 'sensitive',
     headerName: '敏感词',
-    valueGetter: (params) => ` ${params.row.sensitiveWords ? params.row.sensitiveWords.map((s) => s.value).toString() : '无'} `,
+    valueGetter: (params) => ` ${params.row.SensitiveWordInMessage ? params.row.SensitiveWordInMessage.map((s) => s.plainText).toString() : '无'} `,
     sortable: false,
     flex: 1
   },
