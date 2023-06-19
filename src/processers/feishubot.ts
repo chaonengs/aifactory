@@ -154,7 +154,7 @@ const processMessage = async ({ feishuMessage, history, app }: MessageQueueBody)
   // const senderType = feiShuMessageData.sender.sender_type;
   const messages = new Array();
   let promptTokens = 0;
-  const maxPromptTokens = appConfig.ai.maxPromptTokens || 2000;
+  const maxPromptTokens = appConfig.ai?.maxPromptTokens || 2000;
   for (let i = 0; i < history.length; i++) {
     const answerMessage = {
       role: 'assistant',
