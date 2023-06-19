@@ -26,7 +26,7 @@ export type OpenAIRequest = {
   hostUrl: string | undefined | null;
   apiType: string | undefined | null;
   apiVersion: string | undefined | null;
-  model: OpenAIModel | undefined | null;
+  model: string | undefined | null;
   systemPrompt: string | undefined | null;
   temperature: number | undefined | null;
   key: string;
@@ -100,7 +100,6 @@ export const OpenAIChatComletion = (request : OpenAIRequest) => {
     throw new Error('OpenAI Url not set');
   }
 
-  let model = OpenAIModels[OpenAIModelID.GPT_3_5];
   const temperature = request.temperature === null ? (
     process.env.DEFUALT_TEMPERATURE === null || process.env.DEFUALT_TEMPERATURE === '' ? 1.0 :
     Number.parseFloat(process.env.DEFUALT_TEMPERATURE as string)) : request.temperature;
@@ -109,6 +108,24 @@ export const OpenAIChatComletion = (request : OpenAIRequest) => {
   if(stream === null || stream === undefined){
     stream = true;
   }
+  
+
+  const requestBody = {
+    ...(apiType === 'OPENAI' && { model: request.model || 'gpt-3.5-turbo'}),
+    ...(request.maxTokens && {max_tokens: request.maxTokens}),
+    messages: [
+      // {
+      //   role: 'system',
+      //   content: systemPrompt
+      // },
+      ...request.messages
+    ],
+    // max_tokens: 1024,
+    temperature: temperature,
+    stream: stream,
+  };
+
+  console.log(requestBody)
   
   return fetch(url, {
     headers: {
@@ -122,26 +139,13 @@ export const OpenAIChatComletion = (request : OpenAIRequest) => {
       ...(apiType === 'SELF_HOST_OPENAI' && {
         Authorization: `Bearer ${request.key ? request.key : process.env.DEFAULT_OPENAI_API_KEY}`
       }),
-      ...(apiType === 'openai' &&
+      ...(apiType === 'OPENAI' &&
         OPENAI_ORGANIZATION && {
           'OpenAI-Organization': OPENAI_ORGANIZATION
         })
     },
     method: 'POST',
-    body: JSON.stringify({
-      ...(apiType === 'openai' && { model: model.id }),
-      ...(request.maxTokens && {max_tokens: request.maxTokens}),
-      messages: [
-        // {
-        //   role: 'system',
-        //   content: systemPrompt
-        // },
-        ...request.messages
-      ],
-      // max_tokens: 1024,
-      temperature: temperature,
-      stream: stream,
-    })
+    body: JSON.stringify(requestBody)
   });
 };
 
