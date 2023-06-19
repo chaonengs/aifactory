@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `AIResource` ADD COLUMN `builtIn` BOOLEAN NOT NULL DEFAULT true,
+    ADD COLUMN `quota` INTEGER NULL;

@@ -22,6 +22,6 @@
       "ui-component/*": ["components/ui-component/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "src/pages/resources", "graphql.server.js", "src/feed/index.js"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "src/pages/resources", "graphql.server.js", "src/feed/index.js", "src/pages/api/queues/messages.js"],
   "exclude": ["node_modules"]
 }

@@ -1,16 +1,12 @@
 import { Queue } from 'utils/quirrel/edge';
-import { processFeishuMessage } from '../process/[...messageId]';
+import { MessageQueueBody, processMessage } from 'processers/feishubot';
 
-export interface MessageQueueBody {
-  feishuMessage;
-  history;
-  app;
-}
 
 export default Queue(
   'api/queues/messages', // 👈 the route it's reachable on
+  //@ts-ignore
   async (messageQueueBody: MessageQueueBody) => {
-    return await processFeishuMessage(messageQueueBody);
+    return await processMessage(messageQueueBody);
   }
 );
 

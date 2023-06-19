@@ -4,7 +4,28 @@ import { ProcessMessageBody } from 'types/queue';
 const prisma = new PrismaClient();
 
 const saveMessage = async (message: Message, app: App, aiResource: AIResource, usage: Usage) => {
-  await prisma.$transaction([
+  const organization = await prisma.organization.findFirstOrThrow({
+    where: { id: app.organizationId },
+    include: {
+      sensitiveWords: true
+    }
+  });
+  const matched = organization.sensitiveWords.filter((v,i,a)=>{
+    return message.content.includes(v.value);
+  });
+  let transList = [];
+  matched.forEach((v,i,a)=>{
+    const t = prisma.sensitiveWordInMessage.create({
+      data: {
+        messageId: message.id,
+        sensitiveWordId: v.id,
+        plainText: v.value,
+      }
+    });
+    transList.push(t);
+  })
+
+  transList.push(
     prisma.message.create({
       data: {
         senderUnionId: message.senderUnionId,
@@ -24,32 +45,36 @@ const saveMessage = async (message: Message, app: App, aiResource: AIResource, u
         },
         organizationId: app.organizationId
       }
-    }),
+    })
+  );
+
+
+  transList.push(
     prisma.aIResource.update({
       where: { id: aiResource.id },
       data: {
         tokenRemains: aiResource.tokenRemains - usage.promptTokens - usage.completionTokens,
         tokenUsed: aiResource.tokenUsed + usage.promptTokens + usage.completionTokens
       }
-    }),
-    prisma.app.update({
-      where: { id: app.id },
-      data: {
-        tokenUsed: app.tokenUsed + usage.promptTokens + usage.completionTokens
-      }
     })
-  ]);
+  );
+
+  transList.push(prisma.app.update({
+    where: { id: app.id },
+    data: {
+      tokenUsed: app.tokenUsed + usage.promptTokens + usage.completionTokens
+    }
+  }));
+
+  await prisma.$transaction(transList);
 };
 
-
-
-
-const finishFeishuProcess = async (feishuMessageId:string) => {
-   prisma.feiShuMessage.update({
+const finishFeishuProcess = async (feishuMessageId: string) => {
+  prisma.feiShuMessage.update({
     where: { id: feishuMessageId },
     data: {
       processing: false
     }
   });
-}
+};
 export { saveMessage, finishFeishuProcess };

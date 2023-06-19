@@ -15,10 +15,10 @@ import { useTheme } from '@mui/material/styles';
 
 const Logo = () => {
   const theme = useTheme();
-  const logo  = '/assets/images/logos/aifactory.svg'
-  const logoDark = '/assets/images/logos/aifactory-white.svg';
+  const logo  = '/assets/images/logos/naodong.svg'
+  const logoDark = '/assets/images/logos/naodong.svg';
   return (
-    <img src={theme.palette.mode === 'dark' ? logoDark : logo} alt="aifactory"  />
+    <img src={theme.palette.mode === 'dark' ? logoDark : logo} alt="naodong"  />
     /**
      * if you want to use image instead of svg uncomment following, and comment out <svg> element.
      *

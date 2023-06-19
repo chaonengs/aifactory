@@ -1,6 +1,6 @@
 // material-ui
 import { useTheme } from '@mui/material/styles';
-import { Avatar, Box } from '@mui/material';
+import { Avatar, Box, FormControl, InputLabel, MenuItem, Select } from '@mui/material';
 
 // project imports
 import LogoSection from '../LogoSection';
@@ -14,6 +14,7 @@ import { openDrawer } from 'store/slices/menu';
 
 // assets
 import { IconMenu2 } from '@tabler/icons-react';
+import OrganizationSection from './OrganizationSection';
 
 // ==============================|| MAIN NAVBAR / HEADER ||============================== //
 
@@ -60,7 +61,7 @@ const Header = () => {
       </Box>
 
       {/* header search */}
-      {/* <SearchSection /> */}
+      <OrganizationSection />
       <Box sx={{ flexGrow: 1 }} />
       <Box sx={{ flexGrow: 1 }} />
 
