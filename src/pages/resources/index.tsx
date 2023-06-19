@@ -30,7 +30,7 @@ import {
 } from 'components/application/aifactory/ResourceForm';
 import Page from 'components/ui-component/Page';
 import LAYOUT, { ResourceTypes } from 'constant';
-import { useOrganization } from 'feed';
+import { useAIResources, useOrganization } from 'feed';
 import { useFormik } from 'formik';
 import useConfig from 'hooks/useConfig';
 import Layout from 'layout';
@@ -44,7 +44,7 @@ const Resources = () => {
   const theme = useTheme();
   const { data: session } = useSession();
   const organizationId = useConfig().organization;
-  const { organization } = useOrganization(organizationId);
+  const {url, aiResources } = useAIResources(organizationId);
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -78,7 +78,7 @@ const Resources = () => {
       error: '删除失败 🤯'
     });
     handleDeleteClose();
-    await mutate(`/api/rest/organizations/${organizationId}?include=apps,aiResources`);
+    await mutate(url);
     setIsDeleting(false);
 
   };
@@ -113,7 +113,6 @@ const Resources = () => {
                   value={resourceType}
                   onChange={(e) => {
                     setResourceType(e.target.value);
-                    setAiResources(organization.aiResources.filter((r) => r.type === e.target.value || e.target.value === 'all'));
                   }}
                 >
                   <MenuItem value="all">全部</MenuItem>
@@ -139,9 +138,9 @@ const Resources = () => {
           </Box>
         }
       >
-        {organization && organization.aiResources ? (
+        {aiResources ? (
           <Stack spacing={2} divider={<Divider flexItem />}>
-            {organization.aiResources.filter((r) => r.type === resourceType || resourceType === 'all').map((resource) => {
+            {aiResources.filter((r) => r.type === resourceType || resourceType === 'all').map((resource) => {
               return (
                 <ResourceCard
                   aiResource={resource}
@@ -166,7 +165,7 @@ const Resources = () => {
           open={editOpen}
           onDone={async () => {
             setEditOpen(false);
-            await mutate(`/api/rest/organizations/${organizationId}?include=apps,aiResources`);
+            await mutate(url);
           }}
           aiResource={selectedResource}
           onCancel={() => {

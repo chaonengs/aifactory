@@ -4,9 +4,11 @@ import { mutate } from "swr"
 const fetcher = (...args) => fetch(...args).then(res => res.json())
 
 export function useOrganization (id) {
-  const { data, error, isLoading } = useSWR(`/api/rest/organizations/${id}?include=apps,aiResources`, fetcher)
+  const url = `/api/rest/organizations/${id}?include=apps,aiResources`;
+  const { data, error, isLoading } = useSWR(url, fetcher)
  
   return {
+    url,
     organization: data,
     isLoading,
     isError: error
@@ -35,9 +37,11 @@ export function useApp(id) {
 }
 
 export function useApps(organizationId) {
-  const { data, error, isLoading } = useSWR(`/api/rest/apps?where={"organizationId":{"$eq":"${organizationId}"}}&include=aiResource`, fetcher)
+  const url = `/api/rest/apps?where={"organizationId":{"$eq":"${organizationId}"}}&include=aiResource`;
+  const { data, error, isLoading } = useSWR(url, fetcher)
  
   return {
+    url,
     apps: data,
     isLoading,
     isError: error
@@ -61,6 +65,18 @@ export function usePagedSensitiveWords(organizationId, page, size) {
   return {
     url: url,
     page: data,
+    isLoading,
+    isError: error
+  }
+}
+
+export function useAIResources(organizationId){
+  const url = `/api/rest/aIResources?where={"organizationId":{"$eq":"${organizationId}"}}&include=apps`;
+  const { data, error, isLoading } = useSWR(url, fetcher)
+ 
+  return {
+    url,
+    aiResources: data,
     isLoading,
     isError: error
   }

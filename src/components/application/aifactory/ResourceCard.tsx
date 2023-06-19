@@ -104,7 +104,7 @@ const ResourceCard = ({
           </Stack>
           <Stack flexGrow={1}>
             <Typography variant="subtitle1">使用应用</Typography>
-            <Typography variant="h3">开发中</Typography>
+            <Typography variant="h3">{aiResource.apps.length}</Typography>
           </Stack>
         </Stack>
       )}
@@ -128,7 +128,7 @@ const ResourceCard = ({
           </Stack>
           <Stack flexGrow={1}>
             <Typography variant="subtitle1">使用应用</Typography>
-            <Typography variant="h3">开发中</Typography>
+            <Typography variant="h3">{aiResource.apps.length}</Typography>
           </Stack>
         </Stack>
       )}

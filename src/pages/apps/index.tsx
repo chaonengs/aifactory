@@ -32,7 +32,7 @@ const MyApps = () => {
 
   // const {organization} = useOrganization(session?.user.id);
   const {organization} = useConfig();
-  const {apps} = useApps(organization);
+  const {url, apps} = useApps(organization);
   const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
     setTabValue(newValue);
   };
@@ -91,13 +91,13 @@ const MyApps = () => {
       error: '创建失败 🤯'
     });
     handleCreateClose();
-    await mutate(`/api/rest/apps?where={"organizationId":{"$eq":"${organization}"}}&include=aiResource`)
+    await mutate(url)
   }
 
 
 
   return (
-    <Page title="My Apps">
+    <Page title="我的应用">
       <MainCard
         title={
           <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>

@@ -9,7 +9,7 @@ async function sendVerificationRequest(params: { identifier: string; url: string
   const result = await transport.sendMail({
     to: identifier,
     from: provider.from,
-    subject: `AI Factory 登录认证`,
+    subject: `Naodong AI 登录认证`,
     text: text({ url, host }),
     html: html({ url, host, theme }),
   })
@@ -49,7 +49,7 @@ function html(params: { url: string; host: string; theme: Theme }) {
     <tr>
       <td align="center"
         style="padding: 10px 0px; font-size: 22px; font-family: Helvetica, Arial, sans-serif; color: ${color.text};">
-        登录到AI Factory<strong><!--${escapedHost}--></strong>
+        登录到Naodong AI<strong><!--${escapedHost}--></strong>
       </td>
     </tr>
     <tr>
@@ -66,7 +66,7 @@ function html(params: { url: string; host: string; theme: Theme }) {
     <tr>
       <td align="center"
         style="padding: 0px 0px 10px 0px; font-size: 16px; line-height: 22px; font-family: Helvetica, Arial, sans-serif; color: ${color.text};">
-        如果你没有请求登录到AI Factory， 请忽略此邮件
+        如果你没有请求登录到Naodong AI， 请忽略此邮件
       </td>
     </tr>
   </table>

@@ -226,13 +226,13 @@ model SensitiveWord {
 }
 
 model SensitiveWordInMessage {
-  message         Message       @relation(fields: [messgeId], references: [id])
-  messgeId        String
+  message         Message       @relation(fields: [messageId], references: [id])
+  messageId        String
   sensitiveWord   SensitiveWord @relation(fields: [sensitiveWordId], references: [id])
   sensitiveWordId Int
   plainText       String
 
-  @@id([messgeId, sensitiveWordId])
-  @@index([messgeId])
+  @@id([messageId, sensitiveWordId])
+  @@index([messageId])
   @@index([sensitiveWordId])
 }

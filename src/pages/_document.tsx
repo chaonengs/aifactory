@@ -5,10 +5,10 @@ export default function Document() {
     <Html>
       <Head>
         <meta name="theme-color" content="#2296f3" />
-        <meta name="title" content="AI Factory" />
+        <meta name="title" content="Naodong AI" />
         <meta
           name="description"
-          content="AI Factory by Chilunyc"
+          content="Naodong AI by Chilunyc"
         />
         <meta
           name="keywords"
@@ -16,10 +16,10 @@ export default function Document() {
         />
         <meta property="og:locale" content="zh_CN" />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://aifactory.chilunyc.com/" />
-        <meta property="og:site_name" content="AI Factory" />
+        <meta property="og:url" content="https://naodong.chilunyc.com/" />
+        <meta property="og:site_name" content="Naodong AI" />
         <meta property="article:publisher" content="Chaoneng" />
-        <meta property="og:title" content="AI Factory by Chilunyc" />
+        <meta property="og:title" content="Naodong AI by Chilunyc" />
 
         <link rel="icon" href="/favicon.ico" />
         <link rel="preconnect" href="https://fonts.gstatic.com" />

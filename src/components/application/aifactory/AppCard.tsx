@@ -69,7 +69,7 @@ export default function AppCard({ app }) {
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [configForm, setConfigForm] = React.useState(app.config);
   const [configTab, setConfigTab] = React.useState('feishu');
-  const { organization } = useOrganization(useConfig().organization);
+  const { url, organization } = useOrganization(useConfig().organization);
   const host = process.env.NEXTAUTH_URL;
   const handleFeishuOpen = () => {
     setFeishuOpen(true);
@@ -103,7 +103,7 @@ export default function AppCard({ app }) {
       error: '删除失败 🤯'
     });
     handleDeleteClose();
-    await mutate(`/api/rest/apps?where={"organizationId":{"$eq":"${organization.id}"}}&include=aiResource`)
+    await mutate(url)
     setIsDeleting(false);
   };
 
