@@ -118,7 +118,7 @@ const MyApps = () => {
         <Grid container spacing={2} >
           {
             apps ? apps.map((app)=>{
-                return <Grid xs={3}><AppCard app={app} key={app.id}/>  </Grid>
+                return <Grid xs={3} key={app.id}><AppCard app={app} />  </Grid>
               })
             :
             (
