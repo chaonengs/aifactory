@@ -133,7 +133,6 @@ model Message {
   organizationId         String?
   conversationId         String?
   feishuMessageId        String?
-  sensitiveWords         String?
   SensitiveWordInMessage SensitiveWordInMessage[]
 
   @@index([feishuMessageId])
