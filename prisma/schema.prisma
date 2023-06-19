@@ -135,6 +135,7 @@ model Message {
   organizationId  String?
   conversationId  String?
   feishuMessageId String?
+  sensitiveWords String?
 
   @@index([feishuMessageId])
   @@index([conversationId])
@@ -210,4 +211,8 @@ model FeiShuMessage {
   appId      String
 
   @@index([appId])
+}
+
+model SensitiveWord {
+  id String @id
 }

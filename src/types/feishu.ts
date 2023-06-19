@@ -49,6 +49,20 @@ export interface ReceiveMessageEvent extends Event {
   };
 }
 
+export interface ReceiveMessageData {
+  event_id?: string;
+    token?: string;
+    create_time?: string;
+    event_type?: string;
+    tenant_key?: string;
+    ts?: string;
+    uuid?: string;
+    type?: string;
+    app_id?: string;
+    sender: Sender;
+    message: Message;
+}
+
 export interface User {
   union_id?: string | undefined;
   user_id?: string | undefined;

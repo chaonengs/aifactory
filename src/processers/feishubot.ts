@@ -2,17 +2,19 @@ import { ApiError } from 'next/dist/server/api-utils';
 
 import { encode } from 'gpt-tokenizer';
 import { createProcessMessageBody } from 'utils/db/helper';
-import { User } from 'types/feishu';
+import { ReceiveMessageData, User } from 'types/feishu';
 import { getInternalTenantAccessToken, getUser, patchMessage, replyMessage, sendMessage, getChatHistory } from 'utils/server/feishu';
 import { OpenAIRequest, OpenAIStream } from 'utils/server/openai';
 import { OpenAIModelID, OpenAIModels } from 'types/openai';
 import { Message, FeiShuMessage, App } from '.prisma/client/edge';
+import { FeiShuProfile } from 'nextauth/providers/feishu';
+import { AppConfig } from 'types/app';
 
 export type MessageQueueBody = {
-    feishuMessage:FeiShuMessage;
-    history: Message[];
-    app: App;
-  }
+  feishuMessage: FeiShuMessage;
+  history: Message[];
+  app: App;
+};
 
 const getFeishuUser = async (accessToken: string, userId: string) => {
   const req = {
@@ -65,7 +67,6 @@ const messageCard = (title: string, message: string, status: string, error: stri
   return JSON.stringify(card);
 };
 
-
 const trySendOrUpdateFeishuCard = async (
   accessToken: string,
   title: string,
@@ -103,8 +104,26 @@ const trySendOrUpdateFeishuCard = async (
   }
 };
 
-const finish = async ({ airesult, question, feishuSender, promptTokens, completionTokens, app, feishuMessage }) => {
+const finish = async ({
+  airesult,
+  question,
+  feishuSender,
+  promptTokens,
+  completionTokens,
+  app,
+  feishuMessage
+}: {
+  airesult: string;
+  question: string;
+  feishuSender: User | null;
+  promptTokens: number;
+  completionTokens: number;
+  app: App;
+  feishuMessage: FeiShuMessage;
+}) => {
   let data = null;
+  //@ts-ignore
+  const feiShuMessageData = feishuMessage.data as ReceiveMessageData;
   if (airesult && airesult !== '') {
     data = createProcessMessageBody(
       question,
@@ -114,31 +133,35 @@ const finish = async ({ airesult, question, feishuSender, promptTokens, completi
       promptTokens,
       completionTokens,
       app,
-      feishuMessage.data.message.root_id || feishuMessage.data.message.message_id,
-      feishuMessage.data.message.message_id,
+      feiShuMessageData.message.root_id || feiShuMessageData.message.message_id,
+      feiShuMessageData.message.message_id
     );
   }
 
   const url = `${process.env.QUIRREL_BASE_URL}/api/db/saveFeiShuResult`;
-  await fetch(url, {method:'POST', body:JSON.stringify({feishuMessageId: feishuMessage.data.message.message_id, data})});
+  await fetch(url, { method: 'POST', body: JSON.stringify({ feishuMessageId: feiShuMessageData.message.message_id, data }) });
 };
 
-const processMessage = async ( { feishuMessage, history, app } : MessageQueueBody) => {
-  const accessToken = (await (await getInternalTenantAccessToken(app.config.appId, app.config.appSecret)).json()).tenant_access_token;
-  const question = JSON.parse(feishuMessage.data.message.content).text;
-  const chatId = feishuMessage.data.message.chat_id;
-  const chatType = feishuMessage.data.message.chat_type;
-  const senderType = feishuMessage.data.sender.sender_type;
+const processMessage = async ({ feishuMessage, history, app }: MessageQueueBody) => {
+  const appConfig = app.config as AppConfig;
+  //@ts-ignore
+  const feiShuMessageData = feishuMessage.data as ReceiveMessageData;
+
+  const accessToken = (await (await getInternalTenantAccessToken(appConfig.appId, appConfig.appSecret)).json()).tenant_access_token;
+  const question = JSON.parse(feiShuMessageData.message.content).text;
+  // const chatId = feiShuMessageData.message.chat_id;
+  // const chatType = feiShuMessageData.message.chat_type;
+  // const senderType = feiShuMessageData.sender.sender_type;
   const messages = new Array();
   let promptTokens = 0;
 
-  for(let i = 0; i < history.length; i++){
+  for (let i = 0; i < history.length; i++) {
     const answerMessage = {
       role: 'assistant',
-      content: history[i].answer,
-    }
+      content: history[i].answer
+    };
     const answerTokens = encode(answerMessage.content).length;
-    if(promptTokens + answerTokens > 2000) {
+    if (promptTokens + answerTokens > appConfig.ai.maxPromptTokens) {
       break;
     }
     promptTokens += answerTokens;
@@ -146,10 +169,10 @@ const processMessage = async ( { feishuMessage, history, app } : MessageQueueBod
 
     const contentMessage = {
       role: 'user',
-      content: history[i].content,
-    }
+      content: history[i].content
+    };
     const conentTokens = encode(contentMessage.content).length;
-    if(promptTokens + conentTokens > 2000) {
+    if (promptTokens + conentTokens > appConfig.ai.maxPromptTokens) {
       break;
     }
     promptTokens += conentTokens;
@@ -158,8 +181,8 @@ const processMessage = async ( { feishuMessage, history, app } : MessageQueueBod
 
   const message = {
     role: 'user',
-    content: JSON.parse(feishuMessage.data.message.content).text,
-  }
+    content: JSON.parse(feiShuMessageData.message.content).text
+  };
 
   messages.push(message);
 
@@ -167,13 +190,9 @@ const processMessage = async ( { feishuMessage, history, app } : MessageQueueBod
   // const question = JSON.parse(feishuMessage.data.message.content).text;
   let airesult: string = '';
   let completionTokens = 0;
-  let feishuSender: User | null | undefined = null;
-  //@ts-ignore
-
-  if (feishuMessage.data.sender.sender_id?.union_id) {
-    //@ts-ignore
-
-    const u = await getFeishuUser(accessToken, feishuMessage.data.sender.sender_id.union_id);
+  let feishuSender: User | null  = null;
+  if (feiShuMessageData.sender.sender_id?.union_id) {
+    const u = await getFeishuUser(accessToken, feiShuMessageData.sender.sender_id.union_id);
     if (u) {
       feishuSender = u as User;
     }
@@ -185,14 +204,14 @@ const processMessage = async ( { feishuMessage, history, app } : MessageQueueBod
   const params: OpenAIRequest = {
     model: OpenAIModels[OpenAIModelID.GPT_3_5],
     key: app.aiResource.apiKey,
-    messages: messages,
-  }
+    messages: messages
+  };
   const openaiStream = OpenAIStream(
     params,
     async (data) => {
       completionTokens += 1;
-      if(data) {
-      airesult += data;
+      if (data) {
+        airesult += data;
         if (Date.now() - lastSendAt > 750) {
           const result = await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复中', null, null, repliedMessageId);
           lastSendAt = Date.now();
@@ -204,13 +223,12 @@ const processMessage = async ( { feishuMessage, history, app } : MessageQueueBod
       console.error(error);
       await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '错误中止', null, null, repliedMessageId);
       await finish({ airesult, question, feishuSender, promptTokens, completionTokens, app, feishuMessage });
-
     },
-     async () => {
-        // console.log(`enter finish , tokens: ${completionTokens}` )
-        await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复完成', null, null, repliedMessageId);
-        await finish({ airesult, question, feishuSender, promptTokens, completionTokens, app, feishuMessage });
-      }
+    async () => {
+      // console.log(`enter finish , tokens: ${completionTokens}` )
+      await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复完成', null, null, repliedMessageId);
+      await finish({ airesult, question, feishuSender, promptTokens, completionTokens, app, feishuMessage });
+    }
   );
   return openaiStream;
 };

@@ -31,8 +31,8 @@ const eventDispatcher = (app: App & { aiResource: AIResource }) => {
     domain: config['domain'] as string
   });
   return new lark.EventDispatcher({
-    encryptKey: config['appEncryptKey'] || config['encryptKey']
-    verificationToken: config['appVerificationToken'] || config['verificationToken']
+    encryptKey: config['encryptKey'] || config['appEncryptKey'],
+    verificationToken: config['verificationToken'] || config['appVerificationToken'],
   }).register({
     'im.message.receive_v1': async (data) => {
       if (app.aiResource.tokenRemains <= 0) {

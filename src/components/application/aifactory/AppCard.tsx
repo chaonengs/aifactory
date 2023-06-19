@@ -27,6 +27,7 @@ import useConfig from 'hooks/useConfig';
 import * as React from 'react';
 import { toast } from 'react-toastify';
 import { mutate } from 'swr';
+import { AppConfig } from 'types/app';
 
 interface ExpandMoreProps extends IconButtonProps {
   expand: boolean;
@@ -43,17 +44,7 @@ const ExpandMore = styled((props: ExpandMoreProps) => {
   })
 }));
 
-export type AppConfig = {
-  appId: string;
-  appSecret: string;
-  encryptKey: string;
-  verificationToken: string;
-  ai: {
-    temperature: number;
-    maxPromptTokens: number;
-    maxCompletionTokens: number;
-  };
-};
+
 
 export const deleteApp = (id: string) => {
   const url = `/api/rest/apps/${id}`;
