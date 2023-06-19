@@ -154,14 +154,14 @@ const processMessage = async ({ feishuMessage, history, app }: MessageQueueBody)
   // const senderType = feiShuMessageData.sender.sender_type;
   const messages = new Array();
   let promptTokens = 0;
-
+  const maxPromptTokens = appConfig.ai.maxPromptTokens || 2000;
   for (let i = 0; i < history.length; i++) {
     const answerMessage = {
       role: 'assistant',
       content: history[i].answer
     };
     const answerTokens = encode(answerMessage.content).length;
-    if (promptTokens + answerTokens > appConfig.ai.maxPromptTokens) {
+    if (promptTokens + answerTokens > maxPromptTokens) {
       break;
     }
     promptTokens += answerTokens;
@@ -172,7 +172,7 @@ const processMessage = async ({ feishuMessage, history, app }: MessageQueueBody)
       content: history[i].content
     };
     const conentTokens = encode(contentMessage.content).length;
-    if (promptTokens + conentTokens > appConfig.ai.maxPromptTokens) {
+    if (promptTokens + conentTokens > maxPromptTokens) {
       break;
     }
     promptTokens += conentTokens;
@@ -202,8 +202,10 @@ const processMessage = async ({ feishuMessage, history, app }: MessageQueueBody)
 
   let lastSendAt = 0;
   const params: OpenAIRequest = {
-    model: OpenAIModels[OpenAIModelID.GPT_3_5],
+    model: app.aiResource.model,
     key: app.aiResource.apiKey,
+    maxTokens: appConfig.ai?.maxCompletionTokens || 2000,
+    temperature: appConfig.ai?.temperature || 1,
     messages: messages
   };
   const openaiStream = OpenAIStream(
