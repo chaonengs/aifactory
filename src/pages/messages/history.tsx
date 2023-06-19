@@ -8,7 +8,6 @@ import { useTheme } from '@mui/material/styles';
 import AddIcon from '@mui/icons-material/Add';
 
 // project imports
-import ResourceList from 'components/application/aifactory/ResourceList';
 import Page from 'components/ui-component/Page';
 import LAYOUT from 'constant';
 import Layout from 'layout';
@@ -16,7 +15,7 @@ import React, { ReactElement } from 'react';
 import MainCard from 'ui-component/cards/MainCard';
 import { DataGridPremium } from '@mui/x-data-grid-premium';
 import MessageHistory from 'components/application/aifactory/MessageHistory';
-import { useMessages } from 'feed';
+import { usePagedMessages } from 'feed';
 import { useSession } from 'next-auth/react';
 import { Message } from '@prisma/client';
 
@@ -26,7 +25,7 @@ const History = () => {
 
   const [tabValue, setTabValue] = React.useState('openai');
   const { data: session } = useSession()
-  const {messages} = useMessages(session?.user.id);
+  // const {messages} = usePagedMessages(session?.user.id);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
     setTabValue(newValue);

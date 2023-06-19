@@ -3,7 +3,7 @@ import { mutate } from "swr"
 
 const fetcher = (...args) => fetch(...args).then(res => res.json())
 
-function useOrganization (id) {
+export function useOrganization (id) {
   const { data, error, isLoading } = useSWR(`/api/rest/organizations/${id}?include=apps,aiResources`, fetcher)
  
   return {
@@ -24,7 +24,7 @@ export function useOrganizationUsers(userId) {
 }
 
 
-function useApp(id) {
+export function useApp(id) {
   const { data, error, isLoading } = useSWR(`/api/rest/apps/${id}`, fetcher)
  
   return {
@@ -34,7 +34,7 @@ function useApp(id) {
   }
 }
 
-function useApps(organizationId) {
+export function useApps(organizationId) {
   const { data, error, isLoading } = useSWR(`/api/rest/apps?where={"organizationId":{"$eq":"${organizationId}"}}&include=aiResource`, fetcher)
  
   return {
@@ -44,8 +44,30 @@ function useApps(organizationId) {
   }
 }
 
+export function useSensitiveWords(organizationId) {
+  const { data, error, isLoading } = useSWR(`/api/rest/sensitiveWords?where={"organizationId":{"$eq":"${organizationId}"}}`, fetcher)
+ 
+  return {
+    sensitiveWords: data,
+    isLoading,
+    isError: error
+  }
+}
 
-function useAIResource(id) {
+export function usePagedSensitiveWords(organizationId, page, size) {
+  const url = `/api/rest/sensitiveWords?where={"organizationId":{"$eq":"${organizationId}"}}&orderBy={"createdAt":"$desc"}&page=${page}&limit=${size}`;
+  const { data, error, isLoading } = useSWR(url, fetcher)
+ 
+  return {
+    url: url,
+    page: data,
+    isLoading,
+    isError: error
+  }
+}
+
+
+export function useAIResource(id) {
   const { data, error, isLoading } = useSWR(`/api/rest/airesources/${id}`, fetcher)
  
   return {
@@ -55,7 +77,7 @@ function useAIResource(id) {
   }
 }
 
-function useMessages(organizationId, page=1, size=10) {
+export function usePagedMessages(organizationId, page=1, size=10) {
   const url = `/api/rest/messages?where={"organizationId":{"$eq":"${organizationId}"}}&include=usage,app&orderBy={"createdAt":"$desc"}&page=${page}&limit=${size}`
   const { data, error, isLoading } = useSWR(url, fetcher)
  
@@ -66,11 +88,10 @@ function useMessages(organizationId, page=1, size=10) {
   }
 }
 
-export {useOrganization, useApp, useAIResource, useMessages, useApps}
 
 
  
-// function Profile () {
+// export function Profile () {
 //   const { data, error, isLoading } = useSWR('/api/user/123', fetcher)
  
 //   if (error) return <div>failed to load</div>

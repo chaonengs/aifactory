@@ -1,11 +1,12 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import { DataGrid, GridColDef, GridValueGetterParams } from '@mui/x-data-grid';
-import { useMessages } from 'feed';
+import { usePagedMessages } from 'feed';
 import { Skeleton, styled } from '@mui/material';
 import TextareaAutosize from '@mui/base/TextareaAutosize';
 import { Message } from '@prisma/client';
 import { useSession } from 'next-auth/react';
+import { height } from '@mui/system';
 
 
 const columns:GridColDef[] = [
@@ -78,12 +79,12 @@ export default function MessageHistory( ) {
     page: 0,
   });
 
-  const {data} = useMessages(session?.user.id, paginationModel.page + 1, paginationModel.pageSize);
+  const {data} = usePagedMessages(session?.user.id, paginationModel.page + 1, paginationModel.pageSize);
 
 
 
   return (
-    <Box sx={{  width:'100%' }}>
+    <Box sx={{  width:'100%', minHeight:500}}>
       { data? 
       // (<StyledTextarea defaultValue={JSON.stringify(messages)} disabled ></StyledTextarea>) :
       (<DataGrid
