@@ -212,6 +212,7 @@ const processMessage = async ({ feishuMessage, history, app }: MessageQueueBody)
     apiVersion: aiResource.apiVersion,
     maxTokens: appConfig.ai?.maxCompletionTokens || 2000,
     temperature: appConfig.ai?.temperature || 1,
+    maxPromptTokens: appConfig.ai?.maxPromptTokens || 2000,
     messages: messages,
     systemPrompt: null,
     stream: true,

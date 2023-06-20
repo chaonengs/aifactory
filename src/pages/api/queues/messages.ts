@@ -1,5 +1,6 @@
 import { Queue } from 'utils/quirrel/edge';
 import { MessageQueueBody, processMessage } from 'processers/feishubot';
+import { NextResponse } from 'next/server';
 
 
 export default Queue(
@@ -9,9 +10,9 @@ export default Queue(
     try{
     return await processMessage(messageQueueBody);
     }
-    catch(err){
+    catch(err ) {
           console.error(err);
-          return new Response(JSON.stringify(err), {status: 500});
+          return NextResponse.json({ error: err.message }, { status: 500 })
         }
   }
 );

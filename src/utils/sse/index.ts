@@ -43,7 +43,7 @@ export type SSEEvents = {
         // console.log('line: ' + lines[i])
         if (lines[i].startsWith("data:")) {
           const eventData = lines[i].slice(5).trim();
-  
+          // console.log("eventData: " + eventData)
           if (eventData === "[DONE]") {
             await this.onComplete();
             break;
@@ -52,7 +52,7 @@ export type SSEEvents = {
           }
         }  else if (lines[i].trim() === '') {}
         else {
-          this.onError(new Error('wrong data: line = ' + lines[i]));
+          await this.onError(new Error('wrong data: line = ' + lines[i]));
         }
       }
 
@@ -95,13 +95,19 @@ export type SSEEvents = {
     }
   //parse the data as JSON and extract the content from the JSON object. If successful, the onData callback function is called with the extracted content
     private async processEvent(data: string): Promise<string> {
-      console.log(data)
+      // console.log(data)
       try {
         const json = JSON.parse(data);
+        if(json.choices[0].finish_reason === 'stop') {
+          await this.onComplete();
+          return '';
+        } else {
         const text = json.choices[0].delta?.content || "";
         await this.onData(text);
         return text;
+        }
       } catch (e) {
+        console.error(e);
         await this.onError(e);
         return "";
       }
