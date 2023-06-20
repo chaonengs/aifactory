@@ -109,6 +109,22 @@ export const OpenAIChatComletion = (request : OpenAIRequest) => {
     stream = true;
   }
   
+  const requestHeaders = {
+    'Content-Type': 'application/json',
+    ...(apiType === 'OPENAI' && {
+      Authorization: `Bearer ${request.key ? request.key : process.env.DEFAULT_OPENAI_API_KEY}`
+    }),
+    ...(apiType === 'AZ_OPENAI' && {
+      'api-key': `${request.key ? request.key : process.env.DEFAULT_AZ_OPENAI_API_KEY}`
+    }),
+    ...(apiType === 'SELF_HOST_OPENAI' && {
+      Authorization: `Bearer ${request.key ? request.key : process.env.DEFAULT_OPENAI_API_KEY}`
+    }),
+    ...(apiType === 'OPENAI' &&
+      OPENAI_ORGANIZATION && {
+        'OpenAI-Organization': OPENAI_ORGANIZATION
+      })
+  }
 
   const requestBody = {
     ...(apiType === 'OPENAI' && { model: request.model || 'gpt-3.5-turbo'}),
@@ -125,25 +141,11 @@ export const OpenAIChatComletion = (request : OpenAIRequest) => {
     stream: stream,
   };
 
+  console.log(requestHeaders)
   console.log(requestBody)
   
   return fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(apiType === 'OPENAI' && {
-        Authorization: `Bearer ${request.key ? request.key : process.env.DEFAULT_OPENAI_API_KEY}`
-      }),
-      ...(apiType === 'AZ_OPENAI' && {
-        'api-key': `${request.key ? request.key : process.env.DEFAULT_AZ_OPENAI_API_KEY}`
-      }),
-      ...(apiType === 'SELF_HOST_OPENAI' && {
-        Authorization: `Bearer ${request.key ? request.key : process.env.DEFAULT_OPENAI_API_KEY}`
-      }),
-      ...(apiType === 'OPENAI' &&
-        OPENAI_ORGANIZATION && {
-          'OpenAI-Organization': OPENAI_ORGANIZATION
-        })
-    },
+    headers: requestHeaders,
     method: 'POST',
     body: JSON.stringify(requestBody)
   });
@@ -161,6 +163,9 @@ export const OpenAIStream = async (
   const decoder = new TextDecoder();
 
   if (res.status !== 200) {
+    await onError(res);
+    await onComplete();
+
     const result = await res.json();
     if (result.error) {
       throw new OpenAIError(result.error.message, result.error.type, result.error.param, result.error.code);
