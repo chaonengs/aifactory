@@ -26,7 +26,7 @@ export class OpenAIError extends Error {
 
 export type OpenAIRequest = {
   hostUrl: string | undefined | null;
-  apiType: string | undefined | null;
+  type: string | undefined | null;
   apiVersion: string | undefined | null;
   model: string | undefined | null;
   systemPrompt: string | undefined | null;
@@ -35,20 +35,20 @@ export type OpenAIRequest = {
   messages: Message[];
   stream: boolean | undefined | null;
   maxTokens: number  | undefined | null;
-  promptMaxTokens: number  | undefined | null;
+  maxPromptTokens: number  | undefined | null;
 }
 
 const createOpenAIRequest = (request:any) => {
   let url = request.hostUrl;
-  let apiType = request.apiType;
-  if (!apiType){
-    apiType = 'OPENAI'
+  let type = request.type;
+  if (!type){
+    type = 'OPENAI'
   }
-  if(!request.apiType || request.apiType === 'OPENAI'){
+  if(!request.type || request.type === 'OPENAI'){
     url = url || process.env.OPENAI_API_HOST || 'https://api.openai.com';
     url = `${url}/v1/chat/completions`;
   }
-  else if (request.apiType === 'AZ_OPENAI'){
+  else if (request.type === 'AZ_OPENAI'){
     url = url || process.env.AZ_OPENAI_API_HOST;
     let apiVerison  = request.apiVersion || 'api-version=2023-03-15-preview'
     url = `${url}/chat/completions?api-version=${request.apiVersion}`;
@@ -84,15 +84,15 @@ const createOpenAIRequest = (request:any) => {
 export const OpenAIChatComletion = (request : OpenAIRequest) => {
 
   let url = request.hostUrl;
-  let apiType = request.apiType;
-  if (!apiType){
-    apiType = 'OPENAI'
+  let type = request.type;
+  if (!type){
+    type = 'OPENAI'
   }
-  if(!request.apiType || request.apiType === 'OPENAI'){
+  if(!request.type || request.type === 'OPENAI'){
     url = url || process.env.DEFAULT_OPENAI_URL || 'https://api.openai.com';
     url = `${url}/v1/chat/completions`;
   }
-  else if (request.apiType === 'AZ_OPENAI'){
+  else if (request.type === 'AZ_OPENAI'){
     url = url || process.env.DEFAULT_AZ_OPENAI_URL;
     let apiVersion  = request.apiVersion || '2023-03-15-preview'
     url = `${url}/chat/completions?api-version=${apiVersion}`;
@@ -113,23 +113,23 @@ export const OpenAIChatComletion = (request : OpenAIRequest) => {
   
   const requestHeaders = {
     'Content-Type': 'application/json',
-    ...(apiType === 'OPENAI' && {
+    ...(type === 'OPENAI' && {
       Authorization: `Bearer ${request.key ? request.key : process.env.DEFAULT_OPENAI_API_KEY}`
     }),
-    ...(apiType === 'AZ_OPENAI' && {
+    ...(type === 'AZ_OPENAI' && {
       'api-key': `${request.key ? request.key : process.env.DEFAULT_AZ_OPENAI_API_KEY}`
     }),
-    ...(apiType === 'SELF_HOST_OPENAI' && {
+    ...(type === 'SELF_HOST_OPENAI' && {
       Authorization: `Bearer ${request.key ? request.key : process.env.DEFAULT_OPENAI_API_KEY}`
     }),
-    ...(apiType === 'OPENAI' &&
+    ...(type === 'OPENAI' &&
       OPENAI_ORGANIZATION && {
         'OpenAI-Organization': OPENAI_ORGANIZATION
       })
   }
 
   const requestBody = {
-    ...(apiType === 'OPENAI' && { model: request.model || 'gpt-3.5-turbo'}),
+    ...(type === 'OPENAI' && { model: request.model || 'gpt-3.5-turbo'}),
     ...(request.maxTokens && {max_tokens: request.maxTokens}),
     messages: [
       // {

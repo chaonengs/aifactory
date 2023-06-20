@@ -6,7 +6,7 @@ import { ReceiveMessageData, User } from 'types/feishu';
 import { getInternalTenantAccessToken, getUser, patchMessage, replyMessage, sendMessage, getChatHistory } from 'utils/server/feishu';
 import { OpenAIRequest, OpenAIStream } from 'utils/server/openai';
 import { OpenAIModelID, OpenAIModels } from 'types/openai';
-import { Message, FeiShuMessage, App } from '.prisma/client/edge';
+import { Message, FeiShuMessage, App, AIResource } from '.prisma/client/edge';
 import { FeiShuProfile } from 'nextauth/providers/feishu';
 import { AppConfig } from 'types/app';
 
@@ -201,12 +201,20 @@ const processMessage = async ({ feishuMessage, history, app }: MessageQueueBody)
   const repliedMessageId = await trySendOrUpdateFeishuCard(accessToken, 'AI助理', '...', '回复中', null, feishuMessage.id, null);
 
   let lastSendAt = 0;
+
+  //@ts-ignore
+  const aiResource = app.aiResource as AIResource;
   const params: OpenAIRequest = {
-    model: app.aiResource.model,
-    key: app.aiResource.apiKey,
+    model: aiResource.model,
+    key: aiResource.apiKey,
+    hostUrl: aiResource.hostUrl,
+    type: aiResource.type,
+    apiVersion: aiResource.apiVersion,
     maxTokens: appConfig.ai?.maxCompletionTokens || 2000,
     temperature: appConfig.ai?.temperature || 1,
-    messages: messages
+    messages: messages,
+    systemPrompt: null,
+    stream: true,
   };
   const openaiStream = OpenAIStream(
     params,
