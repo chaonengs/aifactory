@@ -82,7 +82,7 @@ module.exports = withSentryConfig(
     silent: true,
 
     org: "talentorg",
-    project: "aifactory",
+    project: "naodong",
   },
   {
     // For all available options, see:
