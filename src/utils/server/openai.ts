@@ -12,13 +12,15 @@ export class OpenAIError extends Error {
   type: string;
   param: string;
   code: string;
+  request: any;
 
-  constructor(message: string, type: string, param: string, code: string) {
+  constructor(message: string, type: string, param: string, code: string, request: any) {
     super(message);
     this.name = 'OpenAIError';
     this.type = type;
     this.param = param;
     this.code = code;
+    this.request = request;
   }
 }
 
@@ -152,12 +154,12 @@ export const OpenAIChatComletion = (request : OpenAIRequest) => {
 };
 
 export const OpenAIStream = async (
-  param: OpenAIRequest,
+  params: OpenAIRequest,
   onData: ((data: string) => Promise<void>) ,
   onError: ((error: unknown) => Promise<void>) ,
   onComplete: (() => Promise<void>)
 ) => {
-  const res = await OpenAIChatComletion(param);
+  const res = await OpenAIChatComletion(params);
 
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
@@ -168,7 +170,8 @@ export const OpenAIStream = async (
 
     const result = await res.json();
     if (result.error) {
-      throw new OpenAIError(result.error.message, result.error.type, result.error.param, result.error.code);
+      throw new OpenAIError(result.error.message, result.error.type, result.error.param, result.error.code, params);
+
     } else {
       throw new Error(`OpenAI API returned an error: ${decoder.decode(result?.value) || result.statusText}`);
     }
