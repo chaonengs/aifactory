@@ -9,9 +9,17 @@ export default Queue(
     try{
     return await processMessage(messageQueueBody);
     }
-    catch(err){
+    catch(err ) {
           console.error(err);
-          return new Response(JSON.stringify(err), {status: 500});
+          return new Response(
+            JSON.stringify({ error: err.message }),
+            {
+              status: 500,
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            }
+          )
         }
   }
 );

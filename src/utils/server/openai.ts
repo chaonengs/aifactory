@@ -165,7 +165,7 @@ export const OpenAIStream = async (
   const decoder = new TextDecoder();
 
   if (res.status !== 200) {
-    await onError(res);
+    await onError(await res.text());
     await onComplete();
 
     const result = await res.json();
