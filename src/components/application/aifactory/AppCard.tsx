@@ -288,7 +288,7 @@ export default function AppCard({ app }) {
                 />
                 <TextField
                   margin="dense"
-                  id="appSecret"
+                  id="config.appSecret"
                   label="AppSecret"
                   fullWidth
                   variant="standard"
@@ -299,7 +299,7 @@ export default function AppCard({ app }) {
                 />
                 <TextField
                   margin="dense"
-                  id="encryptKey"
+                  id="config.encryptKey"
                   label="EncryptKey"
                   fullWidth
                   variant="standard"
@@ -311,7 +311,7 @@ export default function AppCard({ app }) {
                 <TextField
                   margin="dense"
                   variant="standard"
-                  id="verificationToken"
+                  id="config.verificationToken"
                   label="VerificationToken"
                   fullWidth
                   value={formik.values.config.verificationToken}
