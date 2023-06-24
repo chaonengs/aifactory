@@ -123,7 +123,7 @@ const AIResourceDialog = ({aiResource, organizationId, open, onCancel, onClose, 
                 </MenuItem>
               ))}
             </TextField>
-            {formik.values.type === 'OPENAI' && (
+            {formik.values.type != 'SELF_HOST_OPENAI' && (
               <TextField
                 fullWidth
                 id="model"

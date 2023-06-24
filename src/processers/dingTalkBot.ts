@@ -132,7 +132,7 @@ const finish = async ({
       promptTokens,
       completionTokens,
       app,
-      feiShuMessageData.msgId,
+      feiShuMessageData.conversationId,
       feiShuMessageData.msgId
     );
   }
@@ -194,8 +194,8 @@ const processMessage = async ({ feishuMessage, history, app }: MessageQueueBody)
   const params: OpenAIRequest = {
     model: OpenAIModels[OpenAIModelID.GPT_3_5],
     messages: messages,
-    apiType: "AZ_OPENAI",
-    stream:true
+    key: app.aiResource.apiKey,
+    apiType: app.aiResource.type
   };
   const openaiStream = OpenAIStream(
     params,

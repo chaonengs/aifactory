@@ -3,6 +3,7 @@ import { PrismaClient, App, Prisma, AIResource, Message } from '@prisma/client';
 import MessageQueue from 'pages/api/queues/messagesDingTalk';
 import { MessageQueueBody, processMessage }  from 'processers/dingTalkBot';
 import { NotFoundError } from '@prisma/client/runtime/library';
+import  dingTalkSend  from 'pages/dingtalk/client';
 
 
 const prisma = new PrismaClient();
@@ -75,6 +76,7 @@ const handleFeishuMessage = async (
 };
 
 const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {
+  if (req.body && req.body['msgtype'] && req.body['msgtype'] == 'text') {
   const { appId } = req.query;
   let id = null;
   if (Array.isArray(appId)) {
@@ -99,10 +101,6 @@ const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {
     }
   }
 
-  if (req.body && req.body['msgtype'] && req.body['msgtype'] == 'text') {
-    const config = app.config as Prisma.JsonObject;
-    // const message="消息收到";
-    // const dingTalk= DingTalk(app,message);
 
     const data = Object.assign(
       Object.create({
@@ -110,9 +108,15 @@ const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {
       }),
       req.body
     );
+    if (app.aiResource && app.aiResource.tokenRemains <= 0) {
+      dingTalkSend(app,"Token已耗尽，请联系相关人员添加Token",data);
+      return;
+    }
     console.log(data);
     handleFeishuMessage(data,app,res);
 
+  }else{
+    return;
   }
 };
 

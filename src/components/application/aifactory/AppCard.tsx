@@ -210,7 +210,7 @@ export default function AppCard({ app }) {
         </CardContent>
         <CardMedia
           component="img"
-          image="/assets/images/logos/feishu.png"
+          image={app.appType === 'FEISHU_BOT' ? '/assets/images/logos/feishu.png' : '/assets/images/logos/dingtalk.png'}
           alt="FeiShu"
           height={124}
           width={124}
@@ -267,7 +267,7 @@ export default function AppCard({ app }) {
           <TabContext value={configTab}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <TabList onChange={handleChangeConfigTab} aria-label="app-config-tabs">
-                <Tab label="飞书机器人" value="feishu" />
+                <Tab label={AppTypes[app.appType]} value="feishu" />
                 <Tab label="AI" value="ai" />
                 <Tab label="资源" value="resource" />
               </TabList>
@@ -297,6 +297,8 @@ export default function AppCard({ app }) {
                   error={formik.touched.config?.appSecret && Boolean(formik.errors.config?.appSecret)}
                   helperText={formik.touched.config?.appSecret && formik.errors.config?.appSecret}
                 />
+                {app.appType==='FEISHU_BOT' &&(
+                <>
                 <TextField
                   margin="dense"
                   id="config.encryptKey"
@@ -319,6 +321,8 @@ export default function AppCard({ app }) {
                   error={formik.touched.config?.verificationToken && Boolean(formik.errors.config?.verificationToken)}
                   helperText={formik.touched.config?.verificationToken && formik.errors.config?.verificationToken}
                 />
+                </>           
+                )}
               </Stack>
             </TabPanel>
             <TabPanel value="ai">
@@ -417,9 +421,9 @@ export default function AppCard({ app }) {
       </Dialog>
 
       <Dialog open={feishuOpen} onClose={handleFeishuClose}>
-        <DialogTitle>查看飞书配置</DialogTitle>
+        <DialogTitle>查看{AppTypes[app.appType]}配置</DialogTitle>
         <DialogContent>
-          <DialogContentText>查看飞书URL配置</DialogContentText>
+          <DialogContentText>查看{AppTypes[app.appType]}URL配置</DialogContentText>
           <TextField
             margin="dense"
             id="callbackurl"
@@ -427,7 +431,7 @@ export default function AppCard({ app }) {
             fullWidth
             variant="standard"
             sx={{ minWidth: 500 }}
-            value={`${window.location.origin}/api/feishu/${app.id}`}
+            value={app.appType=== 'FEISHU_BOT' ? `${window.location.origin}/api/feishu/${app.id}`:`${window.location.origin}/api/dingtalk/${app.id}`}
           />
         </DialogContent>
         <DialogActions>

@@ -3,7 +3,7 @@ import { MessageQueueBody, processMessage } from 'processers/dingTalkBot';
 
 
 export default Queue(
-  'api/queues/messages', // 👈 the route it's reachable on
+  'api/queues/messagesDingTalk', // 👈 the route it's reachable on
   //@ts-ignore
   async (messageQueueBody: MessageQueueBody) => {
     return await processMessage(messageQueueBody);

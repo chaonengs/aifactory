@@ -43,7 +43,13 @@ const columns:GridColDef[] = [
   {
     field:'sensitive',
     headerName:'敏感词',
-    valueGetter: (params) =>  ` ${ params.row.sensitiveWords.map(s => s.value).toString()} `,
+    valueGetter: (params) => {
+      if (params.row.sensitiveWords) {
+        return ` ${params.row.sensitiveWords.map(s => s.value).toString()} `;
+      } else {
+        return '';
+      }
+    },
     sortable: false,
     flex:1
   },
