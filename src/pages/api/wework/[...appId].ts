@@ -38,41 +38,33 @@ const weworkVerify = async(req: NextApiRequest, res: NextApiResponse) => {
     appId = appId[0];
   } 
   if (!appId) {
-    res.status(404).end('not found');
-    return;
+    throw new Error('Invalid appid: ' + appId);
   }
   if (Array.isArray(echostr)) {
     echostr = echostr[0];
   } 
 
-  let app;
-  try {
-    app = await findApp(appId);
-  } catch (e: unknown) {
-    if (e instanceof NotFoundError) {
-      res.status(404).end('not found');
-      return;
-    } else {
-      console.error(e);
-      throw e;
-    }
-  }
+  const app = await findApp(appId) as App & { aiResource : AIResource };
+
 
   const config = app.config as AppConfig;
   if(echostr){
     const { message, id } = decrypt(config.encodingAESKey, echostr);
-    res.end(message);
-    return;
+    return {app, isVerification: true, verificationMessage:message};
   }
-  return app;
+  return {app, isVerification: false, verificationMessage:null};
 }
 
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   console.log(req);
-  const app = await weworkVerify(req, res) as App & { aiResource : AIResource };
+  const {app, isVerification, verificationMessage} = await weworkVerify(req, res);
   if (!app) {
     throw new Error('app not found');
+  }
+  if (isVerification) {
+    res.end(verificationMessage);
+    return;
   }
   if (!app.aiResource) {
     throw new Error('resource not found');
