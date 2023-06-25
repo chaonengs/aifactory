@@ -116,10 +116,10 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     console.log(resBody);
     res.setHeader('Content-Type', 'text/xml').end(resBody);
   } catch (e) {
+    console.error(e);
     if ((e as PrismaClientKnownRequestError).code === 'P2002') {
       res.setHeader('Content-Type', 'text/xml').end(resBody);
     } else {
-      console.error(e);
       throw e;
     }
   }
