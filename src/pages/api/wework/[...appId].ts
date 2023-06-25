@@ -30,6 +30,13 @@ const firstResponseXML = (toUser: string, fromUser: string) => `
 </xml>
 `;
 
+const wrapResponeMessage = (encrypted:string) => `<xml>
+<Encrypt><![CDATA[msg_encrypt]]></Encrypt>
+<MsgSignature><![CDATA[msg_signature]]></MsgSignature>
+<TimeStamp>timestamp</TimeStamp>
+<Nonce><![CDATA[nonce]]></Nonce>
+</xml>`;
+
 // Verify wework api request and app id, return app if appid is valid and this is not a wework api verification request
 const weworkVerify = async (req: NextApiRequest, res: NextApiResponse) => {
   let { appId, echostr } = req.query;
@@ -75,7 +82,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   const decrypted = decrypt(config.encodingAESKey, encryptString);
   console.debug(decrypted);
   const decryptedJson = new XMLParser().parse(decrypted.message).xml;
-  const resBody = encrypt(config.encodingAESKey, firstResponseXML(decryptedJson.fromUser, config.corpId), decrypted.id);
+  const resBody = encrypt(config.encodingAESKey, firstResponseXML(decryptedJson.fromUser, config.corpId), decryptedJson.id);
 
   try {
     const recievedMessage = await prisma.recievedMessage.create({
@@ -94,7 +101,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       { recievedMessage: recievedMessage, history: [], app: app }, // job to be enqueued
       { delay: 1 } // scheduling options
     );
-  
+    console.log(resBody);
     res.setHeader('Content-Type', 'text/xml').end(resBody);
 
   } catch (e) {
