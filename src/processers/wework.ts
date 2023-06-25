@@ -125,7 +125,8 @@ export const processMessage = async ({ recievedMessage, history, app }: MessageQ
   const usage = result.usage as Usage;
   const accessToken = (await (await getAccessToken(appConfig)).json()).access_token;
   const user = await (await getUser(receiveMessageData.FromUserName, accessToken)).json();
-  await sendWewokMessage(receiveMessageData.FromUserName, answer, appConfig, accessToken);
+  const weworkResult = await sendWewokMessage(receiveMessageData.FromUserName, answer, appConfig, accessToken);
+  console.debug(weworkResult);
 
   const repliedMessage = {
     senderUnionId: receiveMessageData.FromUserName,
