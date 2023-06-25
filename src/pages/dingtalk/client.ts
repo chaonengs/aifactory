@@ -1,7 +1,6 @@
 import { App,Prisma} from '@prisma/client';
 // Import necessary modules
 const axios = require('axios');
-const fs = require('fs');
 
 // Define function to get access token
 const AccessToken=async(app:App) =>{
@@ -22,7 +21,7 @@ const config = app.config as Prisma.JsonObject;
     const response = await axios.post(url,data,headerConfig);
     const accessToken = response.data.accessToken;
     // Store access token in local cache
-   // fs.writeFileSync('access_token.txt', accessToken);
+
     console.log('Access token stored in local cache');
     return accessToken;
   } catch (error) {
