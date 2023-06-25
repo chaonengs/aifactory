@@ -191,7 +191,8 @@ const processMessage = async ({ recievedMessage, history, app }: MessageQueueBod
     model: OpenAIModels[OpenAIModelID.GPT_3_5],
     messages: messages,
     key: app.aiResource.apiKey,
-    type: app.aiResource.type
+    type: app.aiResource.type,
+    hostUrl:app.aiResource.hostUrl
   };
   const openaiStream = OpenAIStream(
     params,
