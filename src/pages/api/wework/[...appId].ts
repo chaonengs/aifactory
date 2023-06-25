@@ -2,9 +2,10 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, App, Prisma, AIResource, Message, RecievedMessage } from '@prisma/client';
 import { getSignature, decrypt, encrypt } from '@wecom/crypto';
 import MessageQueue from 'pages/api/queues/messages';
-import { NotFoundError } from '@prisma/client/runtime/library';
+import { NotFoundError, PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { AppConfig } from 'types/wework';
-import {XMLParser} from 'fast-xml-parser';
+import { XMLParser } from 'fast-xml-parser';
+import { error } from 'console';
 
 const prisma = new PrismaClient();
 
@@ -19,7 +20,7 @@ const findApp = async (id: string) => {
   });
 };
 
-const firstResponseXML = (toUser:string, fromUser:string) =>  `
+const firstResponseXML = (toUser: string, fromUser: string) => `
 <xml>
    <ToUserName><![CDATA[${toUser}]]></ToUserName>
    <FromUserName><![CDATA[${fromUser}]]></FromUserName> 
@@ -29,37 +30,33 @@ const firstResponseXML = (toUser:string, fromUser:string) =>  `
 </xml>
 `;
 
-
-
 // Verify wework api request and app id, return app if appid is valid and this is not a wework api verification request
-const weworkVerify = async(req: NextApiRequest, res: NextApiResponse) => {
+const weworkVerify = async (req: NextApiRequest, res: NextApiResponse) => {
   let { appId, echostr } = req.query;
   if (Array.isArray(appId)) {
     appId = appId[0];
-  } 
+  }
   if (!appId) {
     throw new Error('Invalid appid: ' + appId);
   }
   if (Array.isArray(echostr)) {
     echostr = echostr[0];
-  } 
+  }
 
-  const app = await findApp(appId) as App & { aiResource : AIResource };
-
+  const app = (await findApp(appId)) as App & { aiResource: AIResource };
 
   const config = app.config as AppConfig;
-  if(echostr){
+  if (echostr) {
     const { message, id } = decrypt(config.encodingAESKey, echostr);
-    return {app, isVerification: true, verificationMessage:message};
+    return { app, isVerification: true, verificationMessage: message };
   }
-  return {app, isVerification: false, verificationMessage:null};
-}
-
+  return { app, isVerification: false, verificationMessage: null };
+};
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   console.debug(req);
   console.debug(req.body);
-  const {app, isVerification, verificationMessage} = await weworkVerify(req, res);
+  const { app, isVerification, verificationMessage } = await weworkVerify(req, res);
   if (!app) {
     throw new Error('app not found');
   }
@@ -76,31 +73,38 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   const encryptString = jsonBody.xml.Encrypt;
   const config = app.config as AppConfig;
   const decrypted = decrypt(config.encodingAESKey, encryptString);
+  console.debug(decrypted);
   const decryptedJson = new XMLParser().parse(decrypted.message).xml;
   const resBody = encrypt(config.encodingAESKey, firstResponseXML(decryptedJson.fromUser, config.corpId), decrypted.id);
 
-  const recievedMessage = await prisma.recievedMessage.create(
-    {
-      data:{
-        id: decrypted.id,
+  try {
+    const recievedMessage = await prisma.recievedMessage.create({
+      data: {
+        id: String(decryptedJson.MsgId),
         data: decryptedJson,
         recievedAt: new Date(),
         createdAt: new Date(),
         processing: true,
         appId: app.id,
         type: 'WEWORK',
-        eventName: 'WeWork_message_received',
-
+        eventName: 'WeWork_message_received'
       }
+    });
+    await MessageQueue.enqueue(
+      { recievedMessage: recievedMessage, history: [], app: app }, // job to be enqueued
+      { delay: 1 } // scheduling options
+    );
+  
+    res.setHeader('Content-Type', 'text/xml').end(resBody);
+
+  } catch (e) {
+    if ((e as PrismaClientKnownRequestError).code === 'P2002') {
+      res.setHeader('Content-Type', 'text/xml').end(resBody);
+    } else {
+      console.error(e);
+      throw e;
     }
-  );
+  }
 
-
-  await MessageQueue.enqueue(
-    { recievedMessage: recievedMessage, history: [], app: app }, // job to be enqueued
-    { delay: 1 } // scheduling options
-  );
-
-  res.setHeader('Content-Type', 'text/xml').end(resBody);
 
 };

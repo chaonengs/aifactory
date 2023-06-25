@@ -123,17 +123,17 @@ export const processMessage = async ({ recievedMessage, history, app }: MessageQ
   const answer = (await result.json()).choices[0].text;
   const usage = (await result.json()).usage as Usage;
   const accessToken = (await (await getAccessToken(appConfig)).json()).access_token;
-  const user = await (await getUser(receiveMessageData.fromUser, accessToken)).json();
-  await sendWewokMessage(receiveMessageData.fromUser, answer, appConfig, accessToken);
+  const user = await (await getUser(receiveMessageData.FromUserName, accessToken)).json();
+  await sendWewokMessage(receiveMessageData.FromUserName, answer, appConfig, accessToken);
 
   const repliedMessage = {
-    senderUnionId: user.userid,
+    senderUnionId: receiveMessageData.FromUserName,
     sender: user.name,
-    content: receiveMessageData.content,
+    content: receiveMessageData.Content,
     answer: answer,
     appId: app.id,
-    conversationId: receiveMessageData.msgId,
-    recievedMessageId: receiveMessageData.msgId
+    conversationId: String(receiveMessageData.MsgId),
+    recievedMessageId: String(receiveMessageData.MsgId)
   };
   await saveProcesserResult({ repliedMessage, app, usage, answer });
 };
