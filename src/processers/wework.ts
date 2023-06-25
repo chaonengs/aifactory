@@ -5,6 +5,7 @@ import { Usage } from 'types/openai';
 import { WeworkAppConfig } from 'types/app';
 import { Message } from 'types/wework';
 import { OpenAIChatComletion, OpenAIRequest } from 'utils/server/openai';
+import { WEWORK_PROXYED_BASE_URL } from 'utils/server/const';
 
 const makeMessages = ({ recievedMessage, history, app }: MessageQueueBody) => {
   const appConfig = app.config as WeworkAppConfig;
@@ -47,12 +48,13 @@ const makeMessages = ({ recievedMessage, history, app }: MessageQueueBody) => {
 };
 
 const getAccessToken = (appConfig: WeworkAppConfig) => {
-  const url = `https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=${appConfig.corpId}&corpsecret=${appConfig.corpSecret}`;
+  const ulr = `${WEWORK_PROXYED_BASE_URL}/cgi-bin/gettoken?corpid=${appConfig.corpId}&corpsecret=${appConfig.corpSecret}`;
   return fetch(url);
 };
 
 const getUser = (userId: String, accessToken: string) => {
-  const url = `https://qyapi.weixin.qq.com/cgi-bin/user/get?access_token=${accessToken}&userid=${userId}`;
+  const url = `${WEWORK_PROXYED_BASE_URL}/cgi-bin/user/get?access_token=${accessToken}&userid=${userId}`;
+
   return fetch(url);
 };
 
@@ -66,7 +68,7 @@ const sendWewokMessage = async (userId: string, answer: string, appConfig: Wewor
     }
   };
 
-  const result = await fetch(`https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${accessToken}`, {
+  const result = await fetch(`${WEWORK_PROXYED_BASE_URL}/cgi-bin/message/send?access_token=${accessToken}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -120,13 +122,13 @@ export const processMessage = async ({ recievedMessage, history, app }: MessageQ
     maxPromptTokens: appConfig.ai.maxPromptTokens
   };
   const result = await (await OpenAIChatComletion(params)).json();
-  console.debug(result);
+  console.info(result);
   const answer = result.choices[0].message.content;
   const usage = result.usage as Usage;
   const accessToken = (await (await getAccessToken(appConfig)).json()).access_token;
   const user = await (await getUser(receiveMessageData.FromUserName, accessToken)).json();
   const weworkResult = await sendWewokMessage(receiveMessageData.FromUserName, answer, appConfig, accessToken);
-  console.debug(weworkResult);
+  console.info(weworkResult);
 
   const repliedMessage = {
     senderUnionId: receiveMessageData.FromUserName,
