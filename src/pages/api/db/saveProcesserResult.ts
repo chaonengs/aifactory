@@ -32,10 +32,8 @@ export type MessageDBSaveRequest = {
 
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
-    console.info(req.body);
-
     console.debug(req.body);
-    const saveQuest = JSON.parse(req.body) as MessageDBSaveRequest;
+    const saveQuest = req.body as MessageDBSaveRequest;
     await finishProcessing(saveQuest.recievedMessageId );
     if(saveQuest.data){
         const [m, r, a] = await saveMessage(saveQuest.data.message, saveQuest.data.usage);
