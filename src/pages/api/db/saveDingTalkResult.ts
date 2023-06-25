@@ -19,11 +19,13 @@ export type MessageDBSaveRequest = {
 //     const saveQuest = body as MessageDBSaveRequest;
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
+    console.log("开始");
     const saveQuest = JSON.parse(req.body) as MessageDBSaveRequest;
     await finishProcessing(saveQuest.recievedMessageId );
     if(saveQuest.data){
         const [m, r, a] = await saveMessage(saveQuest.data.message, saveQuest.data.app, saveQuest.data.aiResource, saveQuest.data.usage);
         await logSensitiveWord(m as Message, (a as App).organizationId);
     }
+    console.log("结束");
 }
 

@@ -135,8 +135,7 @@ const finish = async ({
 
   const url = `${process.env.QUIRREL_BASE_URL}/api/db/saveDingTalkResult`;
   const body=JSON.stringify({ feishuMessageId: feiShuMessageData.msgId, data }) ;
-  await fetch(url, { method: 'POST', body:body})
-            .then(response=>{console.log(response.status)});
+  await fetch(url, { method: 'POST', body:body});
   // const json={
   //   feishuMessageId: feiShuMessageData.msgId, 
   //   data: data 
