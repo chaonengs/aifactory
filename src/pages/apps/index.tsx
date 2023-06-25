@@ -150,7 +150,7 @@ const MyApps = () => {
             <MenuItem value="FEISHU">
               飞书机器人
             </MenuItem>
-            <MenuItem value="DINGTALK_BOT">
+            <MenuItem value="DINGTALK">
               钉钉机器人
             </MenuItem>
             <MenuItem value="WEWORK">

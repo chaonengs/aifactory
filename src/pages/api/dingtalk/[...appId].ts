@@ -26,12 +26,12 @@ const handleFeishuMessage = async (
   app: App & { aiResource: AIResource },
   res: NextApiResponse
 ) => {
-  let feishuMessage = await prisma.feiShuMessage.findUnique({ where: { id:  data.msgId} });
-  if (feishuMessage?.processing) {
+  let recievedMessage = await prisma.recievedMessage.findUnique({ where: { id:  data.msgId} });
+  if (recievedMessage?.processing) {
     res.status(400).end('messege in processing');
     return;
   }
-  if (feishuMessage && !feishuMessage.processing) {
+  if (recievedMessage && !recievedMessage.processing) {
     res.end('ok');
     return;
   }
@@ -40,13 +40,14 @@ const handleFeishuMessage = async (
     res.end('ok');
     return;
   }
-  feishuMessage = await prisma.feiShuMessage.create({
+  recievedMessage = await prisma.recievedMessage.create({
     data: {
       id: data.msgId,
       appId: app.id,
       data: data,
       eventName: '',
       processing: true,
+      type:"DINGTALK",
       createdAt: new Date(Number(data.createAt))
     }
   });
@@ -71,7 +72,7 @@ const handleFeishuMessage = async (
   //   { feishuMessage: feishuMessage, history: history, app: app }, // job to be enqueued
   //   { delay: 1 } // scheduling options
   // );
-  const openaiStream = await processMessage({feishuMessage,history,app});
+  const openaiStream = await processMessage({recievedMessage,history,app});
   res.end('ok');
 };
 

@@ -7,15 +7,11 @@ import saveDingTalkResult from "pages/api/db/saveDingTalkResult";
 import { getInternalTenantAccessToken, getUser, patchMessage, replyMessage, sendMessage, getChatHistory } from 'utils/server/feishu';
 import { OpenAIRequest, OpenAIStream } from 'utils/server/openai';
 import { OpenAIModelID, OpenAIModels } from 'types/openai';
-import { Message, FeiShuMessage, App } from '.prisma/client/edge';
+import { Message, RecievedMessage, App } from '.prisma/client/edge';
 import { AppConfig } from 'types/app';
 import DingTalk from 'pages/dingtalk/client';
+import { MessageQueueBody } from 'pages/api/queues/messages';
 
-export type MessageQueueBody = {
-  feishuMessage: FeiShuMessage;
-  history: Message[];
-  app: App;
-};
 
 const getFeishuUser = async (accessToken: string, userId: string) => {
   const req = {
@@ -111,18 +107,18 @@ const finish = async ({
   promptTokens,
   completionTokens,
   app,
-  feishuMessage
+  recievedMessage
 }: {
   airesult: string;
   question: string;
   promptTokens: number;
   completionTokens: number;
   app: App;
-  feishuMessage: FeiShuMessage;
+  recievedMessage: RecievedMessage;
 }) => {
   let data = null;
   //@ts-ignore
-  const feiShuMessageData = feishuMessage.data ;
+  const feiShuMessageData = recievedMessage.data ;
   if (airesult && airesult !== '') {
     data = createProcessMessageBody(
       question,
@@ -148,10 +144,10 @@ const finish = async ({
   // saveFeiShuResult(json);
 };
 
-const processMessage = async ({ feishuMessage, history, app }: MessageQueueBody) => {
+const processMessage = async ({ recievedMessage, history, app }: MessageQueueBody) => {
   const appConfig = app.config as AppConfig;
   //@ts-ignore
-  const feiShuMessageData = feishuMessage.data as ReceiveMessageData;
+  const feiShuMessageData = recievedMessage.data as ReceiveMessageData;
   const question = feiShuMessageData.text.content;
   const messages = new Array();
   let promptTokens = 0;
@@ -195,7 +191,7 @@ const processMessage = async ({ feishuMessage, history, app }: MessageQueueBody)
     model: OpenAIModels[OpenAIModelID.GPT_3_5],
     messages: messages,
     key: app.aiResource.apiKey,
-    apiType: app.aiResource.type
+    type: app.aiResource.type
   };
   const openaiStream = OpenAIStream(
     params,
@@ -208,11 +204,11 @@ const processMessage = async ({ feishuMessage, history, app }: MessageQueueBody)
     async (error) => {
       console.error(error);
 
-      await finish({ airesult, question, promptTokens, completionTokens, app, feishuMessage });
+      await finish({ airesult, question, promptTokens, completionTokens, app, recievedMessage });
     },
     async () => {
-      DingTalk(app,airesult,feishuMessage.data);
-      await finish({ airesult, question, promptTokens, completionTokens, app, feishuMessage });
+      DingTalk(app,airesult,recievedMessage.data);
+      await finish({ airesult, question, promptTokens, completionTokens, app, recievedMessage });
     }
   );
   return openaiStream;
