@@ -39,7 +39,7 @@ const makeMessages = ({ recievedMessage, history, app }: MessageQueueBody) => {
 
   const message = {
     role: 'user',
-    content: receiveMessageData.content
+    content: receiveMessageData.Content
   };
 
   messages.push(message);
@@ -120,6 +120,7 @@ export const processMessage = async ({ recievedMessage, history, app }: MessageQ
     maxPromptTokens: appConfig.ai.maxPromptTokens
   };
   const result = await OpenAIChatComletion(params);
+  console.debug(await result.json());
   const answer = (await result.json()).choices[0].text;
   const usage = (await result.json()).usage as Usage;
   const accessToken = (await (await getAccessToken(appConfig)).json()).access_token;
