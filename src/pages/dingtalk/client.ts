@@ -1,13 +1,13 @@
 import { App,Prisma} from '@prisma/client';
 // Import necessary modules
 const axios = require('axios');
-
+const hostUrl=process.env.DINGTALK_URL;
 // Define function to get access token
 const AccessToken=async(app:App) =>{
 const config = app.config as Prisma.JsonObject;
   const appKey = config['appId'] as string;
   const appSecret = config['appSecret'] as string;
-  const url = 'https://api.dingtalk.com/v1.0/oauth2/accessToken';
+  const url = hostUrl+'/v1.0/oauth2/accessToken';
   const headerConfig={
     headers:{
         'Content-Type':'application/json'
@@ -49,7 +49,7 @@ const sendMessageToRobot=async(app:App, message:String,feishu:JSON)=> {
 
 const SingleChatSend=async(app:App, message:String,feishu:JSON)=>{
   const token= await AccessToken(app);
-  const url = `https://api.dingtalk.com/v1.0/robot/oToMessages/batchSend`;
+  const url = hostUrl+`/v1.0/robot/oToMessages/batchSend`;
   const data = {
     msgParam: '{"title":"'+message+'","text":"'+message+'"}',
     msgKey: 'sampleMarkdown',
@@ -73,7 +73,7 @@ const SingleChatSend=async(app:App, message:String,feishu:JSON)=>{
 }
 const GroupChatSend=async(app:App, message:String,feishu:JSON)=>{
   const token= await AccessToken(app);
-  const url = `https://api.dingtalk.com/v1.0/robot/groupMessages/send`;
+  const url = hostUrl+`/v1.0/robot/groupMessages/send`;
   const data = {
     msgParam: '{"title":"'+message+'","text":"'+message+'"}',
     msgKey: 'sampleMarkdown',
