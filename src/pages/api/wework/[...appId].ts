@@ -53,6 +53,7 @@ const weworkVerify = async(req: NextApiRequest, res: NextApiResponse) => {
       res.status(404).end('not found');
       return;
     } else {
+      console.error(e);
       throw e;
     }
   }
@@ -68,6 +69,7 @@ const weworkVerify = async(req: NextApiRequest, res: NextApiResponse) => {
 
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
+  console.log(req);
   const app = await weworkVerify(req, res) as App & { aiResource : AIResource };
   if (!app) {
     throw new Error('app not found');
