@@ -6,6 +6,7 @@ import { NotFoundError, PrismaClientKnownRequestError } from '@prisma/client/run
 import { AppConfig } from 'types/wework';
 import { XMLParser } from 'fast-xml-parser';
 import { error } from 'console';
+import { now } from 'next-auth/client/_utils';
 
 const prisma = new PrismaClient();
 
@@ -60,6 +61,21 @@ const weworkVerify = async (req: NextApiRequest, res: NextApiResponse) => {
   return { app, isVerification: false, verificationMessage: null };
 };
 
+
+
+const makeRespone = (config: AppConfig, decryptedJson: any) => {
+  const timestamp = now();
+  const nonce = (Math.random() * 10000000000);
+  const encrypted = encrypt(config.encodingAESKey, firstResponseXML(decryptedJson.fromUser, config.corpId), decryptedJson.MsgId);
+  const signature = getSignature(config.encodingAESKey, timestamp, String(nonce), encrypted);
+  return `<xml>
+  <Encrypt><![CDATA[${encrypted}]]></Encrypt>
+  <MsgSignature><![CDATA[${signature}]]></MsgSignature>
+  <TimeStamp>${timestamp}</TimeStamp>
+  <Nonce><![CDATA[${String(nonce)}]]></Nonce>
+  </xml>`;
+}
+
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   console.debug(req);
   console.debug(req.body);
@@ -82,7 +98,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   const decrypted = decrypt(config.encodingAESKey, encryptString);
   console.debug(decrypted);
   const decryptedJson = new XMLParser().parse(decrypted.message).xml;
-  const resBody = encrypt(config.encodingAESKey, firstResponseXML(decryptedJson.fromUser, config.corpId), decryptedJson.MsgId);
+  const resBody = makeRespone(config, decryptedJson);
 
   try {
     const recievedMessage = await prisma.recievedMessage.create({
