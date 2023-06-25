@@ -1,11 +1,11 @@
-import { AIResource, RecievedMessage, Message as PrismaMessage, Usage as PrismaUsage, App as PrismaApp } from '@prisma/client/edge';
 import { encode } from 'gpt-tokenizer';
+import { MessageDBSaveRequest, Message as MessageToSave, Usage as UsageToSave } from 'pages/api/db/saveProcesserResult';
 import { MessageQueueBody } from 'pages/api/queues/messages';
-import { Usage } from 'types/openai';
 import { WeworkAppConfig } from 'types/app';
+import { Usage } from 'types/openai';
 import { Message } from 'types/wework';
-import { OpenAIChatComletion, OpenAIRequest } from 'utils/server/openai';
 import { WEWORK_PROXYED_BASE_URL } from 'utils/server/const';
+import { OpenAIChatComletion, OpenAIRequest } from 'utils/server/openai';
 
 const makeMessages = ({ recievedMessage, history, app }: MessageQueueBody) => {
   const appConfig = app.config as WeworkAppConfig;
@@ -78,18 +78,14 @@ const sendWewokMessage = async (userId: string, answer: string, appConfig: Wewor
   return await result.json();
 };
 
-const saveProcesserResult = async ({
-  repliedMessage,
-  app,
-  answer,
-  usage
-}: {
-  repliedMessage: PrismaMessage;
-  app: PrismaApp & { aiResource: AIResource };
-  answer: string;
-  usage: Usage;
-}) => {
-  const params = { repliedMessage, usage, app, aiResource: app.aiResource, finished: true };
+const saveProcesserResult = async ({ repliedMessage, usage }: { repliedMessage: MessageToSave; usage: UsageToSave }) => {
+  const params: MessageDBSaveRequest = {
+    recievedMessageId: repliedMessage.recievedMessageId,
+    data: {
+      message: repliedMessage,
+      usage: usage
+    }
+  };
   const url = `${process.env.QUIRREL_BASE_URL}/api/db/saveProcesserResult`;
   await fetch(url, {
     method: 'POST',
@@ -139,5 +135,5 @@ export const processMessage = async ({ recievedMessage, history, app }: MessageQ
     conversationId: String(receiveMessageData.MsgId),
     recievedMessageId: String(receiveMessageData.MsgId)
   };
-  await saveProcesserResult({ repliedMessage, app, usage, answer });
+  await saveProcesserResult({ repliedMessage, usage });
 };

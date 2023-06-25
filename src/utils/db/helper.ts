@@ -1,4 +1,4 @@
-import { ProcessMessageBody } from "types/queue";
+import { ProcessMessageBody } from "pages/api/db/saveProcesserResult";
 
 const createProcessMessageBody = (
     question: string,
@@ -23,17 +23,14 @@ const createProcessMessageBody = (
     };
   
     const usage = {
-      aiResourceId: app.aiResourceId,
       promptTokens: propmtTokens,
       completionTokens: completionTokens,
       totalTokens: propmtTokens + completionTokens
     };
   
     const requestBody: ProcessMessageBody = {
-      app: app,
       message: message,
       usage: usage,
-      aiResource: app.aiResource
     };
     return requestBody;
   };
