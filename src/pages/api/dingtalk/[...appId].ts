@@ -112,7 +112,7 @@ const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {
       dingTalkSend(app,"Token已耗尽，请联系相关人员添加Token",data);
       return;
     }
-    console.log(data);
+    //console.log(data);
     handleFeishuMessage(data,app,res);
 
   }else{
