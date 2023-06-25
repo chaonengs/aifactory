@@ -44,8 +44,6 @@ const ExpandMore = styled((props: ExpandMoreProps) => {
   })
 }));
 
-
-
 export const deleteApp = (id: string) => {
   const url = `/api/rest/apps/${id}`;
   return fetch(url, {
@@ -61,7 +59,7 @@ export const deleteApp = (id: string) => {
   });
 };
 
-export default function AppCard({ app }:{app:App & {aiResource:AIResource | null}}) {
+export default function AppCard({ app }: { app: App & { aiResource: AIResource | null } }) {
   const [expanded, setExpanded] = React.useState(false);
   const [configOpen, setConfigOpen] = React.useState(false);
   const [thirdpartyOpen, setThirdpartyOpen] = React.useState(false);
@@ -102,7 +100,7 @@ export default function AppCard({ app }:{app:App & {aiResource:AIResource | null
       error: '删除失败 🤯'
     });
     handleDeleteClose();
-    await mutate(url)
+    await mutate(url);
     setIsDeleting(false);
   };
 
@@ -124,14 +122,13 @@ export default function AppCard({ app }:{app:App & {aiResource:AIResource | null
     });
     if (!response.ok) {
       return Promise.reject(response);
-    }
-    else {
+    } else {
       setConfigOpen(false);
       return response;
     }
   };
 
-  const appConfigInitial = (app: App)  => {
+  const appConfigInitial = (app: App) => {
     if (app.appType === 'FEISHU') {
       const config = app.config as FeishuAppConfig;
       return {
@@ -148,17 +145,19 @@ export default function AppCard({ app }:{app:App & {aiResource:AIResource | null
           }
         },
         aiResourceId: app.aiResourceId
-      }; 
+      };
     }
 
-    {/* export type AppConfig = {
+    {
+      /* export type AppConfig = {
     token: string;
     encodingAESKey: string;
     corpId: string;
     corpSecret: string;
     agentId: string;
     ai: AppAIConfig;
-} */}
+} */
+    }
 
     if (app.appType === 'WEWORK') {
       const config = app.config as WeworkAppConfig;
@@ -177,11 +176,9 @@ export default function AppCard({ app }:{app:App & {aiResource:AIResource | null
           }
         },
         aiResourceId: app.aiResourceId
-      }; 
-      
+      };
     }
     throw new Error('Invalid app type: ' + app.appType);
-
   };
 
   const formik = useFormik({
@@ -218,22 +215,26 @@ export default function AppCard({ app }:{app:App & {aiResource:AIResource | null
             {app.aiResource?.name || app.aiResource?.type || '资源待配置'}
           </Typography>
         </CardContent>
-        {app.appType === 'FEISHU' &&         <CardMedia
-          component="img"
-          image="/assets/images/logos/feishu.png"
-          alt="FeiShu"
-          height={124}
-          width={124}
-          sx={{ objectFit: 'contain' }}
-        />}
-  {app.appType === 'WEWORK' &&         <CardMedia
-          component="img"
-          image="/assets/images/logos/wework.png"
-          alt="Wework"
-          height={124}
-          width={124}
-          sx={{ objectFit: 'contain' }}
-        />}
+        {app.appType === 'FEISHU' && (
+          <CardMedia
+            component="img"
+            image="/assets/images/logos/feishu.png"
+            alt="FeiShu"
+            height={124}
+            width={124}
+            sx={{ objectFit: 'contain' }}
+          />
+        )}
+        {app.appType === 'WEWORK' && (
+          <CardMedia
+            component="img"
+            image="/assets/images/logos/wework.png"
+            alt="Wework"
+            height={124}
+            width={124}
+            sx={{ objectFit: 'contain' }}
+          />
+        )}
 
         <CardActions disableSpacing>
           <IconButton aria-label="edit" onClick={() => handleConfigOpen()}>
@@ -271,8 +272,8 @@ export default function AppCard({ app }:{app:App & {aiResource:AIResource | null
           <TabContext value={configTab}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <TabList onChange={handleChangeConfigTab} aria-label="app-config-tabs">
-                {app.appType === 'FEISHU' && <Tab label="飞书" value="feishu" /> }
-                {app.appType === 'WEWORK' && <Tab label="企业微信" value="wework" /> }
+                {app.appType === 'FEISHU' && <Tab label="飞书" value="feishu" />}
+                {app.appType === 'WEWORK' && <Tab label="企业微信" value="wework" />}
 
                 <Tab label="AI" value="ai" />
                 <Tab label="资源" value="resource" />
@@ -331,7 +332,6 @@ export default function AppCard({ app }:{app:App & {aiResource:AIResource | null
               </Stack>
             </TabPanel>
 
-            
             <TabPanel value="wework">
               <Stack>
                 <TextField
@@ -484,7 +484,9 @@ export default function AppCard({ app }:{app:App & {aiResource:AIResource | null
           </TabContext>
         </DialogContent>
         <DialogActions>
-          <Button disabled={formik.isSubmitting}  onClick={handleConfigClose}>取消</Button>
+          <Button disabled={formik.isSubmitting} onClick={handleConfigClose}>
+            取消
+          </Button>
           <LoadingButton loading={formik.isSubmitting} onClick={formik.submitForm}>
             保存
           </LoadingButton>
@@ -494,31 +496,42 @@ export default function AppCard({ app }:{app:App & {aiResource:AIResource | null
       <Dialog open={thirdpartyOpen} onClose={handleThirdpartyClose}>
         <DialogTitle>查看第三方配置</DialogTitle>
         <DialogContent>
-          {app.appType === 'FEISHU' && (<>
-          <DialogContentText>飞书URL配置</DialogContentText>
-          <TextField
-            margin="dense"
-            id="callbackurl"
-            label="事件接收地址"
-            fullWidth
-            variant="standard"
-            sx={{ minWidth: 500 }}
-            value={`${window.location.origin}/api/feishu/${app.id}`}
-          />
-          </>
+          {app.appType === 'FEISHU' && (
+            <>
+              <DialogContentText>飞书URL配置</DialogContentText>
+              <TextField
+                margin="dense"
+                id="callbackurl"
+                label="事件接收地址"
+                fullWidth
+                variant="standard"
+                sx={{ minWidth: 500 }}
+                value={`${window.location.origin}/api/feishu/${app.id}`}
+              />
+            </>
           )}
-{app.appType === 'WEWORK' && (<>
-          <DialogContentText>企业微信配置</DialogContentText>
-          <TextField
-            margin="dense"
-            id="callbackurl"
-            label="接收消息URL"
-            fullWidth
-            variant="standard"
-            sx={{ minWidth: 500 }}
-            value={`${window.location.origin}/api/wework/${app.id}`}
-          />
-          </>
+          {app.appType === 'WEWORK' && (
+            <>
+              <DialogContentText>企业微信配置</DialogContentText>
+              <TextField
+                margin="dense"
+                id="callbackurl"
+                label="接收消息URL"
+                fullWidth
+                variant="standard"
+                sx={{ minWidth: 500 }}
+                value={`${window.location.origin}/api/wework/${app.id}`}
+              />
+              <TextField
+                margin="dense"
+                id="callbackurl"
+                label="白名单IP"
+                fullWidth
+                variant="standard"
+                sx={{ minWidth: 500 }}
+                value={`39.107.33.80`}
+              />
+            </>
           )}
         </DialogContent>
         <DialogActions>
@@ -537,7 +550,9 @@ export default function AppCard({ app }:{app:App & {aiResource:AIResource | null
           <DialogContentText id="alert-dialog-description">确认要删除该应用吗？无法恢复</DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button disabled={isDeleting} onClick={handleDeleteClose}>取消</Button>
+          <Button disabled={isDeleting} onClick={handleDeleteClose}>
+            取消
+          </Button>
           <LoadingButton loading={isDeleting} onClick={handleDelete}>
             删除
           </LoadingButton>
