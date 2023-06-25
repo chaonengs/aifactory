@@ -18,8 +18,16 @@ const config = app.config as Prisma.JsonObject;
     "appSecret": appSecret
   };
   try {
-    const response = await axios.post(url,data,headerConfig);
-    const accessToken = response.data.accessToken;
+    const result = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+    const json= await result.json();
+
+    const accessToken = json.accessToken;
     // Store access token in local cache
 
     console.log('Access token stored in local cache');
@@ -48,16 +56,16 @@ const SingleChatSend=async(app:App, message:String,feishu:JSON)=>{
     userIds:[feishu.senderStaffId],
     robotCode:feishu.robotCode
   };
-  const headerConfig={
-      headers:{
-          'x-acs-dingtalk-access-token':token,
-          'Content-Type':'application/json',
-          
-      }
-    }
+
   try {
-    const response = await axios.post(url, data, headerConfig);
-    console.log(response.data);
+   const result= await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-acs-dingtalk-access-token':token
+      },
+      body: JSON.stringify(data)
+    });
   } catch (error) {
     console.error(error);
   }
@@ -71,16 +79,15 @@ const GroupChatSend=async(app:App, message:String,feishu:JSON)=>{
     openConversationId:feishu.conversationId,
     robotCode:feishu.robotCode
   };
-  const headerConfig={
-      headers:{
-          'x-acs-dingtalk-access-token':token,
-          'Content-Type':'application/json',
-          
-      }
-    }
   try {
-    const response = await axios.post(url, data, headerConfig);
-    console.log(response.data);
+    await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-acs-dingtalk-access-token':token
+      },
+      body: JSON.stringify(data)
+    });
   } catch (error) {
     console.error(error);
   }

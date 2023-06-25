@@ -67,12 +67,12 @@ const handleFeishuMessage = async (
     });
 
 
-  // Send to queue.
-  // await MessageQueue.enqueue(
-  //   { feishuMessage: feishuMessage, history: history, app: app }, // job to be enqueued
-  //   { delay: 1 } // scheduling options
-  // );
-  const openaiStream = await processMessage({recievedMessage,history,app});
+  //Send to queue.
+  await MessageQueue.enqueue(
+    { recievedMessage: recievedMessage, history: history, app: app }, // job to be enqueued
+    { delay: 1 } // scheduling options
+  );
+  //const openaiStream = await processMessage({recievedMessage,history,app});
   res.end('ok');
 };
 

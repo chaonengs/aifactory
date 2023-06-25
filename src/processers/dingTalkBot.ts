@@ -208,7 +208,7 @@ const processMessage = async ({ recievedMessage, history, app }: MessageQueueBod
       await finish({ airesult, question, promptTokens, completionTokens, app, recievedMessage });
     },
     async () => {
-      DingTalk(app,airesult,recievedMessage.data);
+      await DingTalk(app,airesult,recievedMessage.data);
       await finish({ airesult, question, promptTokens, completionTokens, app, recievedMessage });
     }
   );
