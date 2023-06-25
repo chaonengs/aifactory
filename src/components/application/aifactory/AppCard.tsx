@@ -64,14 +64,14 @@ export const deleteApp = (id: string) => {
 export default function AppCard({ app }:{app:App & {aiResource:AIResource | null}}) {
   const [expanded, setExpanded] = React.useState(false);
   const [configOpen, setConfigOpen] = React.useState(false);
-  const [feishuOpen, setFeishuOpen] = React.useState(false);
+  const [thirdpartyOpen, setThirdpartyOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
-  const [configTab, setConfigTab] = React.useState('feishu');
+  const [configTab, setConfigTab] = React.useState(app.appType.toLowerCase());
   const { url, organization } = useOrganization(useConfig().organization);
   const host = process.env.NEXTAUTH_URL;
-  const handleFeishuOpen = () => {
-    setFeishuOpen(true);
+  const handleThirdpartyOpen = () => {
+    setThirdpartyOpen(true);
   };
 
   const handleConfigOpen = () => {
@@ -82,8 +82,8 @@ export default function AppCard({ app }:{app:App & {aiResource:AIResource | null
     setConfigOpen(false);
   };
 
-  const handleFeishuClose = () => {
-    setFeishuOpen(false);
+  const handleThirdpartyClose = () => {
+    setThirdpartyOpen(false);
   };
 
   const handleDeleteOpen = () => {
@@ -218,36 +218,30 @@ export default function AppCard({ app }:{app:App & {aiResource:AIResource | null
             {app.aiResource?.name || app.aiResource?.type || '资源待配置'}
           </Typography>
         </CardContent>
-        <CardMedia
+        {app.appType === 'FEISHU' &&         <CardMedia
           component="img"
           image="/assets/images/logos/feishu.png"
           alt="FeiShu"
           height={124}
           width={124}
           sx={{ objectFit: 'contain' }}
-        />
+        />}
+  {app.appType === 'WEWORK' &&         <CardMedia
+          component="img"
+          image="/assets/images/logos/wework.png"
+          alt="Wework"
+          height={124}
+          width={124}
+          sx={{ objectFit: 'contain' }}
+        />}
 
         <CardActions disableSpacing>
           <IconButton aria-label="edit" onClick={() => handleConfigOpen()}>
             <EditIcon />
           </IconButton>
-          <IconButton aria-label="view" onClick={() => handleFeishuOpen()}>
+          <IconButton aria-label="view" onClick={() => handleThirdpartyOpen()}>
             <VisibilityIcon />
           </IconButton>
-          {/* <IconButton aria-label="messages">
-            <ForumIcon />
-          </IconButton>
-          <IconButton aria-label="usages">
-            <ReceiptIcon />
-          </IconButton> */}
-          {/* <ExpandMore
-          expand={expanded}
-          onClick={handleExpandClick}
-          aria-expanded={expanded}
-          aria-label="show more"
-        >
-          <ExpandMoreIcon />
-        </ExpandMore> */}
         </CardActions>
         <Collapse in={expanded} timeout="auto" unmountOnExit>
           <CardContent>
@@ -338,15 +332,6 @@ export default function AppCard({ app }:{app:App & {aiResource:AIResource | null
             </TabPanel>
 
             
-{/* export type AppConfig = {
-    token: string;
-    encodingAESKey: string;
-    corpId: string;
-    corpSecret: string;
-    agentId: string;
-    ai: AppAIConfig;
-} */}
-
             <TabPanel value="wework">
               <Stack>
                 <TextField
@@ -506,10 +491,11 @@ export default function AppCard({ app }:{app:App & {aiResource:AIResource | null
         </DialogActions>
       </Dialog>
 
-      <Dialog open={feishuOpen} onClose={handleFeishuClose}>
-        <DialogTitle>查看飞书配置</DialogTitle>
+      <Dialog open={thirdpartyOpen} onClose={handleThirdpartyClose}>
+        <DialogTitle>查看第三方配置</DialogTitle>
         <DialogContent>
-          <DialogContentText>查看飞书URL配置</DialogContentText>
+          {app.appType === 'FEISHU' && (<>
+          <DialogContentText>飞书URL配置</DialogContentText>
           <TextField
             margin="dense"
             id="callbackurl"
@@ -519,9 +505,24 @@ export default function AppCard({ app }:{app:App & {aiResource:AIResource | null
             sx={{ minWidth: 500 }}
             value={`${window.location.origin}/api/feishu/${app.id}`}
           />
+          </>
+          )}
+{app.appType === 'WEWORK' && (<>
+          <DialogContentText>企业微信配置</DialogContentText>
+          <TextField
+            margin="dense"
+            id="callbackurl"
+            label="接收消息URL"
+            fullWidth
+            variant="standard"
+            sx={{ minWidth: 500 }}
+            value={`${window.location.origin}/api/wework/${app.id}`}
+          />
+          </>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleFeishuClose}>关闭</Button>
+          <Button onClick={handleThirdpartyClose}>关闭</Button>
         </DialogActions>
       </Dialog>
 
