@@ -117,6 +117,7 @@ const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {
     handleFeishuMessage(data,app,res);
 
   }else{
+    console.log("请求结束！");
     res.end('ok');
   }
 };
