@@ -19,7 +19,7 @@ import IconButton, { IconButtonProps } from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
-import { App } from '@prisma/client';
+import { AIResource, App } from '@prisma/client';
 import { AppTypes } from 'constant';
 import { useOrganization } from 'feed';
 import { useFormik } from 'formik';
@@ -27,7 +27,7 @@ import useConfig from 'hooks/useConfig';
 import * as React from 'react';
 import { toast } from 'react-toastify';
 import { mutate } from 'swr';
-import { AppConfig } from 'types/app';
+import { WeworkAppConfig, FeishuAppConfig } from 'types/app';
 
 interface ExpandMoreProps extends IconButtonProps {
   expand: boolean;
@@ -61,13 +61,12 @@ export const deleteApp = (id: string) => {
   });
 };
 
-export default function AppCard({ app }) {
+export default function AppCard({ app }:{app:App & {aiResource:AIResource | null}}) {
   const [expanded, setExpanded] = React.useState(false);
   const [configOpen, setConfigOpen] = React.useState(false);
   const [feishuOpen, setFeishuOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
-  const [configForm, setConfigForm] = React.useState(app.config);
   const [configTab, setConfigTab] = React.useState('feishu');
   const { url, organization } = useOrganization(useConfig().organization);
   const host = process.env.NEXTAUTH_URL;
@@ -107,18 +106,6 @@ export default function AppCard({ app }) {
     setIsDeleting(false);
   };
 
-  // const handleFormOnChange = (event: { target: { id: string; value: string } }) => {
-  //   // event.target.id, event.target.value
-  //   let config = {};
-  //   Object.assign(config, configForm);
-
-  //   const k = event.target.id as string;
-  //   const v = event.target.value as string;
-
-  //   config[k] = v;
-  //   setConfigForm(config);
-  // };
-
   const handleExpandClick = () => {
     setExpanded(!expanded);
   };
@@ -138,30 +125,67 @@ export default function AppCard({ app }) {
     if (!response.ok) {
       return Promise.reject(response);
     }
-    return response;
+    else {
+      setConfigOpen(false);
+      return response;
+    }
   };
 
-  const appConfigInitial = (app: App): App & { config: AppConfig } => {
-    return {
-      // ...app,
-      config: {
-        appId: (app.config as AppConfig).appId || '',
-        appSecret: (app.config as AppConfig).appSecret || '',
-        encryptKey: (app.config as AppConfig).encryptKey || '',
-        verificationToken: (app.config as AppConfig).verificationToken || '',
-        ai: {
-          temperature: (app.config as AppConfig).ai?.temperature || 1,
-          maxCompletionTokens: (app.config as AppConfig).ai?.maxCompletionTokens || 2000,
-          maxPromptTokens: (app.config as AppConfig).ai?.maxPromptTokens || 2000
-        }
-      },
-      aiResourceId: app.aiResourceId
-    };
+  const appConfigInitial = (app: App)  => {
+    if (app.appType === 'FEISHU') {
+      const config = app.config as FeishuAppConfig;
+      return {
+        // ...app,
+        config: {
+          appId: config.appId || '',
+          appSecret: config.appSecret || '',
+          encryptKey: config.encryptKey || '',
+          verificationToken: config.verificationToken || '',
+          ai: {
+            temperature: config.ai?.temperature || 1,
+            maxCompletionTokens: config.ai?.maxCompletionTokens || 2000,
+            maxPromptTokens: config.ai?.maxPromptTokens || 2000
+          }
+        },
+        aiResourceId: app.aiResourceId
+      }; 
+    }
+
+    {/* export type AppConfig = {
+    token: string;
+    encodingAESKey: string;
+    corpId: string;
+    corpSecret: string;
+    agentId: string;
+    ai: AppAIConfig;
+} */}
+
+    if (app.appType === 'WEWORK') {
+      const config = app.config as WeworkAppConfig;
+      return {
+        // ...app,
+        config: {
+          token: config.token || '',
+          encodingAESKey: config.encodingAESKey || '',
+          corpId: config.corpId || '',
+          corpSecret: config.corpSecret || '',
+          agentId: config.agentId || '',
+          ai: {
+            temperature: config.ai?.temperature || 1,
+            maxCompletionTokens: config.ai?.maxCompletionTokens || 2000,
+            maxPromptTokens: config.ai?.maxPromptTokens || 2000
+          }
+        },
+        aiResourceId: app.aiResourceId
+      }; 
+      
+    }
+    throw new Error('Invalid app type: ' + app.appType);
+
   };
 
   const formik = useFormik({
     initialValues: appConfigInitial(app),
-    // validationSchema: ResourceSchema,
 
     onSubmit: async (values, { setSubmitting }) => {
       await toast.promise(updateConfig(app.id, values), {
@@ -170,20 +194,6 @@ export default function AppCard({ app }) {
         error: '保存失败 🤯'
       });
       setSubmitting(false);
-      // try{
-      //   const result = await updateConfig(app.id,values);
-      //   if (result.ok) {
-      //     toast('保存成功')
-      //     setConfigOpen(false);
-
-      //   } else {
-      //     toast('保存失败')
-      //   }
-      // } catch (e){
-
-      // } finally {
-
-      // }
     }
   });
 
@@ -201,7 +211,7 @@ export default function AppCard({ app }) {
             )
           }
           title={app.name || app.appType}
-          subheader={AppTypes[app.appType]}
+          subheader={AppTypes[app.appType] || app.appType}
         />
         <CardContent>
           <Typography variant="body2" color="text.secondary">
@@ -267,7 +277,9 @@ export default function AppCard({ app }) {
           <TabContext value={configTab}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <TabList onChange={handleChangeConfigTab} aria-label="app-config-tabs">
-                <Tab label="飞书机器人" value="feishu" />
+                {app.appType === 'FEISHU' && <Tab label="飞书" value="feishu" /> }
+                {app.appType === 'WEWORK' && <Tab label="企业微信" value="wework" /> }
+
                 <Tab label="AI" value="ai" />
                 <Tab label="资源" value="resource" />
               </TabList>
@@ -321,6 +333,81 @@ export default function AppCard({ app }) {
                   onChange={formik.handleChange}
                   error={formik.touched.config?.verificationToken && Boolean(formik.errors.config?.verificationToken)}
                   helperText={formik.touched.config?.verificationToken && formik.errors.config?.verificationToken}
+                />
+              </Stack>
+            </TabPanel>
+
+            
+{/* export type AppConfig = {
+    token: string;
+    encodingAESKey: string;
+    corpId: string;
+    corpSecret: string;
+    agentId: string;
+    ai: AppAIConfig;
+} */}
+
+            <TabPanel value="wework">
+              <Stack>
+                <TextField
+                  margin="dense"
+                  id="config.corpId"
+                  name="config.corpId"
+                  label="Corp Id"
+                  fullWidth
+                  variant="standard"
+                  value={formik.values.config.corpId}
+                  onChange={formik.handleChange}
+                  error={formik.touched.config?.corpId && Boolean(formik.errors.config?.corpId)}
+                  helperText={formik.touched.config?.corpId && formik.errors.config?.corpId}
+                />
+                <TextField
+                  margin="dense"
+                  id="config.corpSecret"
+                  name="config.corpSecret"
+                  label="Corp Secret"
+                  fullWidth
+                  variant="standard"
+                  value={formik.values.config.corpSecret}
+                  onChange={formik.handleChange}
+                  error={formik.touched.config?.corpSecret && Boolean(formik.errors.config?.corpSecret)}
+                  helperText={formik.touched.config?.corpSecret && formik.errors.config?.corpSecret}
+                />
+                <TextField
+                  margin="dense"
+                  id="config.agentId"
+                  name="config.agentId"
+                  label="Agent Id"
+                  fullWidth
+                  variant="standard"
+                  value={formik.values.config.agentId}
+                  onChange={formik.handleChange}
+                  error={formik.touched.config?.agentId && Boolean(formik.errors.config?.agentId)}
+                  helperText={formik.touched.config?.agentId && formik.errors.config?.agentId}
+                />
+                <TextField
+                  margin="dense"
+                  variant="standard"
+                  id="config.encodingAESKey"
+                  label="AES KEY"
+                  name="config.encodingAESKey"
+                  fullWidth
+                  value={formik.values.config.encodingAESKey}
+                  onChange={formik.handleChange}
+                  error={formik.touched.config?.encodingAESKey && Boolean(formik.errors.config?.encodingAESKey)}
+                  helperText={formik.touched.config?.encodingAESKey && formik.errors.config?.encodingAESKey}
+                />
+                <TextField
+                  margin="dense"
+                  variant="standard"
+                  id="config.token"
+                  label="Token"
+                  name="config.token"
+                  fullWidth
+                  value={formik.values.config.token}
+                  onChange={formik.handleChange}
+                  error={formik.touched.config?.token && Boolean(formik.errors.config?.token)}
+                  helperText={formik.touched.config?.token && formik.errors.config?.token}
                 />
               </Stack>
             </TabPanel>
@@ -412,7 +499,7 @@ export default function AppCard({ app }) {
           </TabContext>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleConfigClose}>取消</Button>
+          <Button disabled={formik.isSubmitting}  onClick={handleConfigClose}>取消</Button>
           <LoadingButton loading={formik.isSubmitting} onClick={formik.submitForm}>
             保存
           </LoadingButton>

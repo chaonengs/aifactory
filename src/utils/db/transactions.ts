@@ -4,7 +4,7 @@ import { ProcessMessageBody } from 'types/queue';
 
 const prisma = new PrismaClient();
 
-const logSensitiveWord = async (message:Message, organizationId:string) => {
+export const logSensitiveWord = async (message:Message, organizationId:string) => {
   const organization = await prisma.organization.findFirstOrThrow({
     where: { id: organizationId },
     include: {
@@ -33,9 +33,7 @@ const logSensitiveWord = async (message:Message, organizationId:string) => {
   }
 }
 
-const saveMessage = async (message: Message, app: App, aiResource: AIResource, usage: Usage) => {
-
-
+export const saveMessage = async (message: Message, app: App, aiResource: AIResource, usage: Usage) => {
   let transList = [];
 
   transList.push(
@@ -46,7 +44,6 @@ const saveMessage = async (message: Message, app: App, aiResource: AIResource, u
         content: message.content,
         answer: message.answer,
         appId: app.id,
-        feishuMessageId: message.feishuMessageId,
         conversationId: message.conversationId,
         usage: {
           create: {
@@ -56,6 +53,7 @@ const saveMessage = async (message: Message, app: App, aiResource: AIResource, u
             totalTokens: usage.promptTokens + usage.completionTokens
           }
         },
+        recievedMessageId: message.recievedMessageId,
         organizationId: app.organizationId
       }
     })
@@ -82,12 +80,11 @@ const saveMessage = async (message: Message, app: App, aiResource: AIResource, u
 
 };
 
-const finishFeishuProcess = async (feishuMessageId: string) => {
-  prisma.feiShuMessage.update({
-    where: { id: feishuMessageId },
+export const finishProcessing = async (recievedMessageId: string) => {
+  prisma.recievedMessage.update({
+    where: { id: recievedMessageId },
     data: {
       processing: false
     }
   });
 };
-export { logSensitiveWord, saveMessage, finishFeishuProcess };
