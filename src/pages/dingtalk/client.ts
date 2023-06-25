@@ -58,7 +58,7 @@ const SingleChatSend=async(app:App, message:String,feishu:JSON)=>{
   };
 
   try {
-   const result= await fetch(url, {
+    const result=   await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -66,6 +66,7 @@ const SingleChatSend=async(app:App, message:String,feishu:JSON)=>{
       },
       body: JSON.stringify(data)
     });
+    console.log(await result.json());
   } catch (error) {
     console.error(error);
   }
@@ -80,7 +81,7 @@ const GroupChatSend=async(app:App, message:String,feishu:JSON)=>{
     robotCode:feishu.robotCode
   };
   try {
-    await fetch(url, {
+ const result=   await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -88,6 +89,7 @@ const GroupChatSend=async(app:App, message:String,feishu:JSON)=>{
       },
       body: JSON.stringify(data)
     });
+    console.log(await result.json());
   } catch (error) {
     console.error(error);
   }
