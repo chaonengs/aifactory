@@ -10,10 +10,6 @@
     "graphql": "node graphql.server.js"
   },
   "dependencies": {
-    "@alicloud/dingtalk": "^2.0.21",
-    "@alicloud/openapi-client": "^0.4.6",
-    "@alicloud/tea-typescript": "^1.8.0",
-    "@alicloud/tea-util": "^1.4.5",
     "@apollo/server": "^4.7.1",
     "@as-integrations/next": "^2.0.0",
     "@auth/core": "^0.7.1",
