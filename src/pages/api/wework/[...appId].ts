@@ -82,7 +82,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   const decrypted = decrypt(config.encodingAESKey, encryptString);
   console.debug(decrypted);
   const decryptedJson = new XMLParser().parse(decrypted.message).xml;
-  const resBody = encrypt(config.encodingAESKey, firstResponseXML(decryptedJson.fromUser, config.corpId), decryptedJson.id);
+  const resBody = encrypt(config.encodingAESKey, firstResponseXML(decryptedJson.fromUser, config.corpId), decryptedJson.MsgId);
 
   try {
     const recievedMessage = await prisma.recievedMessage.create({
