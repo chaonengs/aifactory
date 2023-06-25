@@ -48,7 +48,7 @@ const makeMessages = ({ recievedMessage, history, app }: MessageQueueBody) => {
 };
 
 const getAccessToken = (appConfig: WeworkAppConfig) => {
-  const ulr = `${WEWORK_PROXYED_BASE_URL}/cgi-bin/gettoken?corpid=${appConfig.corpId}&corpsecret=${appConfig.corpSecret}`;
+  const url = `${WEWORK_PROXYED_BASE_URL}/cgi-bin/gettoken?corpid=${appConfig.corpId}&corpsecret=${appConfig.corpSecret}`;
   return fetch(url);
 };
 
