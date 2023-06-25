@@ -25,13 +25,13 @@ const firstResponseXML = (toUser: string, fromUser: string) => `
 <xml>
    <ToUserName><![CDATA[${toUser}]]></ToUserName>
    <FromUserName><![CDATA[${fromUser}]]></FromUserName> 
-   <CreateTime>${Date.now()}</CreateTime>
+   <CreateTime>${now()}</CreateTime>
    <MsgType><![CDATA[text]]></MsgType>
    <Content><![CDATA[正在产生内容]]></Content>
 </xml>
 `;
 
-const wrapResponeMessage = (encrypted:string) => `<xml>
+const wrapResponeMessage = (encrypted: string) => `<xml>
 <Encrypt><![CDATA[msg_encrypt]]></Encrypt>
 <MsgSignature><![CDATA[msg_signature]]></MsgSignature>
 <TimeStamp>timestamp</TimeStamp>
@@ -61,11 +61,9 @@ const weworkVerify = async (req: NextApiRequest, res: NextApiResponse) => {
   return { app, isVerification: false, verificationMessage: null };
 };
 
-
-
 const makeRespone = (config: AppConfig, decryptedJson: any) => {
   const timestamp = now();
-  const nonce = (Math.random() * 10000000000);
+  const nonce = Math.random() * 10000000000;
   const encrypted = encrypt(config.encodingAESKey, firstResponseXML(decryptedJson.fromUser, config.corpId), decryptedJson.MsgId);
   const signature = getSignature(config.encodingAESKey, timestamp, String(nonce), encrypted);
   return `<xml>
@@ -74,11 +72,9 @@ const makeRespone = (config: AppConfig, decryptedJson: any) => {
   <TimeStamp>${timestamp}</TimeStamp>
   <Nonce><![CDATA[${String(nonce)}]]></Nonce>
   </xml>`;
-}
+};
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
-  console.debug(req);
-  console.debug(req.body);
   const { app, isVerification, verificationMessage } = await weworkVerify(req, res);
   if (!app) {
     throw new Error('app not found');
@@ -119,7 +115,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     );
     console.log(resBody);
     res.setHeader('Content-Type', 'text/xml').end(resBody);
-
   } catch (e) {
     if ((e as PrismaClientKnownRequestError).code === 'P2002') {
       res.setHeader('Content-Type', 'text/xml').end(resBody);
@@ -128,6 +123,4 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       throw e;
     }
   }
-
-
 };

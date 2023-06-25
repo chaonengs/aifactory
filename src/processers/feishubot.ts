@@ -1,17 +1,13 @@
 import { ApiError } from 'next/dist/server/api-utils';
 
+import { AIResource, App, RecievedMessage } from '.prisma/client/edge';
 import { encode } from 'gpt-tokenizer';
-import { createProcessMessageBody } from 'utils/db/helper';
-import { ReceiveMessageData, User } from 'types/feishu';
-import { getInternalTenantAccessToken, getUser, patchMessage, replyMessage, sendMessage, getChatHistory } from 'utils/server/feishu';
-import { OpenAIRequest, OpenAIStream } from 'utils/server/openai';
-import { OpenAIModelID, OpenAIModels } from 'types/openai';
-import { Message, RecievedMessage, App, AIResource } from '.prisma/client/edge';
-import { FeiShuProfile } from 'nextauth/providers/feishu';
-import { FeishuAppConfig } from 'types/app';
 import { MessageQueueBody } from 'pages/api/queues/messages';
-
-
+import { FeishuAppConfig } from 'types/app';
+import { ReceiveMessageData, User } from 'types/feishu';
+import { createProcessMessageBody } from 'utils/db/helper';
+import { getInternalTenantAccessToken, getUser, patchMessage, replyMessage } from 'utils/server/feishu';
+import { OpenAIRequest, OpenAIStream } from 'utils/server/openai';
 
 const getFeishuUser = async (accessToken: string, userId: string) => {
   const req = {
@@ -186,7 +182,7 @@ const processMessage = async ({ recievedMessage, history, app }: MessageQueueBod
   //@ts-ignore
   let airesult: string = '';
   let completionTokens = 0;
-  let feishuSender: User | null  = null;
+  let feishuSender: User | null = null;
   if (feiShuMessageData.sender.sender_id?.union_id) {
     const u = await getFeishuUser(accessToken, feiShuMessageData.sender.sender_id.union_id);
     if (u) {
@@ -211,7 +207,7 @@ const processMessage = async ({ recievedMessage, history, app }: MessageQueueBod
     maxPromptTokens: appConfig.ai?.maxPromptTokens || 2000,
     messages: messages,
     systemPrompt: null,
-    stream: true,
+    stream: true
   };
   const openaiStream = OpenAIStream(
     params,
@@ -241,3 +237,4 @@ const processMessage = async ({ recievedMessage, history, app }: MessageQueueBod
 };
 
 export { processMessage };
+
