@@ -1,7 +1,6 @@
 import { AIResource, RecievedMessage, Message as PrismaMessage, Usage as PrismaUsage, App as PrismaApp } from '@prisma/client/edge';
 import { encode } from 'gpt-tokenizer';
 import { MessageQueueBody } from 'pages/api/queues/messages';
-import { StringNumFunc } from 'types';
 import { Usage } from 'types/openai';
 import { WeworkAppConfig } from 'types/app';
 import { Message } from 'types/wework';
