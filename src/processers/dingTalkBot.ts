@@ -5,9 +5,9 @@ import { createProcessMessageBody } from 'utils/db/helper';
 import { ReceiveMessageData } from 'types/feishu';
 import saveDingTalkResult from "pages/api/db/saveDingTalkResult";
 import { getInternalTenantAccessToken, getUser, patchMessage, replyMessage, sendMessage, getChatHistory } from 'utils/server/feishu';
-import { OpenAIRequest, OpenAIStream } from 'utils/server/openai';
-import { OpenAIModelID, OpenAIModels } from 'types/openai';
-import { Message, RecievedMessage, App } from '.prisma/client/edge';
+import { OpenAIRequest, OpenAIStream,OpenAIChatComletion } from 'utils/server/openai';
+import { Usage } from 'types/openai';
+import { AIResource, RecievedMessage, Message as PrismaMessage, Usage as PrismaUsage, App as PrismaApp } from '@prisma/client/edge';
 import { AppConfig } from 'types/app';
 import DingTalk from 'pages/dingtalk/client';
 import { MessageQueueBody } from 'pages/api/queues/messages';
@@ -142,6 +142,31 @@ const finish = async ({
   // };
   // saveFeiShuResult(json);
 };
+const saveProcesserResult = async ({
+  repliedMessage,
+  app,
+  answer,
+  usage
+}: {
+  repliedMessage: PrismaMessage;
+  app: PrismaApp & { aiResource: AIResource };
+  answer: string;
+  usage: Usage;
+}) => {
+  const params = { repliedMessage, usage, app, aiResource: app.aiResource, finished: true };
+  const body=JSON.stringify({ feishuMessageId: repliedMessage.conversationId, params }) ;
+  const url = `${process.env.QUIRREL_BASE_URL}/api/db/saveProcesserResult`;
+  await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+};
+
+
+
 
 const processMessage = async ({ recievedMessage, history, app }: MessageQueueBody) => {
   const appConfig = app.config as AppConfig;
@@ -182,36 +207,66 @@ const processMessage = async ({ recievedMessage, history, app }: MessageQueueBod
 
   messages.push(message);
 
+
+  const params: OpenAIRequest = {
+    hostUrl: app.aiResource.hostUrl,
+    type: app.aiResource.type,
+    apiVersion: app.aiResource.apiVersion,
+    model: app.aiResource.model,
+    systemPrompt: '',
+    temperature: appConfig.ai.temperature,
+    key: app.aiResource.apiKey,
+    messages: messages,
+    stream: false,
+    maxTokens: appConfig.ai.maxCompletionTokens,
+    maxPromptTokens: appConfig.ai.maxPromptTokens
+  };
+  const result = await OpenAIChatComletion(params);
+  const json=await result.json();
+  const answer = json.choices[0].message.content;
+  const usage = json.usage as Usage;
+  DingTalk(app,answer,feiShuMessageData);
+  const repliedMessage = {
+    senderUnionId: feiShuMessageData?.senderNick || 'anonymous',
+    sender:feiShuMessageData?.senderStaffId || 'anonymous',
+    content: question,
+    answer: answer,
+    appId: app.id,
+    conversationId: feiShuMessageData.msgId,
+    recievedMessageId: feiShuMessageData.msgId
+  };
+  await saveProcesserResult({ repliedMessage, app, usage, answer });
+ // finish({ answer, question,promptTokens,completionTokens, app, recievedMessage });
   //@ts-ignore
   // const question = JSON.parse(feishuMessage.data.message.content).text;
-  let airesult: string='';
-  let completionTokens = 0;
-  const params: OpenAIRequest = {
-    model: OpenAIModels[OpenAIModelID.GPT_3_5],
-    messages: messages,
-    key: app.aiResource.apiKey,
-    type: app.aiResource.type,
-    hostUrl:app.aiResource.hostUrl
-  };
-  const openaiStream = OpenAIStream(
-    params,
-    async (data) => {
-      completionTokens += 1;
-      if (data) {
-        airesult += data;
-      }
-    },
-    async (error) => {
-      console.error(error);
+  // let airesult: string='';
+  // let completionTokens = 0;
+  // const params: OpenAIRequest = {
+  //   model: OpenAIModels[OpenAIModelID.GPT_3_5],
+  //   messages: messages,
+  //   key: app.aiResource.apiKey,
+  //   type: app.aiResource.type,
+  //   hostUrl:app.aiResource.hostUrl
+  // };
+  // const openaiStream = OpenAIStream(
+  //   params,
+  //   async (data) => {
+  //     completionTokens += 1;
+  //     if (data) {
+  //       airesult += data;
+  //     }
+  //   },
+  //   async (error) => {
+  //     console.error(error);
 
-      await finish({ airesult, question, promptTokens, completionTokens, app, recievedMessage });
-    },
-    async () => {
-      await DingTalk(app,airesult,recievedMessage.data);
-      await finish({ airesult, question, promptTokens, completionTokens, app, recievedMessage });
-    }
-  );
-  return openaiStream;
+  //     await finish({ airesult, question, promptTokens, completionTokens, app, recievedMessage });
+  //   },
+  //   async () => {
+  //     await DingTalk(app,airesult,recievedMessage.data);
+  //     await finish({ airesult, question, promptTokens, completionTokens, app, recievedMessage });
+  //   }
+  // );
+  // return openaiStream;
 };
 
 
