@@ -39,5 +39,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         const [m, r, a] = await saveMessage(saveQuest.data.message, saveQuest.data.usage);
         await logSensitiveWord(m as PrismaMessage, (a as App).organizationId);
     }
+    res.end('ok');
 }
 
