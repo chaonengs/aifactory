@@ -119,10 +119,10 @@ export const processMessage = async ({ recievedMessage, history, app }: MessageQ
     maxTokens: appConfig.ai.maxCompletionTokens,
     maxPromptTokens: appConfig.ai.maxPromptTokens
   };
-  const result = await OpenAIChatComletion(params);
-  console.debug(await result.json());
-  const answer = (await result.json()).choices[0].text;
-  const usage = (await result.json()).usage as Usage;
+  const result = await (await OpenAIChatComletion(params)).json();
+  console.debug(result);
+  const answer = result.choices[0].message.content;
+  const usage = result.usage as Usage;
   const accessToken = (await (await getAccessToken(appConfig)).json()).access_token;
   const user = await (await getUser(receiveMessageData.FromUserName, accessToken)).json();
   await sendWewokMessage(receiveMessageData.FromUserName, answer, appConfig, accessToken);
