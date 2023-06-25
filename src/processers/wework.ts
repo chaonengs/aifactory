@@ -120,7 +120,11 @@ export const processMessage = async ({ recievedMessage, history, app }: MessageQ
   const result = await (await OpenAIChatComletion(params)).json();
   console.info(result);
   const answer = result.choices[0].message.content;
-  const usage = result.usage as Usage;
+  const usage:Usage = {
+    promptTokens: result.usage.prompt_tokens,
+    completionTokens:  result.usage.completion_tokens,
+    totalTokens:  result.usage.total_tokens,
+  }
   const accessToken = (await (await getAccessToken(appConfig)).json()).access_token;
   const user = await (await getUser(receiveMessageData.FromUserName, accessToken)).json();
   const weworkResult = await sendWewokMessage(receiveMessageData.FromUserName, answer, appConfig, accessToken);
