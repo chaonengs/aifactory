@@ -117,7 +117,7 @@ const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {
     handleFeishuMessage(data,app,res);
 
   }else{
-    return;
+    res.end('ok');
   }
 };
 
