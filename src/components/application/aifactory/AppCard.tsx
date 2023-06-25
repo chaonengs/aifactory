@@ -19,7 +19,7 @@ import IconButton, { IconButtonProps } from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
-import { App } from '@prisma/client';
+import { AIResource, App } from '@prisma/client';
 import { AppTypes } from 'constant';
 import { useOrganization } from 'feed';
 import { useFormik } from 'formik';
@@ -27,7 +27,7 @@ import useConfig from 'hooks/useConfig';
 import * as React from 'react';
 import { toast } from 'react-toastify';
 import { mutate } from 'swr';
-import { AppConfig } from 'types/app';
+import { WeworkAppConfig, FeishuAppConfig } from 'types/app';
 
 interface ExpandMoreProps extends IconButtonProps {
   expand: boolean;
@@ -44,8 +44,6 @@ const ExpandMore = styled((props: ExpandMoreProps) => {
   })
 }));
 
-
-
 export const deleteApp = (id: string) => {
   const url = `/api/rest/apps/${id}`;
   return fetch(url, {
@@ -61,18 +59,17 @@ export const deleteApp = (id: string) => {
   });
 };
 
-export default function AppCard({ app }) {
+export default function AppCard({ app }: { app: App & { aiResource: AIResource | null } }) {
   const [expanded, setExpanded] = React.useState(false);
   const [configOpen, setConfigOpen] = React.useState(false);
-  const [feishuOpen, setFeishuOpen] = React.useState(false);
+  const [thirdpartyOpen, setThirdpartyOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
-  const [configForm, setConfigForm] = React.useState(app.config);
-  const [configTab, setConfigTab] = React.useState('feishu');
+  const [configTab, setConfigTab] = React.useState(app.appType.toLowerCase());
   const { url, organization } = useOrganization(useConfig().organization);
   const host = process.env.NEXTAUTH_URL;
-  const handleFeishuOpen = () => {
-    setFeishuOpen(true);
+  const handleThirdpartyOpen = () => {
+    setThirdpartyOpen(true);
   };
 
   const handleConfigOpen = () => {
@@ -83,8 +80,8 @@ export default function AppCard({ app }) {
     setConfigOpen(false);
   };
 
-  const handleFeishuClose = () => {
-    setFeishuOpen(false);
+  const handleThirdpartyClose = () => {
+    setThirdpartyOpen(false);
   };
 
   const handleDeleteOpen = () => {
@@ -103,21 +100,9 @@ export default function AppCard({ app }) {
       error: '删除失败 🤯'
     });
     handleDeleteClose();
-    await mutate(url)
+    await mutate(url);
     setIsDeleting(false);
   };
-
-  // const handleFormOnChange = (event: { target: { id: string; value: string } }) => {
-  //   // event.target.id, event.target.value
-  //   let config = {};
-  //   Object.assign(config, configForm);
-
-  //   const k = event.target.id as string;
-  //   const v = event.target.value as string;
-
-  //   config[k] = v;
-  //   setConfigForm(config);
-  // };
 
   const handleExpandClick = () => {
     setExpanded(!expanded);
@@ -137,31 +122,67 @@ export default function AppCard({ app }) {
     });
     if (!response.ok) {
       return Promise.reject(response);
+    } else {
+      setConfigOpen(false);
+      return response;
     }
-    return response;
   };
 
-  const appConfigInitial = (app: App): App & { config: AppConfig } => {
-    return {
-      // ...app,
-      config: {
-        appId: (app.config as AppConfig).appId || '',
-        appSecret: (app.config as AppConfig).appSecret || '',
-        encryptKey: (app.config as AppConfig).encryptKey || '',
-        verificationToken: (app.config as AppConfig).verificationToken || '',
-        ai: {
-          temperature: (app.config as AppConfig).ai?.temperature || 1,
-          maxCompletionTokens: (app.config as AppConfig).ai?.maxCompletionTokens || 2000,
-          maxPromptTokens: (app.config as AppConfig).ai?.maxPromptTokens || 2000
-        }
-      },
-      aiResourceId: app.aiResourceId
-    };
+  const appConfigInitial = (app: App) => {
+    if (app.appType === 'FEISHU') {
+      const config = app.config as FeishuAppConfig;
+      return {
+        // ...app,
+        config: {
+          appId: config.appId || '',
+          appSecret: config.appSecret || '',
+          encryptKey: config.encryptKey || '',
+          verificationToken: config.verificationToken || '',
+          ai: {
+            temperature: config.ai?.temperature || 1,
+            maxCompletionTokens: config.ai?.maxCompletionTokens || 2000,
+            maxPromptTokens: config.ai?.maxPromptTokens || 2000
+          }
+        },
+        aiResourceId: app.aiResourceId
+      };
+    }
+
+    {
+      /* export type AppConfig = {
+    token: string;
+    encodingAESKey: string;
+    corpId: string;
+    corpSecret: string;
+    agentId: string;
+    ai: AppAIConfig;
+} */
+    }
+
+    if (app.appType === 'WEWORK') {
+      const config = app.config as WeworkAppConfig;
+      return {
+        // ...app,
+        config: {
+          token: config.token || '',
+          encodingAESKey: config.encodingAESKey || '',
+          corpId: config.corpId || '',
+          corpSecret: config.corpSecret || '',
+          agentId: config.agentId || '',
+          ai: {
+            temperature: config.ai?.temperature || 1,
+            maxCompletionTokens: config.ai?.maxCompletionTokens || 2000,
+            maxPromptTokens: config.ai?.maxPromptTokens || 2000
+          }
+        },
+        aiResourceId: app.aiResourceId
+      };
+    }
+    throw new Error('Invalid app type: ' + app.appType);
   };
 
   const formik = useFormik({
     initialValues: appConfigInitial(app),
-    // validationSchema: ResourceSchema,
 
     onSubmit: async (values, { setSubmitting }) => {
       await toast.promise(updateConfig(app.id, values), {
@@ -170,20 +191,6 @@ export default function AppCard({ app }) {
         error: '保存失败 🤯'
       });
       setSubmitting(false);
-      // try{
-      //   const result = await updateConfig(app.id,values);
-      //   if (result.ok) {
-      //     toast('保存成功')
-      //     setConfigOpen(false);
-
-      //   } else {
-      //     toast('保存失败')
-      //   }
-      // } catch (e){
-
-      // } finally {
-
-      // }
     }
   });
 
@@ -201,43 +208,41 @@ export default function AppCard({ app }) {
             )
           }
           title={app.name || app.appType}
-          subheader={AppTypes[app.appType]}
+          subheader={AppTypes[app.appType] || app.appType}
         />
         <CardContent>
           <Typography variant="body2" color="text.secondary">
             {app.aiResource?.name || app.aiResource?.type || '资源待配置'}
           </Typography>
         </CardContent>
-        <CardMedia
-          component="img"
-          image={app.appType === 'FEISHU_BOT' ? '/assets/images/logos/feishu.png' : '/assets/images/logos/dingtalk.png'}
-          alt="FeiShu"
-          height={124}
-          width={124}
-          sx={{ objectFit: 'contain' }}
-        />
+        {app.appType === 'FEISHU' && (
+          <CardMedia
+            component="img"
+            image="/assets/images/logos/feishu.png"
+            alt="FeiShu"
+            height={124}
+            width={124}
+            sx={{ objectFit: 'contain' }}
+          />
+        )}
+        {app.appType === 'WEWORK' && (
+          <CardMedia
+            component="img"
+            image="/assets/images/logos/wework.png"
+            alt="Wework"
+            height={124}
+            width={124}
+            sx={{ objectFit: 'contain' }}
+          />
+        )}
 
         <CardActions disableSpacing>
           <IconButton aria-label="edit" onClick={() => handleConfigOpen()}>
             <EditIcon />
           </IconButton>
-          <IconButton aria-label="view" onClick={() => handleFeishuOpen()}>
+          <IconButton aria-label="view" onClick={() => handleThirdpartyOpen()}>
             <VisibilityIcon />
           </IconButton>
-          {/* <IconButton aria-label="messages">
-            <ForumIcon />
-          </IconButton>
-          <IconButton aria-label="usages">
-            <ReceiptIcon />
-          </IconButton> */}
-          {/* <ExpandMore
-          expand={expanded}
-          onClick={handleExpandClick}
-          aria-expanded={expanded}
-          aria-label="show more"
-        >
-          <ExpandMoreIcon />
-        </ExpandMore> */}
         </CardActions>
         <Collapse in={expanded} timeout="auto" unmountOnExit>
           <CardContent>
@@ -267,7 +272,9 @@ export default function AppCard({ app }) {
           <TabContext value={configTab}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <TabList onChange={handleChangeConfigTab} aria-label="app-config-tabs">
-                <Tab label={AppTypes[app.appType]} value="feishu" />
+                {app.appType === 'FEISHU' && <Tab label="飞书" value="feishu" />}
+                {app.appType === 'WEWORK' && <Tab label="企业微信" value="wework" />}
+
                 <Tab label="AI" value="ai" />
                 <Tab label="资源" value="resource" />
               </TabList>
@@ -289,6 +296,7 @@ export default function AppCard({ app }) {
                 <TextField
                   margin="dense"
                   id="config.appSecret"
+                  name="config.appSecret"
                   label="AppSecret"
                   fullWidth
                   variant="standard"
@@ -297,11 +305,10 @@ export default function AppCard({ app }) {
                   error={formik.touched.config?.appSecret && Boolean(formik.errors.config?.appSecret)}
                   helperText={formik.touched.config?.appSecret && formik.errors.config?.appSecret}
                 />
-                {app.appType==='FEISHU_BOT' &&(
-                <>
                 <TextField
                   margin="dense"
                   id="config.encryptKey"
+                  name="config.encryptKey"
                   label="EncryptKey"
                   fullWidth
                   variant="standard"
@@ -315,14 +322,78 @@ export default function AppCard({ app }) {
                   variant="standard"
                   id="config.verificationToken"
                   label="VerificationToken"
+                  name="config.verificationToken"
                   fullWidth
                   value={formik.values.config.verificationToken}
                   onChange={formik.handleChange}
                   error={formik.touched.config?.verificationToken && Boolean(formik.errors.config?.verificationToken)}
                   helperText={formik.touched.config?.verificationToken && formik.errors.config?.verificationToken}
                 />
-                </>           
-                )}
+              </Stack>
+            </TabPanel>
+
+            <TabPanel value="wework">
+              <Stack>
+                <TextField
+                  margin="dense"
+                  id="config.corpId"
+                  name="config.corpId"
+                  label="Corp Id"
+                  fullWidth
+                  variant="standard"
+                  value={formik.values.config.corpId}
+                  onChange={formik.handleChange}
+                  error={formik.touched.config?.corpId && Boolean(formik.errors.config?.corpId)}
+                  helperText={formik.touched.config?.corpId && formik.errors.config?.corpId}
+                />
+                <TextField
+                  margin="dense"
+                  id="config.corpSecret"
+                  name="config.corpSecret"
+                  label="Corp Secret"
+                  fullWidth
+                  variant="standard"
+                  value={formik.values.config.corpSecret}
+                  onChange={formik.handleChange}
+                  error={formik.touched.config?.corpSecret && Boolean(formik.errors.config?.corpSecret)}
+                  helperText={formik.touched.config?.corpSecret && formik.errors.config?.corpSecret}
+                />
+                <TextField
+                  margin="dense"
+                  id="config.agentId"
+                  name="config.agentId"
+                  label="Agent Id"
+                  fullWidth
+                  variant="standard"
+                  value={formik.values.config.agentId}
+                  onChange={formik.handleChange}
+                  error={formik.touched.config?.agentId && Boolean(formik.errors.config?.agentId)}
+                  helperText={formik.touched.config?.agentId && formik.errors.config?.agentId}
+                />
+                <TextField
+                  margin="dense"
+                  variant="standard"
+                  id="config.encodingAESKey"
+                  label="AES KEY"
+                  name="config.encodingAESKey"
+                  fullWidth
+                  value={formik.values.config.encodingAESKey}
+                  onChange={formik.handleChange}
+                  error={formik.touched.config?.encodingAESKey && Boolean(formik.errors.config?.encodingAESKey)}
+                  helperText={formik.touched.config?.encodingAESKey && formik.errors.config?.encodingAESKey}
+                />
+                <TextField
+                  margin="dense"
+                  variant="standard"
+                  id="config.token"
+                  label="Token"
+                  name="config.token"
+                  fullWidth
+                  value={formik.values.config.token}
+                  onChange={formik.handleChange}
+                  error={formik.touched.config?.token && Boolean(formik.errors.config?.token)}
+                  helperText={formik.touched.config?.token && formik.errors.config?.token}
+                />
               </Stack>
             </TabPanel>
             <TabPanel value="ai">
@@ -413,29 +484,58 @@ export default function AppCard({ app }) {
           </TabContext>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleConfigClose}>取消</Button>
+          <Button disabled={formik.isSubmitting} onClick={handleConfigClose}>
+            取消
+          </Button>
           <LoadingButton loading={formik.isSubmitting} onClick={formik.submitForm}>
             保存
           </LoadingButton>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={feishuOpen} onClose={handleFeishuClose}>
-        <DialogTitle>查看{AppTypes[app.appType]}配置</DialogTitle>
+      <Dialog open={thirdpartyOpen} onClose={handleThirdpartyClose}>
+        <DialogTitle>查看第三方配置</DialogTitle>
         <DialogContent>
-          <DialogContentText>查看{AppTypes[app.appType]}URL配置</DialogContentText>
-          <TextField
-            margin="dense"
-            id="callbackurl"
-            label="事件接收地址"
-            fullWidth
-            variant="standard"
-            sx={{ minWidth: 500 }}
-            value={app.appType=== 'FEISHU_BOT' ? `${window.location.origin}/api/feishu/${app.id}`:`${window.location.origin}/api/dingtalk/${app.id}`}
-          />
+          {app.appType === 'FEISHU' && (
+            <>
+              <DialogContentText>飞书URL配置</DialogContentText>
+              <TextField
+                margin="dense"
+                id="callbackurl"
+                label="事件接收地址"
+                fullWidth
+                variant="standard"
+                sx={{ minWidth: 500 }}
+                value={`${window.location.origin}/api/feishu/${app.id}`}
+              />
+            </>
+          )}
+          {app.appType === 'WEWORK' && (
+            <>
+              <DialogContentText>企业微信配置</DialogContentText>
+              <TextField
+                margin="dense"
+                id="callbackurl"
+                label="接收消息URL"
+                fullWidth
+                variant="standard"
+                sx={{ minWidth: 500 }}
+                value={`${window.location.origin}/api/wework/${app.id}`}
+              />
+              <TextField
+                margin="dense"
+                id="callbackurl"
+                label="白名单IP"
+                fullWidth
+                variant="standard"
+                sx={{ minWidth: 500 }}
+                value={`39.107.33.80`}
+              />
+            </>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleFeishuClose}>关闭</Button>
+          <Button onClick={handleThirdpartyClose}>关闭</Button>
         </DialogActions>
       </Dialog>
 
@@ -450,7 +550,9 @@ export default function AppCard({ app }) {
           <DialogContentText id="alert-dialog-description">确认要删除该应用吗？无法恢复</DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button disabled={isDeleting} onClick={handleDeleteClose}>取消</Button>
+          <Button disabled={isDeleting} onClick={handleDeleteClose}>
+            取消
+          </Button>
           <LoadingButton loading={isDeleting} onClick={handleDelete}>
             删除
           </LoadingButton>

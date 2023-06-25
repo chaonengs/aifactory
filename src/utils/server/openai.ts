@@ -12,41 +12,43 @@ export class OpenAIError extends Error {
   type: string;
   param: string;
   code: string;
+  request: any;
 
-  constructor(message: string, type: string, param: string, code: string) {
+  constructor(message: string, type: string, param: string, code: string, request: any) {
     super(message);
     this.name = 'OpenAIError';
     this.type = type;
     this.param = param;
     this.code = code;
+    this.request = request;
   }
 }
 
 export type OpenAIRequest = {
   hostUrl: string | undefined | null;
-  apiType: string | undefined | null;
+  type: string | undefined | null;
   apiVersion: string | undefined | null;
-  model: OpenAIModel | undefined | null;
+  model: string | undefined | null;
   systemPrompt: string | undefined | null;
   temperature: number | undefined | null;
   key: string;
   messages: Message[];
   stream: boolean | undefined | null;
   maxTokens: number  | undefined | null;
-  promptMaxTokens: number  | undefined | null;
+  maxPromptTokens: number  | undefined | null;
 }
 
 const createOpenAIRequest = (request:any) => {
   let url = request.hostUrl;
-  let apiType = request.apiType;
-  if (!apiType){
-    apiType = 'OPENAI'
+  let type = request.type;
+  if (!type){
+    type = 'OPENAI'
   }
-  if(!request.apiType || request.apiType === 'OPENAI'){
+  if(!request.type || request.type === 'OPENAI'){
     url = url || process.env.OPENAI_API_HOST || 'https://api.openai.com';
     url = `${url}/v1/chat/completions`;
   }
-  else if (request.apiType === 'AZ_OPENAI'){
+  else if (request.type === 'AZ_OPENAI'){
     url = url || process.env.AZ_OPENAI_API_HOST;
     let apiVerison  = request.apiVersion || 'api-version=2023-03-15-preview'
     url = `${url}/chat/completions?api-version=${request.apiVersion}`;
@@ -82,15 +84,15 @@ const createOpenAIRequest = (request:any) => {
 export const OpenAIChatComletion = (request : OpenAIRequest) => {
 
   let url = request.hostUrl;
-  let apiType = request.apiType;
-  if (!apiType){
-    apiType = 'OPENAI'
+  let type = request.type;
+  if (!type){
+    type = 'OPENAI'
   }
-  if(!request.apiType || request.apiType === 'OPENAI'){
+  if(!request.type || request.type === 'OPENAI'){
     url = url || process.env.DEFAULT_OPENAI_URL || 'https://api.openai.com';
     url = `${url}/v1/chat/completions`;
   }
-  else if (request.apiType === 'AZ_OPENAI'){
+  else if (request.type === 'AZ_OPENAI'){
     url = url || process.env.DEFAULT_AZ_OPENAI_URL;
     let apiVersion  = request.apiVersion || '2023-03-15-preview'
     url = `${url}/chat/completions?api-version=${apiVersion}`;
@@ -100,7 +102,6 @@ export const OpenAIChatComletion = (request : OpenAIRequest) => {
     throw new Error('OpenAI Url not set');
   }
 
-  let model = OpenAIModels[OpenAIModelID.GPT_3_5];
   const temperature = request.temperature === null ? (
     process.env.DEFUALT_TEMPERATURE === null || process.env.DEFUALT_TEMPERATURE === '' ? 1.0 :
     Number.parseFloat(process.env.DEFUALT_TEMPERATURE as string)) : request.temperature;
@@ -110,56 +111,67 @@ export const OpenAIChatComletion = (request : OpenAIRequest) => {
     stream = true;
   }
   
+  const requestHeaders = {
+    'Content-Type': 'application/json',
+    ...(type === 'OPENAI' && {
+      Authorization: `Bearer ${request.key ? request.key : process.env.DEFAULT_OPENAI_API_KEY}`
+    }),
+    ...(type === 'AZ_OPENAI' && {
+      'api-key': `${request.key ? request.key : process.env.DEFAULT_AZ_OPENAI_API_KEY}`
+    }),
+    ...(type === 'SELF_HOST_OPENAI' && {
+      Authorization: `Bearer ${request.key ? request.key : process.env.DEFAULT_OPENAI_API_KEY}`
+    }),
+    ...(type === 'OPENAI' &&
+      OPENAI_ORGANIZATION && {
+        'OpenAI-Organization': OPENAI_ORGANIZATION
+      })
+  }
+
+  const requestBody = {
+    ...(type === 'OPENAI' && { model: request.model || 'gpt-3.5-turbo'}),
+    ...(request.maxTokens && {max_tokens: request.maxTokens}),
+    messages: [
+      // {
+      //   role: 'system',
+      //   content: systemPrompt
+      // },
+      ...request.messages
+    ],
+    // max_tokens: 1024,
+    temperature: temperature,
+    stream: stream,
+  };
+
+  console.log(requestHeaders)
+  console.log(requestBody)
+  
   return fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(apiType === 'OPENAI' && {
-        Authorization: `Bearer ${request.key ? request.key : process.env.DEFAULT_OPENAI_API_KEY}`
-      }),
-      ...(apiType === 'AZ_OPENAI' && {
-        'api-key': `${request.key ? request.key : process.env.DEFAULT_AZ_OPENAI_API_KEY}`
-      }),
-      ...(apiType === 'SELF_HOST_OPENAI' && {
-        Authorization: `Bearer ${request.key ? request.key : process.env.DEFAULT_OPENAI_API_KEY}`
-      }),
-      ...(apiType === 'openai' &&
-        OPENAI_ORGANIZATION && {
-          'OpenAI-Organization': OPENAI_ORGANIZATION
-        })
-    },
+    headers: requestHeaders,
     method: 'POST',
-    body: JSON.stringify({
-      ...(apiType === 'openai' && { model: model.id }),
-      ...(request.maxTokens && {max_tokens: request.maxTokens}),
-      messages: [
-        // {
-        //   role: 'system',
-        //   content: systemPrompt
-        // },
-        ...request.messages
-      ],
-      // max_tokens: 1024,
-      temperature: temperature,
-      stream: stream,
-    })
+    body: JSON.stringify(requestBody)
   });
 };
 
 export const OpenAIStream = async (
-  param: OpenAIRequest,
+  params: OpenAIRequest,
   onData: ((data: string) => Promise<void>) ,
   onError: ((error: unknown) => Promise<void>) ,
   onComplete: (() => Promise<void>)
 ) => {
-  const res = await OpenAIChatComletion(param);
+  const res = await OpenAIChatComletion(params);
 
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
   if (res.status !== 200) {
+    await onError(await res.text());
+    await onComplete();
+
     const result = await res.json();
     if (result.error) {
-      throw new OpenAIError(result.error.message, result.error.type, result.error.param, result.error.code);
+      throw new OpenAIError(result.error.message, result.error.type, result.error.param, result.error.code, params);
+
     } else {
       throw new Error(`OpenAI API returned an error: ${decoder.decode(result?.value) || result.statusText}`);
     }
@@ -200,49 +212,6 @@ export const OpenAIStream = async (
             // console.log(chunkValue)
             await sseParser.parseSSE(chunkValue);
       }
-  
-  
-
-
-
-    //   for await (const chunk of res.body as any) {
-    //     const decoded = decoder.decode(chunk);
-    //     const parser = new SSEParser({onData, onError, onComplete})
-    //     await parser.parseSSE(decoded);
-        // const lines = decoded.split('\n').filter((line) => line.trim() !== '');
-
-        // for (const line of lines) {
-        //   const message = line.replace(/^data: /, '');
-        //   if (message === '[DONE]') {
-        //     if (onDone) {
-        //       await onDone(airesult);
-        //     }
-        //     if (onComplete) {
-        //       await onComplete(airesult, e);
-        //     }
-        //     controller.close();
-        //   } else {
-        //     try {
-        //       const parsed = JSON.parse(message);
-        //       const text = parsed.choices[0].delta.content;
-        //       if (onData) {
-        //         await onData(text);
-        //       }
-        //       const queue = encoder.encode(text);
-        //       controller.enqueue(queue);
-        //     } catch (e) {
-        //     console.error(e);
-        //     console.error(decoded);
-        //       if (onError) {
-        //         await onError(e);
-        //       }
-        //       if (onComplete) {
-        //         await onComplete(airesult, e);
-        //       }
-        //       controller.error(e);
-        //     }
-        //   }
-        // }
       }
     }
   });

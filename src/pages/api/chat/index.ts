@@ -17,8 +17,12 @@ export default async function handler(req: Request): Promise<Response> {
     apiType: 'AZ_OPENAI',
     messages: messages
   }
-  const res = await OpenAIChatComletion(params);
-  return res;
+  try{
+   return (await OpenAIChatComletion(params));
+  }catch(e){
+    console.error(e);
+    return new Response(JSON.stringify(e),{status:500});
+  }
 };
 
 

@@ -9,7 +9,7 @@ const createProcessMessageBody = (
     completionTokens: number,
     app: any,
     conversationId: string,
-    feishuMessageId: string,
+    recievedMessageId: string,
 
   ) => {
     const message = {
@@ -19,7 +19,7 @@ const createProcessMessageBody = (
       answer: answer,
       appId: app.id,
       conversationId: conversationId,
-      feishuMessageId: feishuMessageId,
+      recievedMessageId: recievedMessageId,
     };
   
     const usage = {

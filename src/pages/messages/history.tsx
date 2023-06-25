@@ -32,7 +32,7 @@ const History = () => {
   };
 
   return (
-    <Page title="资源">
+    <Page title="消息历史">
       <MainCard
         title={
           <Stack direction="row" alignItems="center" spacing={2}>

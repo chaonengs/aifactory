@@ -1,18 +1,21 @@
+import { messageCard } from '@larksuiteoapi/node-sdk';
 import { AIResource, App, PrismaClient, Message, Usage } from '@prisma/client';
 import { ProcessMessageBody } from 'types/queue';
 
 const prisma = new PrismaClient();
 
-const saveMessage = async (message: Message, app: App, aiResource: AIResource, usage: Usage) => {
+export const logSensitiveWord = async (message:Message, organizationId:string) => {
   const organization = await prisma.organization.findFirstOrThrow({
-    where: { id: app.organizationId },
+    where: { id: organizationId },
     include: {
       sensitiveWords: true
     }
   });
+
   const matched = organization.sensitiveWords.filter((v,i,a)=>{
     return message.content.includes(v.value);
   });
+
   let transList = [];
   matched.forEach((v,i,a)=>{
     const t = prisma.sensitiveWordInMessage.create({
@@ -25,6 +28,14 @@ const saveMessage = async (message: Message, app: App, aiResource: AIResource, u
     transList.push(t);
   })
 
+  if(transList.length > 0){
+    await prisma.$transaction(transList);
+  }
+}
+
+export const saveMessage = async (message: Message, app: App, aiResource: AIResource, usage: Usage) => {
+  let transList = [];
+
   transList.push(
     prisma.message.create({
       data: {
@@ -33,7 +44,6 @@ const saveMessage = async (message: Message, app: App, aiResource: AIResource, u
         content: message.content,
         answer: message.answer,
         appId: app.id,
-        feishuMessageId: message.feishuMessageId,
         conversationId: message.conversationId,
         usage: {
           create: {
@@ -43,11 +53,11 @@ const saveMessage = async (message: Message, app: App, aiResource: AIResource, u
             totalTokens: usage.promptTokens + usage.completionTokens
           }
         },
+        recievedMessageId: message.recievedMessageId,
         organizationId: app.organizationId
       }
     })
   );
-
 
   transList.push(
     prisma.aIResource.update({
@@ -66,15 +76,15 @@ const saveMessage = async (message: Message, app: App, aiResource: AIResource, u
     }
   }));
 
-  await prisma.$transaction(transList);
+  return await prisma.$transaction(transList);
+
 };
 
-const finishFeishuProcess = async (feishuMessageId: string) => {
-  prisma.feiShuMessage.update({
-    where: { id: feishuMessageId },
+export const finishProcessing = async (recievedMessageId: string) => {
+  prisma.recievedMessage.update({
+    where: { id: recievedMessageId },
     data: {
       processing: false
     }
   });
 };
-export { saveMessage, finishFeishuProcess };

@@ -118,7 +118,7 @@ const MyApps = () => {
         <Grid container spacing={2} >
           {
             apps ? apps.map((app)=>{
-                return <Grid xs={3}><AppCard app={app} key={app.id}/>  </Grid>
+                return <Grid xs={3} key={app.id}><AppCard app={app} />  </Grid>
               })
             :
             (
@@ -145,18 +145,16 @@ const MyApps = () => {
             fullWidth
             variant="standard"
             value={newApp.appType}
-            onChange={(e) => {
-              setNewApp({
-                name: newApp.name,
-                appType: e.target.value
-              });
-            }}
+            onChange={e => setNewApp({...newApp, appType: e.target.value})}
           >
-            <MenuItem value="FEISHU_BOT">
+            <MenuItem value="FEISHU">
               飞书机器人
             </MenuItem>
             <MenuItem value="DINGTALK_BOT">
               钉钉机器人
+            </MenuItem>
+            <MenuItem value="WEWORK">
+              企业微信机器人
             </MenuItem>
             </TextField>
           <TextField

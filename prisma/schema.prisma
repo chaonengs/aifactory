@@ -132,11 +132,11 @@ model Message {
   organization           Organization?            @relation(fields: [organizationId], references: [id])
   organizationId         String?
   conversationId         String?
-  feishuMessageId        String?
-  sensitiveWords         String?
+  recievedMessageId      String?
+  recievedMessage        RecievedMessage?         @relation(fields: [recievedMessageId], references: [id])
   SensitiveWordInMessage SensitiveWordInMessage[]
 
-  @@index([feishuMessageId])
+  @@index([recievedMessageId])
   @@index([conversationId])
   @@index([organizationId])
   @@index([appId])
@@ -179,34 +179,51 @@ model APIKey {
   @@index([organizationId])
 }
 
+enum AppType {
+  FEISHU
+  WEWORK
+  DINGTALK
+  WEB
+}
+
 model App {
-  id              String          @id @default(cuid())
-  organization    Organization    @relation(fields: [organizationId], references: [id])
-  organizationId  String
-  name            String?
-  appType         String
-  aiResource      AIResource?     @relation(fields: [aiResourceId], references: [id])
-  aiResourceId    String?
-  messages        Message[]
-  tokenLimitation Int?
-  tokenUsed       Int             @default(0)
-  config          Json
-  feishuMessages  FeiShuMessage[]
-  builtIn         Boolean         @default(false)
+  id               String            @id @default(cuid())
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  organizationId   String
+  name             String?
+  appType          String
+  aiResource       AIResource?       @relation(fields: [aiResourceId], references: [id])
+  aiResourceId     String?
+  messages         Message[]
+  tokenLimitation  Int?
+  tokenUsed        Int               @default(0)
+  config           Json
+  recievedMessages RecievedMessage[]
+  builtIn          Boolean           @default(false)
 
   @@index([organizationId])
   @@index([aiResourceId])
 }
 
-model FeiShuMessage {
-  id         String   @id
+enum RecievedMessageType {
+  FEISHU
+  WEWORK
+  DINGTALK
+  WEB
+  UNKNOWN
+}
+
+model RecievedMessage {
+  id         String              @id
   data       Json
   processing Boolean
-  createdAt  DateTime @default(now())
-  recievedAt DateTime @default(now())
+  createdAt  DateTime            @default(now())
+  recievedAt DateTime            @default(now())
   eventName  String
-  app        App      @relation(fields: [appId], references: [id])
+  app        App                 @relation(fields: [appId], references: [id])
   appId      String
+  type       RecievedMessageType @default(UNKNOWN)
+  Message    Message[]
 
   @@index([appId])
 }
@@ -227,7 +244,7 @@ model SensitiveWord {
 
 model SensitiveWordInMessage {
   message         Message       @relation(fields: [messageId], references: [id])
-  messageId        String
+  messageId       String
   sensitiveWord   SensitiveWord @relation(fields: [sensitiveWordId], references: [id])
   sensitiveWordId Int
   plainText       String

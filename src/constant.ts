@@ -55,6 +55,7 @@ export const AppAIConfigDefaults = {
 }
 
 export const AppTypes = {
-  "FEISHU_BOT": "飞书机器人",
-  "DINGTALK_BOT": "钉钉机器人",
+  "FEISHU": "飞书机器人",
+  "WEWORK": "企业微信机器人",
+  "DINGTALK": "钉钉机器人",
 }

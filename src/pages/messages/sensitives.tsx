@@ -186,7 +186,7 @@ function EditToolbar(props: EditToolbarProps) {
       >
         <Box
           sx={{
-            height: 500,
+            height: `${page?.pagination?.total > 0 ? 'auto': '500px' }`,
             width: '100%',
             '& .actions': {
               color: 'text.secondary'
