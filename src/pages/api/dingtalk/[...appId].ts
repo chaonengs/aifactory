@@ -1,7 +1,7 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient, App, Prisma, AIResource, Message } from '@prisma/client';
-import MessageQueue from 'pages/api/queues/messages';
+import { AIResource, App, Message, PrismaClient } from '@prisma/client';
 import { NotFoundError } from '@prisma/client/runtime/library';
+import { NextApiRequest, NextApiResponse } from 'next';
+import MessageQueue from 'pages/api/queues/messages';
 import dingTalkSend from 'utils/dingtalk/client';
 
 
@@ -53,17 +53,17 @@ const handleDingTalkMessage = async (
 
   let history: Message[] = [];
 
-  history = await prisma.message.findMany({
-    where: {
-      conversationId: data.conversationId
-    },
-    orderBy: [
-      {
-        createdAt: 'desc'
-      }
-    ],
-    take: 50
-  });
+  // history = await prisma.message.findMany({
+  //   where: {
+  //     conversationId: data.conversationId
+  //   },
+  //   orderBy: [
+  //     {
+  //       createdAt: 'desc'
+  //     }
+  //   ],
+  //   take: 50
+  // });
 
 
   //Send to queue.
