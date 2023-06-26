@@ -3,7 +3,7 @@ import { encode } from 'gpt-tokenizer';
 import { MessageQueueBody } from 'pages/api/queues/messages';
 import { AppConfig } from 'types/app';
 import { ReceiveMessageData } from 'types/feishu';
-import DingTalk from 'utils/dingtalk/client';
+import dingTalkMessageSend from 'utils/dingtalk/client';
 import { OpenAIChatComletion, OpenAIRequest } from 'utils/server/openai';
 import { MessageDBSaveRequest, Message , Usage  } from 'pages/api/db/saveProcesserResult';
 
@@ -99,7 +99,7 @@ const processMessage = async ({ recievedMessage, history, app }: MessageQueueBod
     completionTokens:  json.usage.completion_tokens,
     totalTokens:  json.usage.total_tokens,
   }
-  DingTalk(app, answer, recievedMessageData);
+  await dingTalkMessageSend(app, answer, recievedMessageData);
   const repliedMessage = {
     senderUnionId: recievedMessageData?.senderStaffId || 'anonymous',
     sender: recievedMessageData?.senderNick || 'anonymous',
