@@ -27,7 +27,7 @@ import useConfig from 'hooks/useConfig';
 import * as React from 'react';
 import { toast } from 'react-toastify';
 import { mutate } from 'swr';
-import { WeworkAppConfig, FeishuAppConfig } from 'types/app';
+import { WeworkAppConfig, FeishuAppConfig, DingTalkAppConfig } from 'types/app';
 
 interface ExpandMoreProps extends IconButtonProps {
   expand: boolean;
@@ -178,6 +178,22 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
         aiResourceId: app.aiResourceId
       };
     }
+    if (app.appType === 'DINGTALK') {
+      const config = app.config as DingTalkAppConfig;
+      return {
+        // ...app,
+        config: {
+          appId: config.appId || '',
+          appSecret: config.appSecret || '',
+          ai: {
+            temperature: config.ai?.temperature || 1,
+            maxCompletionTokens: config.ai?.maxCompletionTokens || 2000,
+            maxPromptTokens: config.ai?.maxPromptTokens || 2000
+          }
+        },
+        aiResourceId: app.aiResourceId
+      };
+    }
     throw new Error('Invalid app type: ' + app.appType);
   };
 
@@ -235,6 +251,16 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
             sx={{ objectFit: 'contain' }}
           />
         )}
+        {app.appType === 'DINGTALK' && (
+          <CardMedia
+            component="img"
+            image="/assets/images/logos/dingtalk.png"
+            alt="DingTalk"
+            height={124}
+            width={124}
+            sx={{ objectFit: 'contain' }}
+          />
+        )}
 
         <CardActions disableSpacing>
           <IconButton aria-label="edit" onClick={() => handleConfigOpen()}>
@@ -274,7 +300,7 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
               <TabList onChange={handleChangeConfigTab} aria-label="app-config-tabs">
                 {app.appType === 'FEISHU' && <Tab label="飞书" value="feishu" />}
                 {app.appType === 'WEWORK' && <Tab label="企业微信" value="wework" />}
-
+                {app.appType === 'DINGTALK' && <Tab label="钉钉" value="dingtalk" />}
                 <Tab label="AI" value="ai" />
                 <Tab label="资源" value="resource" />
               </TabList>
@@ -393,6 +419,35 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
                   onChange={formik.handleChange}
                   error={formik.touched.config?.token && Boolean(formik.errors.config?.token)}
                   helperText={formik.touched.config?.token && formik.errors.config?.token}
+                />
+              </Stack>
+            </TabPanel>
+
+            <TabPanel value="dingtalk">
+              <Stack>
+                <TextField
+                  margin="dense"
+                  id="config.appId"
+                  name="config.appId"
+                  label="AppId"
+                  fullWidth
+                  variant="standard"
+                  value={formik.values.config.appId}
+                  onChange={formik.handleChange}
+                  error={formik.touched.config?.appId && Boolean(formik.errors.config?.appId)}
+                  helperText={formik.touched.config?.appId && formik.errors.config?.appId}
+                />
+                <TextField
+                  margin="dense"
+                  id="config.appSecret"
+                  name="config.appSecret"
+                  label="AppSecret"
+                  fullWidth
+                  variant="standard"
+                  value={formik.values.config.appSecret}
+                  onChange={formik.handleChange}
+                  error={formik.touched.config?.appSecret && Boolean(formik.errors.config?.appSecret)}
+                  helperText={formik.touched.config?.appSecret && formik.errors.config?.appSecret}
                 />
               </Stack>
             </TabPanel>
@@ -530,6 +585,20 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
                 variant="standard"
                 sx={{ minWidth: 500 }}
                 value={`39.107.33.80`}
+              />
+            </>
+          )}
+          {app.appType === 'DINGTALK' && (
+            <>
+              <DialogContentText>钉钉URL配置</DialogContentText>
+              <TextField
+                margin="dense"
+                id="callbackurl"
+                label="事件接收地址"
+                fullWidth
+                variant="standard"
+                sx={{ minWidth: 500 }}
+                value={`${window.location.origin}/api/dingtalk/${app.id}`}
               />
             </>
           )}

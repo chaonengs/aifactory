@@ -1,7 +1,7 @@
 import { Queue } from 'utils/quirrel/edge';
 import { processMessage as processFeishu } from 'processers/feishubot';
 import { processMessage as processWework } from 'processers/wework';
-
+import { processMessage as processDingTalk } from 'processers/dingTalkBot';
 import { AIResource, App, Message, RecievedMessage } from '@prisma/client/edge';
 
 export type MessageQueueBody = {
@@ -18,6 +18,10 @@ export default Queue(
       if (messageQueueBody.recievedMessage.type === 'WEWORK') {
         return await processWework(messageQueueBody);
       }
+      if (messageQueueBody.recievedMessage.type === 'DINGTALK') {
+        return await processDingTalk(messageQueueBody);
+
+      }
       if (messageQueueBody.recievedMessage.type === 'FEISHU') {
         return await processFeishu(messageQueueBody);
       }
@@ -29,6 +33,7 @@ export default Queue(
           'Content-Type': 'application/json'
         }
       });
+
     }
   }
 );
