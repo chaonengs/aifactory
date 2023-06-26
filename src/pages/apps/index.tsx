@@ -167,7 +167,7 @@ const MyApps = () => {
             value={newApp.name}
             onChange={
               (e)=>{
-                console.log(e);
+                //console.log(e);
                 setNewApp({
                   name: e.target.value.trim(),
                   appType: newApp.appType

@@ -143,8 +143,8 @@ export const OpenAIChatComletion = (request : OpenAIRequest) => {
     stream: stream,
   };
 
-  console.log(requestHeaders)
-  console.log(requestBody)
+  //console.log(requestHeaders)
+  //console.log(requestBody)
   
   return fetch(url, {
     headers: requestHeaders,

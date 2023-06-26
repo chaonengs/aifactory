@@ -57,7 +57,7 @@ const weworkVerify = async(req: NextApiRequest, res: NextApiResponse) => {
 
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
-  console.log(req);
+  //console.log(req);
   const {app, isVerification, verificationMessage} = await weworkVerify(req, res);
   if (!app) {
     throw new Error('app not found');

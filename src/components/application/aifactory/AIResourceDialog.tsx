@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 
 // project imports
-import {LoadingButton} from '@mui/lab';
+import { LoadingButton } from '@mui/lab';
 import { AZApiVersions, OpenAIModels, ResourceTypes } from 'constant';
 import { toast } from 'react-toastify';
 import { useFormik } from 'formik';
@@ -20,24 +20,24 @@ import { ResourceSchema, ResourceValues, createResource, updateResource } from '
 import { AIResource } from '@prisma/client';
 import { useEffect, useState } from 'react';
 
-const AIResourceDialog = ({aiResource, organizationId, open, onCancel, onClose, onDone, ...others} :{ aiResource: AIResource | null; organizationId: string; onCancel:()=>void; onDone:()=>void} & DialogProps) => {
-  
+const AIResourceDialog = ({ aiResource, organizationId, open, onCancel, onClose, onDone, ...others }: { aiResource: AIResource | null; organizationId: string; onCancel: () => void; onDone: () => void } & DialogProps) => {
+
 
   const formik = useFormik({
     initialValues: {
       name: aiResource?.name || '',
       type: aiResource?.type || 'OPENAI',
-      model: aiResource?.model,
-      apiKey: aiResource?.apiKey ||  '',
-      hostUrl: aiResource?.hostUrl ||  null,
-      builtIn: aiResource?.builtIn ||  false,
-      quota:  aiResource?.quota ||  null,
-      apiVersion:  aiResource?.apiVersion ||  null,
+      model: aiResource?.model || '',
+      apiKey: aiResource?.apiKey || '',
+      hostUrl: aiResource?.hostUrl || null,
+      builtIn: aiResource?.builtIn || false,
+      quota: aiResource?.quota || null,
+      apiVersion: aiResource?.apiVersion || null,
       tokenRemains: aiResource?.tokenRemains || 0,
     },
     validationSchema: ResourceSchema,
     enableReinitialize: true,
-    
+
     onSubmit: async (values, { setSubmitting }) => {
       if (aiResource) {
         await toast.promise(updateResource(aiResource.id, values), {
@@ -51,15 +51,15 @@ const AIResourceDialog = ({aiResource, organizationId, open, onCancel, onClose, 
           success: '保存成功 👌',
           error: '保存失败 🤯'
         });
-      }  
+      }
       setSubmitting(false);
       onDone();
     }
   });
 
-  const handleOnClose =  (event: {}, reason: 'backdropClick' | 'escapeKeyDown' ) => {
+  const handleOnClose = (event: {}, reason: 'backdropClick' | 'escapeKeyDown') => {
     // formik.resetForm();
-    if(onClose){
+    if (onClose) {
       onClose(event, reason);
     }
   }
@@ -69,23 +69,23 @@ const AIResourceDialog = ({aiResource, organizationId, open, onCancel, onClose, 
     formik.initialValues = {
       name: aiResource?.name || '',
       type: aiResource?.type || 'OPENAI',
-      model: aiResource?.model,
-      apiKey: aiResource?.apiKey ||  '',
-      hostUrl: aiResource?.hostUrl ||  null,
-      builtIn: aiResource?.builtIn ||  false,
-      quota:  aiResource?.quota ||  null,
-      apiVersion:  aiResource?.apiVersion ||  null,
+      model: aiResource?.model || '',
+      apiKey: aiResource?.apiKey || '',
+      hostUrl: aiResource?.hostUrl || null,
+      builtIn: aiResource?.builtIn || false,
+      quota: aiResource?.quota || null,
+      apiVersion: aiResource?.apiVersion || null,
       tokenRemains: aiResource?.tokenRemains || 0,
     },
-    
-    formik.resetForm()
-  },[aiResource]);
+
+      formik.resetForm()
+  }, [aiResource]);
 
   return (
     <Dialog
       open={open}
       onClose={handleOnClose}
-    
+
       aria-labelledby="resource-dialog-title"
       aria-describedby="resource-dialog-description"
       fullWidth
@@ -123,7 +123,7 @@ const AIResourceDialog = ({aiResource, organizationId, open, onCancel, onClose, 
                 </MenuItem>
               ))}
             </TextField>
-            {formik.values.type != 'SELF_HOST_OPENAI' && (
+            {formik.values.type === 'OPENAI' && (
               <TextField
                 fullWidth
                 id="model"
@@ -185,23 +185,23 @@ const AIResourceDialog = ({aiResource, organizationId, open, onCancel, onClose, 
               helperText={formik.touched.apiKey && formik.errors.apiKey}
             />
             <TextField
-          fullWidth
-          id="tokenRemains"
-          name="tokenRemains"
-          label="剩余配额"
-          type='number'
-          value={formik.values.tokenRemains}
-          onChange={formik.handleChange}
-          error={formik.touched.tokenRemains && Boolean(formik.errors.tokenRemains)}
-          helperText={formik.touched.tokenRemains && formik.errors.tokenRemains}
-        />
+              fullWidth
+              id="tokenRemains"
+              name="tokenRemains"
+              label="剩余配额"
+              type='number'
+              value={formik.values.tokenRemains}
+              onChange={formik.handleChange}
+              error={formik.touched.tokenRemains && Boolean(formik.errors.tokenRemains)}
+              helperText={formik.touched.tokenRemains && formik.errors.tokenRemains}
+            />
             {/* {formik.isSubmitting && <LinearProgress />} */}
             <br />
           </Stack>
         </FormControl>
       </DialogContent>
       <DialogActions>
-        <Button onClick={()=>{
+        <Button onClick={() => {
           onCancel();
         }}>取消</Button>
         <LoadingButton loading={formik.isSubmitting} onClick={formik.submitForm}>

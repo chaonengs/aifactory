@@ -27,7 +27,7 @@ import useConfig from 'hooks/useConfig';
 import * as React from 'react';
 import { toast } from 'react-toastify';
 import { mutate } from 'swr';
-import { WeworkAppConfig, FeishuAppConfig,DingTalkAppConfig } from 'types/app';
+import { WeworkAppConfig, FeishuAppConfig, DingTalkAppConfig } from 'types/app';
 
 interface ExpandMoreProps extends IconButtonProps {
   expand: boolean;
@@ -251,7 +251,7 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
             sx={{ objectFit: 'contain' }}
           />
         )}
-            {app.appType === 'DINGTALK' && (
+        {app.appType === 'DINGTALK' && (
           <CardMedia
             component="img"
             image="/assets/images/logos/dingtalk.png"
