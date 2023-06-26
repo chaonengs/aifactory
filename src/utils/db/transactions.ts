@@ -28,8 +28,9 @@ export const logSensitiveWord = async (message:Message, organizationId:string) =
   })
 
   if(transList.length > 0){
-    await prisma.$transaction(transList);
+    return await prisma.$transaction(transList);
   }
+  return null;
 }
 
 export const saveMessage = async (message: MessageToSave, usage: UsageToSave) => {
