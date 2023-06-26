@@ -20,3 +20,8 @@ export type WeworkAppConfig = {
   agentId: string;
   ai: AppAIConfig;
 };
+export type DingTalkAppConfig = {
+  appId: string;
+  appSecret: string;
+  ai: AppAIConfig;
+};

@@ -40,7 +40,6 @@ export type SSEEvents = {
       }
 
       for(let i = 0; i < lines.length; i++){
-        // console.log('line: ' + lines[i])
         if (lines[i].startsWith("data:")) {
           const eventData = lines[i].slice(5).trim();
           // console.log("eventData: " + eventData)
@@ -95,7 +94,6 @@ export type SSEEvents = {
     }
   //parse the data as JSON and extract the content from the JSON object. If successful, the onData callback function is called with the extracted content
     private async processEvent(data: string): Promise<string> {
-      // console.log(data)
       try {
         const json = JSON.parse(data);
         if(json.choices[0].finish_reason === 'stop') {

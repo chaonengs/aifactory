@@ -150,6 +150,9 @@ const MyApps = () => {
             <MenuItem value="FEISHU">
               飞书机器人
             </MenuItem>
+            <MenuItem value="DINGTALK">
+              钉钉机器人
+            </MenuItem>
             <MenuItem value="WEWORK">
               企业微信机器人
             </MenuItem>
@@ -164,6 +167,7 @@ const MyApps = () => {
             value={newApp.name}
             onChange={
               (e)=>{
+                //console.log(e);
                 setNewApp({
                   name: e.target.value.trim(),
                   appType: newApp.appType
