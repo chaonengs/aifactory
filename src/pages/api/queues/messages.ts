@@ -17,32 +17,27 @@ export default Queue(
     try {
       if (messageQueueBody.recievedMessage.type === 'WEWORK') {
         return await processWework(messageQueueBody);
-
       }
       if (messageQueueBody.recievedMessage.type === 'DINGTALK') {
         return await processDingTalk(messageQueueBody);
 
       }
-      return await processFeishu(messageQueueBody);
-    }
-    catch (err) {
+      if (messageQueueBody.recievedMessage.type === 'FEISHU') {
+        return await processFeishu(messageQueueBody);
+      }
+    } catch (err) {
       console.error(err);
-      return new Response(
-        JSON.stringify({ error: (err as Error).message }),
-        {
-          status: 500,
-          headers: {
-            'Content-Type': 'application/json'
-          }
+      return new Response(JSON.stringify({ error: (err as Error).message }), {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json'
         }
-      )
+      });
+
     }
   }
 );
 
-
 export const config = {
-  runtime: 'edge',
+  runtime: 'edge'
 };
-
-

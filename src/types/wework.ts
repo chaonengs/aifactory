@@ -20,12 +20,13 @@ export type AppConfig = {
    <AgentID>1</AgentID>
 </xml>
 */
+
 export type Message = {
-    toUser: string,
-    fromUser:string,
-    createTime:number,
-    msgType:string,
-    content:string,
-    msgId:number,
-    agentId:number,
+    ToUserName: string,
+    FromUserName:string,
+    CreateTime:number,
+    MsgType:string,
+    Content:string,
+    MsgId:string,
+    AgentID:number,
 }

@@ -1,11 +1,27 @@
-import { AIResource, App, Message, Usage } from "@prisma/client";
+import { Message as PrismaMessage, AIResource, App } from "@prisma/client";
 import { NextApiRequest, NextApiResponse } from "next";
 import { finishProcessing, logSensitiveWord, saveMessage } from "utils/db/transactions";
 
+
+export type Message = {
+    senderUnionId: string;
+    sender:  string;
+    content:  string;
+    answer:  string;
+    appId:  string;
+    conversationId:  string;
+    recievedMessageId:  string;
+}
+
+export type Usage = {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+}
+
+
 export type ProcessMessageBody = {
-    app: App;
     message: Message;
-    aiResource: AIResource;
     usage: Usage;
 }
 
@@ -16,11 +32,13 @@ export type MessageDBSaveRequest = {
 
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
-    const saveQuest = JSON.parse(req.body) as MessageDBSaveRequest;
+    console.debug(req.body);
+    const saveQuest = req.body as MessageDBSaveRequest;
     await finishProcessing(saveQuest.recievedMessageId );
     if(saveQuest.data){
-        const [m, r, a] = await saveMessage(saveQuest.data.message, saveQuest.data.app, saveQuest.data.aiResource, saveQuest.data.usage);
-        await logSensitiveWord(m as Message, (a as App).organizationId);
+        const [m, r, a] = await saveMessage(saveQuest.data.message, saveQuest.data.usage);
+        await logSensitiveWord(m as PrismaMessage, (a as App).organizationId);
     }
+    res.end('ok');
 }
 

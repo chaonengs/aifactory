@@ -1,6 +1,5 @@
-import { messageCard } from '@larksuiteoapi/node-sdk';
-import { AIResource, App, PrismaClient, Message, Usage } from '@prisma/client';
-import { ProcessMessageBody } from 'types/queue';
+import { Message, PrismaClient } from '@prisma/client';
+import { Message as MessageToSave, Usage as UsageToSave } from 'pages/api/db/saveProcesserResult';
 
 const prisma = new PrismaClient();
 
@@ -33,9 +32,20 @@ export const logSensitiveWord = async (message:Message, organizationId:string) =
   }
 }
 
-export const saveMessage = async (message: Message, app: App, aiResource: AIResource, usage: Usage) => {
+export const saveMessage = async (message: MessageToSave, usage: UsageToSave) => {
   let transList = [];
+  const app = await prisma.app.findUniqueOrThrow({
+    where: {
+      id: message.appId
+    },
+    include: {
+      aiResource: true
+    }
+  });
 
+  if(!app.aiResource){
+    throw new Error('no resource');
+  }
   transList.push(
     prisma.message.create({
       data: {
@@ -47,7 +57,7 @@ export const saveMessage = async (message: Message, app: App, aiResource: AIReso
         conversationId: message.conversationId,
         usage: {
           create: {
-            aiResourceId: usage.aiResourceId,
+            aiResourceId: app.aiResource.id,
             promptTokens: usage.promptTokens,
             completionTokens: usage.completionTokens,
             totalTokens: usage.promptTokens + usage.completionTokens
@@ -61,10 +71,10 @@ export const saveMessage = async (message: Message, app: App, aiResource: AIReso
 
   transList.push(
     prisma.aIResource.update({
-      where: { id: aiResource.id },
+      where: { id: app.aiResource.id },
       data: {
-        tokenRemains: aiResource.tokenRemains - usage.promptTokens - usage.completionTokens,
-        tokenUsed: aiResource.tokenUsed + usage.promptTokens + usage.completionTokens
+        tokenRemains: app.aiResource.tokenRemains - usage.promptTokens - usage.completionTokens,
+        tokenUsed: app.aiResource.tokenUsed + usage.promptTokens + usage.completionTokens
       }
     })
   );
