@@ -1,7 +1,7 @@
 import { AIResource, App as PrismaApp, Message as PrismaMessage } from '@prisma/client/edge';
 import { encode } from 'gpt-tokenizer';
 import { MessageQueueBody } from 'pages/api/queues/messages';
-import { AppConfig } from 'types/app';
+import { DingTalkAppConfig } from 'types/app';
 import { ReceiveMessageData } from 'types/feishu';
 import { Usage } from 'types/openai';
 import DingTalk from 'utils/dingtalk/client';
@@ -34,7 +34,7 @@ const saveProcesserResult = async ({
 
 
 const processMessage = async ({ recievedMessage, history, app }: MessageQueueBody) => {
-  const appConfig = app.config as AppConfig;
+  const appConfig = app.config as DingTalkAppConfig;
   //@ts-ignore
   const recievedMessageData = recievedMessage.data as ReceiveMessageData;
   const question = recievedMessageData.text.content;
@@ -89,7 +89,11 @@ const processMessage = async ({ recievedMessage, history, app }: MessageQueueBod
   const result = await OpenAIChatComletion(params);
   const json = await result.json();
   const answer = json.choices[0].message.content;
-  const usage = json.usage as Usage;
+  const usage:Usage = {
+    promptTokens: json.usage.prompt_tokens,
+    completionTokens:  json.usage.completion_tokens,
+    totalTokens:  json.usage.total_tokens,
+  }
   DingTalk(app, answer, recievedMessageData);
   const repliedMessage = {
     senderUnionId: recievedMessageData?.senderNick || 'anonymous',
