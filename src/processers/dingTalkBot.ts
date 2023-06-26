@@ -19,7 +19,7 @@ const saveProcesserResult = async ({
   usage: Usage;
 }) => {
   const params = { repliedMessage, usage, app, aiResource: app.aiResource, finished: true };
-  const body = JSON.stringify({ feishuMessageId: repliedMessage.conversationId, params });
+  const body = JSON.stringify({ recievedMessageId: repliedMessage.conversationId, params });
   const url = `${process.env.QUIRREL_BASE_URL}/api/db/saveProcesserResult`;
   await fetch(url, {
     method: 'POST',
@@ -36,8 +36,8 @@ const saveProcesserResult = async ({
 const processMessage = async ({ recievedMessage, history, app }: MessageQueueBody) => {
   const appConfig = app.config as AppConfig;
   //@ts-ignore
-  const feiShuMessageData = recievedMessage.data as ReceiveMessageData;
-  const question = feiShuMessageData.text.content;
+  const recievedMessageData = recievedMessage.data as ReceiveMessageData;
+  const question = recievedMessageData.text.content;
   const messages = new Array();
   let promptTokens = 0;
 
@@ -90,15 +90,15 @@ const processMessage = async ({ recievedMessage, history, app }: MessageQueueBod
   const json = await result.json();
   const answer = json.choices[0].message.content;
   const usage = json.usage as Usage;
-  DingTalk(app, answer, feiShuMessageData);
+  DingTalk(app, answer, recievedMessageData);
   const repliedMessage = {
-    senderUnionId: feiShuMessageData?.senderNick || 'anonymous',
-    sender: feiShuMessageData?.senderStaffId || 'anonymous',
+    senderUnionId: recievedMessageData?.senderNick || 'anonymous',
+    sender: recievedMessageData?.senderStaffId || 'anonymous',
     content: question,
     answer: answer,
     appId: app.id,
-    conversationId: feiShuMessageData.msgId,
-    recievedMessageId: feiShuMessageData.msgId
+    conversationId: recievedMessageData.msgId,
+    recievedMessageId: recievedMessageData.msgId
   };
   await saveProcesserResult({ repliedMessage, app, usage, answer });
 };

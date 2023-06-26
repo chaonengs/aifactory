@@ -1,12 +1,13 @@
 import { App, Prisma } from '@prisma/client';
+import { DINGTALK_URL } from 'utils/server/const';
 // Import necessary modules
-const hostUrl = process.env.DINGTALK_URL;
+
 // Define function to get access token
 const AccessToken = async (app: App) => {
   const config = app.config as Prisma.JsonObject;
   const appKey = config['appId'] as string;
   const appSecret = config['appSecret'] as string;
-  const url = hostUrl + '/v1.0/oauth2/accessToken';
+  const url = DINGTALK_URL + `/v1.0/oauth2/accessToken`;
   const data = {
     "appKey": appKey,
     "appSecret": appSecret
@@ -43,7 +44,7 @@ const sendMessageToRobot = async (app: App, message: String, json: JSON) => {
 
 const SingleChatSend = async (app: App, message: String, json: JSON) => {
   const token = await AccessToken(app);
-  const url = hostUrl + `/v1.0/robot/oToMessages/batchSend`;
+  const url = DINGTALK_URL + `/v1.0/robot/oToMessages/batchSend`;
   const data = {
     msgParam: '{"title":"' + message + '","text":"' + message + '"}',
     msgKey: 'sampleMarkdown',
@@ -66,7 +67,7 @@ const SingleChatSend = async (app: App, message: String, json: JSON) => {
 }
 const GroupChatSend = async (app: App, message: String, json: JSON) => {
   const token = await AccessToken(app);
-  const url = hostUrl + `/v1.0/robot/groupMessages/send`;
+  const url = DINGTALK_URL + `/v1.0/robot/groupMessages/send`;
   const data = {
     msgParam: '{"title":"' + message + '","text":"' + message + '"}',
     msgKey: 'sampleMarkdown',

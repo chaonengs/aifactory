@@ -20,7 +20,7 @@ const findApp = async (id: string) => {
   });
 };
 
-const handleFeishuMessage = async (
+const handleDingTalkMessage = async (
   data: JSON,
   app: App & { aiResource: AIResource },
   res: NextApiResponse
@@ -113,7 +113,7 @@ const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {
       return;
     }
     //console.log(data);
-    handleFeishuMessage(data, app, res);
+    handleDingTalkMessage(data, app, res);
 
   } else {
     res.end('ok');

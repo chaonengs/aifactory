@@ -22,3 +22,5 @@ export const AZURE_DEPLOYMENT_ID =
 
 export const WEWORK_BASE_URL = 'https://qyapi.weixin.qq.com'
 export const WEWORK_PROXYED_BASE_URL = 'https://wework-naodong.chilunyc.com';
+
+export const DINGTALK_URL='http://dingtalk.whpck.com';
