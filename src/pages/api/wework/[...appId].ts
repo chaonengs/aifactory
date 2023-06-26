@@ -64,13 +64,15 @@ const weworkVerify = async (req: NextApiRequest, res: NextApiResponse) => {
 const makeRespone = (config: AppConfig, decryptedJson: any) => {
   const timestamp = now();
   const nonce = Math.random() * 10000000000;
-  const encrypted = encrypt(config.encodingAESKey, firstResponseXML(decryptedJson.fromUser, config.corpId), decryptedJson.MsgId);
+  const messageXML = firstResponseXML(decryptedJson.FromUserName, config.corpId);
+  console.log("messageXML: ", messageXML);
+  const encrypted = encrypt(config.encodingAESKey,messageXML , config.corpId);
   const signature = getSignature(config.encodingAESKey, timestamp, String(nonce), encrypted);
   return `<xml>
-  <Encrypt><![CDATA[${encrypted}]]></Encrypt>
-  <MsgSignature><![CDATA[${signature}]]></MsgSignature>
-  <TimeStamp>${timestamp}</TimeStamp>
-  <Nonce><![CDATA[${String(nonce)}]]></Nonce>
+    <Encrypt><![CDATA[${encrypted}]]></Encrypt>
+    <MsgSignature><![CDATA[${signature}]]></MsgSignature>
+    <TimeStamp>${timestamp}</TimeStamp>
+    <Nonce><![CDATA[${String(nonce)}]]></Nonce>
   </xml>`;
 };
 
@@ -116,10 +118,10 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     console.log(resBody);
     res.setHeader('Content-Type', 'text/xml').end(resBody);
   } catch (e) {
+    console.error(e);
     if ((e as PrismaClientKnownRequestError).code === 'P2002') {
       res.setHeader('Content-Type', 'text/xml').end(resBody);
     } else {
-      console.error(e);
       throw e;
     }
   }
