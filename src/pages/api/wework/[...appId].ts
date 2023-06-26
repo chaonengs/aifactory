@@ -64,7 +64,9 @@ const weworkVerify = async (req: NextApiRequest, res: NextApiResponse) => {
 const makeRespone = (config: AppConfig, decryptedJson: any) => {
   const timestamp = now();
   const nonce = Math.random() * 10000000000;
-  const encrypted = encrypt(config.encodingAESKey, firstResponseXML(decryptedJson.FromUserName, config.corpId), config.corpId);
+  const messageXML = firstResponseXML(decryptedJson.FromUserName, config.corpId);
+  console.log("messageXML: ", messageXML);
+  const encrypted = encrypt(config.encodingAESKey,messageXML , config.corpId);
   const signature = getSignature(config.encodingAESKey, timestamp, String(nonce), encrypted);
   return `<xml>
     <Encrypt><![CDATA[${encrypted}]]></Encrypt>
