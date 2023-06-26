@@ -97,7 +97,7 @@ const processMessage = async ({ recievedMessage, history, app }: MessageQueueBod
     content: question,
     answer: answer,
     appId: app.id,
-    conversationId: recievedMessageData.msgId,
+    conversationId: recievedMessageData.unionMessageId,
     recievedMessageId: recievedMessageData.msgId
   };
   await saveProcesserResult({ repliedMessage, app, usage, answer });

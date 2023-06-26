@@ -253,3 +253,18 @@ model SensitiveWordInMessage {
   @@index([messageId])
   @@index([sensitiveWordId])
 }
+
+model UnionMessage {
+  id                     String                   @id @default(cuid())
+  createdAt              DateTime                 
+  expiringDate           DateTime                 
+  sender                 String
+  appId                  String
+  organizationId         String?
+  conversationId         String?
+  conversationType       Int
+  @@index([appId])
+  @@index([organizationId])
+  @@index([conversationId])
+  @@index([conversationType])
+}
