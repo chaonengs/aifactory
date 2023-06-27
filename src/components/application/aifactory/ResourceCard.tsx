@@ -10,7 +10,7 @@ import MuiAccordion from '@mui/material/Accordion';
 import MuiAccordionSummary from '@mui/material/AccordionSummary';
 import IconButton from '@mui/material/IconButton';
 import React from 'react';
-import { AIResource } from '@prisma/client';
+import { AIResource, App } from '@prisma/client';
 import { AIResourceTypes, ResourceTypes } from 'constant';
 
 
@@ -19,7 +19,7 @@ const ResourceCard = ({
   onEdit,
   onDelete
 }: {
-  aiResource: AIResource;
+  aiResource: AIResource & {apps : App[]},
   onEdit: (aiResource: AIResource) => void;
   onDelete: (aiResource: AIResource) => void;
 }) => {

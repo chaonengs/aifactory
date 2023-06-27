@@ -43,3 +43,10 @@ export const OpenAIModels: Record<OpenAIModelID, OpenAIModel> = {
     tokenLimit: 32000,
   },
 };
+
+
+export type Usage = {
+  promptTokens: number,
+  completionTokens: number,
+  totalTokens: number,
+}

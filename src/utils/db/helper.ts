@@ -1,4 +1,4 @@
-import { ProcessMessageBody } from "types/queue";
+import { ProcessMessageBody } from "pages/api/db/saveProcesserResult";
 
 const createProcessMessageBody = (
     question: string,
@@ -9,8 +9,8 @@ const createProcessMessageBody = (
     completionTokens: number,
     app: any,
     conversationId: string,
-    feishuMessageId: string,
-
+    receivedMessageId: string,
+    isAIAnswer: boolean
   ) => {
     const message = {
       senderUnionId: senderUnionId,
@@ -19,21 +19,19 @@ const createProcessMessageBody = (
       answer: answer,
       appId: app.id,
       conversationId: conversationId,
-      feishuMessageId: feishuMessageId,
+      receivedMessageId: receivedMessageId,
+      isAIAnswer: isAIAnswer,
     };
   
     const usage = {
-      aiResourceId: app.aiResourceId,
       promptTokens: propmtTokens,
       completionTokens: completionTokens,
       totalTokens: propmtTokens + completionTokens
     };
   
     const requestBody: ProcessMessageBody = {
-      app: app,
       message: message,
       usage: usage,
-      aiResource: app.aiResource
     };
     return requestBody;
   };

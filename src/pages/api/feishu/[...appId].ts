@@ -1,9 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, App, Prisma, AIResource, Message } from '@prisma/client';
 import * as lark from '@larksuiteoapi/node-sdk';
-import { ReceiveMessageEvent, Sender, User } from 'types/feishu';
+import { ReceiveMessageEvent, ReceiveMessageData, Sender, User, Message as FeishuReceivedMessage } from 'types/feishu';
 import MessageQueue from 'pages/api/queues/messages';
 import { NotFoundError } from '@prisma/client/runtime/library';
+import { findSensitiveWords } from 'utils/db/transactions';
 
 const prisma = new PrismaClient();
 
@@ -35,6 +36,19 @@ const eventDispatcher = (app: App & { aiResource: AIResource }) => {
     verificationToken: config['verificationToken'] || config['appVerificationToken'],
   }).register({
     'im.message.receive_v1': async (data) => {
+      if (!app.aiResource) {
+        const chatId = data.message.chat_id;
+        const res = await client.im.message.reply({
+          path: {
+            message_id: data.message.message_id
+          },
+          data: {
+            content: JSON.stringify({ text: '应用资源配置有误。' }),
+            msg_type: 'text'
+          }
+        });
+        return res;
+      }
       if (app.aiResource.tokenRemains <= 0) {
         const chatId = data.message.chat_id;
         const res = await client.im.message.reply({
@@ -60,12 +74,12 @@ const handleFeishuMessage = async (
   app: App & { aiResource: AIResource },
   res: NextApiResponse
 ) => {
-  let feishuMessage = await prisma.feiShuMessage.findUnique({ where: { id: event.data.message.message_id } });
-  if (feishuMessage?.processing) {
+  let receivedMessage = await prisma.receivedMessage.findUnique({ where: { id: event.data.message.message_id } });
+  if (receivedMessage?.processing) {
     res.status(400).end('messege in processing');
     return;
   }
-  if (feishuMessage && !feishuMessage.processing) {
+  if (receivedMessage && !receivedMessage.processing) {
     res.end('ok');
     return;
   }
@@ -74,42 +88,51 @@ const handleFeishuMessage = async (
     res.end('ok');
     return;
   }
-  feishuMessage = await prisma.feiShuMessage.create({
+  receivedMessage = await prisma.receivedMessage.create({
     data: {
       id: event.data.message.message_id,
       appId: app.id,
       data: event.data,
+      type: 'FEISHU',
       eventName: event.name,
       processing: true,
       createdAt: new Date(Number(event.data.message.create_time))
     }
   });
 
-  let history: Message[] = [];
-  if (event.data.message.root_id && event.data.message.root_id != event.data.message.message_id) {
-    history = await prisma.message.findMany({
-      where: {
-        conversationId: event.data.message.root_id
-      },
-      orderBy: [
-        {
-          createdAt: 'desc'
-        }
-      ],
-      take: 50
-    });
-  }
+  //@ts-ignore
+  const messageData = receivedMessage.data as ReceiveMessageData;
+  const matched = await findSensitiveWords(JSON.parse(messageData.message.content).text, app.organizationId);
 
-  // Send to queue.
-  await MessageQueue.enqueue(
-    { feishuMessage: feishuMessage, history: history, app: app }, // job to be enqueued
-    { delay: 1 } // scheduling options
-  );
+
+    let history: Message[] = [];
+    if (event.data.message.root_id && event.data.message.root_id != event.data.message.message_id) {
+      history = await prisma.message.findMany({
+        where: {
+          conversationId: event.data.message.root_id, 
+          isAIAnswer: true,
+        },
+        orderBy: [
+          {
+            createdAt: 'desc'
+          }
+        ],
+        take: 50
+      });
+    }
+  
+    // Send to queue.
+    await MessageQueue.enqueue(
+      { receivedMessage: receivedMessage, history: history, app: app, sensitiveWords: matched }, // job to be enqueued
+      { delay: 1 } // scheduling options
+    );
+  
+  
 
   res.end('ok');
 };
 
-const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {
+export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { appId } = req.query;
   let id = null;
   if (Array.isArray(appId)) {
@@ -167,6 +190,3 @@ const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  handleRequest(req, res);
-}

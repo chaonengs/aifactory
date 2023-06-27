@@ -1,10 +1,26 @@
-import { messageCard } from '@larksuiteoapi/node-sdk';
-import { AIResource, App, PrismaClient, Message, Usage } from '@prisma/client';
-import { ProcessMessageBody } from 'types/queue';
+import { Message, PrismaClient } from '@prisma/client';
+import { Message as MessageToSave, Usage as UsageToSave } from 'pages/api/db/saveProcesserResult';
 
 const prisma = new PrismaClient();
 
-const logSensitiveWord = async (message:Message, organizationId:string) => {
+export const findSensitiveWords = async (messageContent:string, organizationId:string) => {
+  const organization = await prisma.organization.findFirstOrThrow({
+    where: { id: organizationId },
+    include: {
+      sensitiveWords: true
+    }
+  });
+
+  const matched = organization.sensitiveWords.filter((v,i,a)=>{
+    return messageContent.includes(v.value);
+  });
+  
+  return matched;
+}
+
+
+
+export const logSensitiveWord = async (message:Message, organizationId:string) => {
   const organization = await prisma.organization.findFirstOrThrow({
     where: { id: organizationId },
     include: {
@@ -29,15 +45,25 @@ const logSensitiveWord = async (message:Message, organizationId:string) => {
   })
 
   if(transList.length > 0){
-    await prisma.$transaction(transList);
+    return await prisma.$transaction(transList);
   }
+  return null;
 }
 
-const saveMessage = async (message: Message, app: App, aiResource: AIResource, usage: Usage) => {
-
-
+export const saveMessage = async (message: MessageToSave, usage: UsageToSave) => {
   let transList = [];
+  const app = await prisma.app.findUniqueOrThrow({
+    where: {
+      id: message.appId
+    },
+    include: {
+      aiResource: true
+    }
+  });
 
+  if(!app.aiResource){
+    throw new Error('no resource');
+  }
   transList.push(
     prisma.message.create({
       data: {
@@ -46,16 +72,18 @@ const saveMessage = async (message: Message, app: App, aiResource: AIResource, u
         content: message.content,
         answer: message.answer,
         appId: app.id,
-        feishuMessageId: message.feishuMessageId,
         conversationId: message.conversationId,
+        isAIAnswer: message.isAIAnswer || false,
+        hasError: message.hasError || false,
         usage: {
           create: {
-            aiResourceId: usage.aiResourceId,
+            aiResourceId: app.aiResource.id,
             promptTokens: usage.promptTokens,
             completionTokens: usage.completionTokens,
             totalTokens: usage.promptTokens + usage.completionTokens
           }
         },
+        receivedMessageId: message.receivedMessageId,
         organizationId: app.organizationId
       }
     })
@@ -63,10 +91,10 @@ const saveMessage = async (message: Message, app: App, aiResource: AIResource, u
 
   transList.push(
     prisma.aIResource.update({
-      where: { id: aiResource.id },
+      where: { id: app.aiResource.id },
       data: {
-        tokenRemains: aiResource.tokenRemains - usage.promptTokens - usage.completionTokens,
-        tokenUsed: aiResource.tokenUsed + usage.promptTokens + usage.completionTokens
+        tokenRemains: app.aiResource.tokenRemains - usage.promptTokens - usage.completionTokens,
+        tokenUsed: app.aiResource.tokenUsed + usage.promptTokens + usage.completionTokens
       }
     })
   );
@@ -82,12 +110,11 @@ const saveMessage = async (message: Message, app: App, aiResource: AIResource, u
 
 };
 
-const finishFeishuProcess = async (feishuMessageId: string) => {
-  prisma.feiShuMessage.update({
-    where: { id: feishuMessageId },
+export const finishProcessing = async (receivedMessageId: string) => {
+  prisma.receivedMessage.update({
+    where: { id: receivedMessageId },
     data: {
       processing: false
     }
   });
 };
-export { logSensitiveWord, saveMessage, finishFeishuProcess };

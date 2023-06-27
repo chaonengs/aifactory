@@ -126,16 +126,19 @@ model Message {
   createdAt              DateTime                 @default(now())
   senderUnionId          String
   sender                 String
+  isAIAnswer             Boolean                  @default(true)
+  hasError               Boolean                  @default(false)
   app                    App                      @relation(fields: [appId], references: [id])
   appId                  String
   usage                  Usage?
   organization           Organization?            @relation(fields: [organizationId], references: [id])
   organizationId         String?
   conversationId         String?
-  feishuMessageId        String?
-  SensitiveWordInMessage SensitiveWordInMessage[]
+  receivedMessageId      String?
+  receivedMessage        ReceivedMessage?         @relation(fields: [receivedMessageId], references: [id])
+  sensitiveWordInMessage SensitiveWordInMessage[]
 
-  @@index([feishuMessageId])
+  @@index([receivedMessageId])
   @@index([conversationId])
   @@index([organizationId])
   @@index([appId])
@@ -154,8 +157,8 @@ model AIResource {
   organizationId String
   type           AIResourceType @default(OPENAI)
   name           String
-  model          String
-  apiKey         String
+  model          String?
+  apiKey         String?
   tokenUsed      Int            @default(0)
   tokenRemains   Int            @default(0)
   hostUrl        String?
@@ -178,34 +181,51 @@ model APIKey {
   @@index([organizationId])
 }
 
+enum AppType {
+  FEISHU
+  WEWORK
+  DINGTALK
+  WEB
+}
+
 model App {
-  id              String          @id @default(cuid())
-  organization    Organization    @relation(fields: [organizationId], references: [id])
-  organizationId  String
-  name            String?
-  appType         String
-  aiResource      AIResource?     @relation(fields: [aiResourceId], references: [id])
-  aiResourceId    String?
-  messages        Message[]
-  tokenLimitation Int?
-  tokenUsed       Int             @default(0)
-  config          Json
-  feishuMessages  FeiShuMessage[]
-  builtIn         Boolean         @default(false)
+  id               String            @id @default(cuid())
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  organizationId   String
+  name             String?
+  appType          String
+  aiResource       AIResource?       @relation(fields: [aiResourceId], references: [id])
+  aiResourceId     String?
+  messages         Message[]
+  tokenLimitation  Int?
+  tokenUsed        Int               @default(0)
+  config           Json
+  receivedMessages ReceivedMessage[]
+  builtIn          Boolean           @default(false)
 
   @@index([organizationId])
   @@index([aiResourceId])
 }
 
-model FeiShuMessage {
-  id         String   @id
+enum ReceivedMessageType {
+  FEISHU
+  WEWORK
+  DINGTALK
+  WEB
+  UNKNOWN
+}
+
+model ReceivedMessage {
+  id         String              @id
   data       Json
   processing Boolean
-  createdAt  DateTime @default(now())
-  recievedAt DateTime @default(now())
+  createdAt  DateTime            @default(now())
+  recievedAt DateTime            @default(now())
   eventName  String
-  app        App      @relation(fields: [appId], references: [id])
+  app        App                 @relation(fields: [appId], references: [id])
   appId      String
+  type       ReceivedMessageType @default(UNKNOWN)
+  Message    Message[]
 
   @@index([appId])
 }
@@ -217,7 +237,7 @@ model SensitiveWord {
 
   organization           Organization             @relation(fields: [organizationId], references: [id])
   organizationId         String
-  SensitiveWordInMessage SensitiveWordInMessage[]
+  sensitiveWordInMessage SensitiveWordInMessage[]
 
   @@unique([value, organizationId])
   @@index([organizationId])
@@ -226,7 +246,7 @@ model SensitiveWord {
 
 model SensitiveWordInMessage {
   message         Message       @relation(fields: [messageId], references: [id])
-  messageId        String
+  messageId       String
   sensitiveWord   SensitiveWord @relation(fields: [sensitiveWordId], references: [id])
   sensitiveWordId Int
   plainText       String

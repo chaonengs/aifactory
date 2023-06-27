@@ -143,8 +143,8 @@ export const OpenAIChatComletion = (request : OpenAIRequest) => {
     stream: stream,
   };
 
-  console.log(requestHeaders)
-  console.log(requestBody)
+  //console.log(requestHeaders)
+  //console.log(requestBody)
   
   return fetch(url, {
     headers: requestHeaders,
@@ -165,6 +165,7 @@ export const OpenAIStream = async (
   const decoder = new TextDecoder();
 
   if (res.status !== 200) {
+    console.error(res)
     await onError(await res.text());
     await onComplete();
 
@@ -212,49 +213,6 @@ export const OpenAIStream = async (
             // console.log(chunkValue)
             await sseParser.parseSSE(chunkValue);
       }
-  
-  
-
-
-
-    //   for await (const chunk of res.body as any) {
-    //     const decoded = decoder.decode(chunk);
-    //     const parser = new SSEParser({onData, onError, onComplete})
-    //     await parser.parseSSE(decoded);
-        // const lines = decoded.split('\n').filter((line) => line.trim() !== '');
-
-        // for (const line of lines) {
-        //   const message = line.replace(/^data: /, '');
-        //   if (message === '[DONE]') {
-        //     if (onDone) {
-        //       await onDone(airesult);
-        //     }
-        //     if (onComplete) {
-        //       await onComplete(airesult, e);
-        //     }
-        //     controller.close();
-        //   } else {
-        //     try {
-        //       const parsed = JSON.parse(message);
-        //       const text = parsed.choices[0].delta.content;
-        //       if (onData) {
-        //         await onData(text);
-        //       }
-        //       const queue = encoder.encode(text);
-        //       controller.enqueue(queue);
-        //     } catch (e) {
-        //     console.error(e);
-        //     console.error(decoded);
-        //       if (onError) {
-        //         await onError(e);
-        //       }
-        //       if (onComplete) {
-        //         await onComplete(airesult, e);
-        //       }
-        //       controller.error(e);
-        //     }
-        //   }
-        // }
       }
     }
   });

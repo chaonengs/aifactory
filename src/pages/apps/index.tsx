@@ -145,10 +145,16 @@ const MyApps = () => {
             fullWidth
             variant="standard"
             value={newApp.appType}
- 
+            onChange={e => setNewApp({...newApp, appType: e.target.value})}
           >
-            <MenuItem value="FEISHU_BOT">
+            <MenuItem value="FEISHU">
               飞书机器人
+            </MenuItem>
+            <MenuItem value="DINGTALK">
+              钉钉机器人
+            </MenuItem>
+            <MenuItem value="WEWORK">
+              企业微信机器人
             </MenuItem>
             </TextField>
           <TextField
@@ -161,6 +167,7 @@ const MyApps = () => {
             value={newApp.name}
             onChange={
               (e)=>{
+                //console.log(e);
                 setNewApp({
                   name: e.target.value.trim(),
                   appType: newApp.appType
