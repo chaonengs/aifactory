@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, App, Prisma, AIResource, Message } from '@prisma/client';
 import * as lark from '@larksuiteoapi/node-sdk';
-import { ReceiveMessageEvent, Sender, User, Message as FeishuReceivedMessage } from 'types/feishu';
+import { ReceiveMessageEvent, ReceiveMessageData, Sender, User, Message as FeishuReceivedMessage } from 'types/feishu';
 import MessageQueue from 'pages/api/queues/messages';
 import { NotFoundError } from '@prisma/client/runtime/library';
 import { findSensitiveWords } from 'utils/db/transactions';
@@ -36,6 +36,19 @@ const eventDispatcher = (app: App & { aiResource: AIResource }) => {
     verificationToken: config['verificationToken'] || config['appVerificationToken'],
   }).register({
     'im.message.receive_v1': async (data) => {
+      if (!app.aiResource) {
+        const chatId = data.message.chat_id;
+        const res = await client.im.message.reply({
+          path: {
+            message_id: data.message.message_id
+          },
+          data: {
+            content: JSON.stringify({ text: '应用资源配置有误。' }),
+            msg_type: 'text'
+          }
+        });
+        return res;
+      }
       if (app.aiResource.tokenRemains <= 0) {
         const chatId = data.message.chat_id;
         const res = await client.im.message.reply({
@@ -88,8 +101,8 @@ const handleFeishuMessage = async (
   });
 
   //@ts-ignore
-  const messageData = receivedMessage.data as FeishuReceivedMessage;
-  const matched = await findSensitiveWords(JSON.parse(messageData.content).text, app.organizationId);
+  const messageData = receivedMessage.data as ReceiveMessageData;
+  const matched = await findSensitiveWords(JSON.parse(messageData.message.content).text, app.organizationId);
 
 
     let history: Message[] = [];

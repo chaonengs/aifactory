@@ -150,7 +150,13 @@ const finish = async ({
   }
 
   const url = `${process.env.QUIRREL_BASE_URL}/api/db/saveProcesserResult`;
-  await fetch(url, { method: 'POST', body: JSON.stringify(params) });
+  await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(params)
+  });
 };
 
 
@@ -194,7 +200,7 @@ const makeMessages = ({ receivedMessage, history, app }: MessageQueueBody) => {
   return {messages, promptTokens};
 };
 
-const processMessage = async ({ receivedMessage, history, app, sensitiveWords }: MessageQueueBody) => {
+export const processMessage = async ({ receivedMessage, history, app, sensitiveWords }: MessageQueueBody) => {
   const appConfig = app.config as FeishuAppConfig;
   //@ts-ignore
   const feiShuMessageData = receivedMessage.data as ReceiveMessageData;
@@ -279,5 +285,4 @@ const processMessage = async ({ receivedMessage, history, app, sensitiveWords }:
   return openaiStream;
 };
 
-export { processMessage };
 

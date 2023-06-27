@@ -7,6 +7,7 @@ import TextareaAutosize from '@mui/base/TextareaAutosize';
 import { Message } from '@prisma/client';
 import { useSession } from 'next-auth/react';
 import { height } from '@mui/system';
+import useConfig from 'hooks/useConfig';
 
 const columns: GridColDef[] = [
   // { field:'id', headerName:'ID' },
@@ -69,13 +70,14 @@ const StyledTextarea = styled(TextareaAutosize)(
 
 export default function MessageHistory() {
   const { data: session } = useSession();
+  const organizationId = useConfig().organization;
 
   const [paginationModel, setPaginationModel] = React.useState({
     pageSize: 10,
     page: 0
   });
 
-  const { data } = usePagedMessages(session?.user.id, paginationModel.page + 1, paginationModel.pageSize);
+  const { data } = usePagedMessages(organizationId, paginationModel.page + 1, paginationModel.pageSize);
 
   const [open, setOpen] = React.useState(false);
   const [dialogContext, setDialogContext] = React.useState('');
