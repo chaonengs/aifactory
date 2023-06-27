@@ -82,7 +82,7 @@ const handleDingTalkMessage = async (
       eventName: '',
       processing: true,
       type: "DINGTALK",
-      createdAt: datetime
+      createdAt: new Date(Number(data.createAt))
     }
   });
 
