@@ -14,6 +14,8 @@ const makeMessages = ({ receivedMessage, history, app }: MessageQueueBody) => {
   const messages = new Array();
 
   let promptTokens = 0;
+  promptTokens = encode(receiveMessageData.Content).length;
+
   const maxPromptTokens = appConfig.ai?.maxPromptTokens || 2000;
   for (let i = 0; i < history.length; i++) {
     const answerMessage = {
