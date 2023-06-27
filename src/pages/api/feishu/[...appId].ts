@@ -1,9 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, App, Prisma, AIResource, Message } from '@prisma/client';
 import * as lark from '@larksuiteoapi/node-sdk';
-import { ReceiveMessageEvent, Sender, User } from 'types/feishu';
+import { ReceiveMessageEvent, Sender, User, Message as FeishuReceivedMessage } from 'types/feishu';
 import MessageQueue from 'pages/api/queues/messages';
 import { NotFoundError } from '@prisma/client/runtime/library';
+import { findSensitiveWords } from 'utils/db/transactions';
 
 const prisma = new PrismaClient();
 
@@ -60,12 +61,12 @@ const handleFeishuMessage = async (
   app: App & { aiResource: AIResource },
   res: NextApiResponse
 ) => {
-  let dingTalkMessage = await prisma.recievedMessage.findUnique({ where: { id: event.data.message.message_id } });
-  if (dingTalkMessage?.processing) {
+  let receivedMessage = await prisma.receivedMessage.findUnique({ where: { id: event.data.message.message_id } });
+  if (receivedMessage?.processing) {
     res.status(400).end('messege in processing');
     return;
   }
-  if (dingTalkMessage && !dingTalkMessage.processing) {
+  if (receivedMessage && !receivedMessage.processing) {
     res.end('ok');
     return;
   }
@@ -74,7 +75,7 @@ const handleFeishuMessage = async (
     res.end('ok');
     return;
   }
-  dingTalkMessage = await prisma.recievedMessage.create({
+  receivedMessage = await prisma.receivedMessage.create({
     data: {
       id: event.data.message.message_id,
       appId: app.id,
@@ -86,31 +87,39 @@ const handleFeishuMessage = async (
     }
   });
 
-  let history: Message[] = [];
-  if (event.data.message.root_id && event.data.message.root_id != event.data.message.message_id) {
-    history = await prisma.message.findMany({
-      where: {
-        conversationId: event.data.message.root_id
-      },
-      orderBy: [
-        {
-          createdAt: 'desc'
-        }
-      ],
-      take: 50
-    });
-  }
+  //@ts-ignore
+  const messageData = receivedMessage.data as FeishuReceivedMessage;
+  const matched = await findSensitiveWords(JSON.parse(messageData.content).text, app.organizationId);
 
-  // Send to queue.
-  await MessageQueue.enqueue(
-    { recievedMessage: feishuMessage, history: history, app: app }, // job to be enqueued
-    { delay: 1 } // scheduling options
-  );
+
+    let history: Message[] = [];
+    if (event.data.message.root_id && event.data.message.root_id != event.data.message.message_id) {
+      history = await prisma.message.findMany({
+        where: {
+          conversationId: event.data.message.root_id, 
+          isAIAnswer: true,
+        },
+        orderBy: [
+          {
+            createdAt: 'desc'
+          }
+        ],
+        take: 50
+      });
+    }
+  
+    // Send to queue.
+    await MessageQueue.enqueue(
+      { receivedMessage: receivedMessage, history: history, app: app, sensitiveWords: matched }, // job to be enqueued
+      { delay: 1 } // scheduling options
+    );
+  
+  
 
   res.end('ok');
 };
 
-const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {
+export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { appId } = req.query;
   let id = null;
   if (Array.isArray(appId)) {
@@ -168,6 +177,3 @@ const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  handleRequest(req, res);
-}

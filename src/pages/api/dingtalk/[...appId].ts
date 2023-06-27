@@ -25,12 +25,12 @@ const handleDingTalkMessage = async (
   app: App & { aiResource: AIResource },
   res: NextApiResponse
 ) => {
-  let recievedMessage = await prisma.recievedMessage.findUnique({ where: { id: data.msgId } });
-  if (recievedMessage?.processing) {
+  let receivedMessage = await prisma.receivedMessage.findUnique({ where: { id: data.msgId } });
+  if (receivedMessage?.processing) {
     res.status(400).end('messege in processing');
     return;
   }
-  if (recievedMessage && !recievedMessage.processing) {
+  if (receivedMessage && !receivedMessage.processing) {
     res.end('ok');
     return;
   }
@@ -39,7 +39,7 @@ const handleDingTalkMessage = async (
     res.end('ok');
     return;
   }
-  recievedMessage = await prisma.recievedMessage.create({
+  receivedMessage = await prisma.receivedMessage.create({
     data: {
       id: data.msgId,
       appId: app.id,
@@ -68,10 +68,10 @@ const handleDingTalkMessage = async (
 
   //Send to queue.
   await MessageQueue.enqueue(
-    { recievedMessage: recievedMessage, history: history, app: app }, // job to be enqueued
+    { receivedMessage: receivedMessage, history: history, app: app }, // job to be enqueued
     { delay: 1 } // scheduling options
   );
-  //const openaiStream = await processMessage({recievedMessage,history,app});
+  //const openaiStream = await processMessage({receivedMessage,history,app});
   res.end('ok');
 };
 
