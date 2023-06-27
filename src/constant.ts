@@ -67,14 +67,19 @@ export const ChatModeTypes=[
   },
   {
     name:"单聊",
-    message:"[Concentrate] 现在进入与#name的单聊模式",
+    message:"**[Concentrate] 现在进入与 #name 的单聊模式**",
     type:1
   },
   {
     name:"串聊",
-    message:"[Concentrate] 现在进入与#name的串聊模式",
+    message:"**[Concentrate] 现在进入与 #name 的串聊模式**\n\n>#time分钟后将恢复默认聊天模式：单聊",
     type:2
   },
+  {
+    name:"重置",
+    message:"**[RecyclingSymbol]已重置与 #name 的对话模式**\n\n> 可以开始新的对话 [Bubble]",
+    type:3
+  }
 ]
 //串聊时间限制
 export const ChatModeDateTime= 10

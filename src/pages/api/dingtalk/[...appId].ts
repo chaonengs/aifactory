@@ -1,10 +1,9 @@
-import MessageQueue from 'pages/api/queues/messages';
-import { AIResource, App, Message, PrismaClient,UnionMessage } from '@prisma/client';
+import { AIResource, App, Message, PrismaClient } from '@prisma/client';
 import { NotFoundError } from '@prisma/client/runtime/library';
+import { ChatModeDateTime, ChatModeTypes } from 'constant';
 import { NextApiRequest, NextApiResponse } from 'next';
 import MessageQueue from 'pages/api/queues/messages';
 import dingTalkSend from 'utils/dingtalk/client';
-import { ChatModeTypes, ChatModeDateTime } from 'constant'
 
 
 const prisma = new PrismaClient({
@@ -23,12 +22,19 @@ const findApp = async (id: string) => {
     }
   });
 };
-
+/**
+ * 确认消息信息，根据情况获取历史消息，然后发送给队列
+ * @param data 钉钉消息体
+ * @param app 应用id
+ * @param res 
+ * @returns 
+ */
 const handleDingTalkMessage = async (
   data: JSON,
   app: App & { aiResource: AIResource },
   res: NextApiResponse
 ) => {
+  //获取当前消息是否存在，判断消息状态。
   let recievedMessage = await prisma.recievedMessage.findUnique({ where: { id: data.msgId } });
   if (recievedMessage?.processing) {
     res.status(400).end('messege in processing');
@@ -43,31 +49,15 @@ const handleDingTalkMessage = async (
     res.end('ok');
     return;
   }
-  let datetime = new Date()
-  let unionMessage = await prisma.unionMessage.findMany({
-    where: {
-      appId: app.id,
-      organizationId: app.organizationId,
-      conversationId: data.conversationId,
 
-      createdAt: {
-        lt: datetime
-      },
-      expiringDate: {
-        gt: datetime
-      }
-    },
-    orderBy: [
-      {
-        createdAt: 'desc'
-      }
-    ], take: 1
-  });
 
   let history: Message[] = [];
   let unionMessageId = null;
-  if (unionMessage.length!=0 && unionMessage[0].id && unionMessage[0].conversationType === 2) {
-    unionMessageId = unionMessage[0].id;
+  //读取是否存在串聊上下文unionMessageId
+  const unionMessage = await unionMessagefindBy({ appId: app.id, organizationId: data.organizationId, conversationId: data.conversationId });
+  //如果存在上下文unionMessageId 并且type类型为串聊，则获取改unionMessageId下历史消息
+  if (unionMessage && unionMessage.unionMessageId && unionMessage.type === 2) {
+    unionMessageId = unionMessage.unionMessageId;
     history = await prisma.message.findMany({
       where: {
         conversationId: unionMessageId
@@ -81,8 +71,9 @@ const handleDingTalkMessage = async (
     });
 
   }
-  data.unionMessageId=unionMessageId ||data.msgId;
-
+  //将unionMessageId 写入到data数据体中，给后续使用
+  data.unionMessageId = unionMessageId || data.msgId;
+  //写入数据
   recievedMessage = await prisma.recievedMessage.create({
     data: {
       id: data.msgId,
@@ -103,7 +94,47 @@ const handleDingTalkMessage = async (
   //const openaiStream = await processMessage({recievedMessage,history,app});
   res.end('ok');
 };
+/**
+ * 根据内容获取unionMessage 是否存在上下文信息，如果存在则返回unionMessageId 和type 如果没有在type=1
+ * @param data 内容体包含：appId,organizationId,conversationId
+ * @returns 返回 json 例如：{"unionMessageId:****","type":1}
+ */
+const unionMessagefindBy = async (data: JSON) => {
+  let datetime = new Date()
+  let unionMessage = await prisma.unionMessage.findMany({
+    where: {
+      appId: data.appId,
+      organizationId: data.organizationId,
+      conversationId: data.conversationId,
 
+      createdAt: {
+        lt: datetime
+      },
+      expiringDate: {
+        gt: datetime
+      }
+    },
+    orderBy: [
+      {
+        createdAt: 'desc'
+      }
+    ], take: 1
+  });
+  let unionMessageId = null;
+  let type = 1;
+  if (unionMessage.length != 0 && unionMessage[0].id) {
+    type = unionMessage[0].conversationType;
+    unionMessageId = unionMessage[0].id;
+  }
+  return { unionMessageId: unionMessageId, type: type }
+}
+/**
+ * 聊天模板消息模块，判断是否为特定字符串如果是则做相应返回和生成上线文ID
+ * @param data 钉钉消息内容体
+ * @param app 应用
+ * @param res 
+ * @returns 返回状态：true:代表没有在模板中，false:在模板中
+ */
 const chatModeMessage = async (
   data: JSON,
   app: App & { aiResource: AIResource },
@@ -112,18 +143,29 @@ const chatModeMessage = async (
   let unionMessage = null;
   let type = null;
   let status = true;
+  //循环遍历模块类型，发送钉钉消息
   ChatModeTypes.forEach((item, index, array) => {
 
     if (item.name === data.text.content) {
       status = false;
       const message = item.message.replace("#name", data.senderNick);
-      dingTalkSend(app, message, data);
+      const messageBody = message.replace("#time", ChatModeDateTime);
+      dingTalkSend(app, messageBody, data);
       if (item.type) {
         type = item.type;
       }
     }
   });
+  //type 存在则表明为：单聊、串聊、重置
   if (type) {
+    //如果为重置则获取原有type类型是单聊还是串聊。默认是单聊
+    if (type == 3) {
+      const unionMessage = await unionMessagefindBy({ appId: app.id, organizationId: app.organizationId, conversationId: data.conversationId });
+      if (unionMessage && unionMessage.type) {
+        type = unionMessage.type;
+      }
+    }
+    //写入数据库，限定时间：ChatModeDateTime
     let datetime = new Date();
     let expiringDate = new Date(Date.now() + ChatModeDateTime * 60000);
     unionMessage = await prisma.unionMessage.create({
