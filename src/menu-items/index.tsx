@@ -33,14 +33,14 @@ const menus = {
           icon: IconAsset,
           breadcrumbs: false
         },
-        {
-          id: 'app-market',
-          title: <FormattedMessage id="app-market" />,
-          type: 'item',
-          url: '/apps/market',
-          icon: IconBuildingStore,
-          breadcrumbs: false
-        }
+        // {
+        //   id: 'app-market',
+        //   title: <FormattedMessage id="app-market" />,
+        //   type: 'item',
+        //   url: '/apps/market',
+        //   icon: IconBuildingStore,
+        //   breadcrumbs: false
+        // }
       ]
     },
     {
