@@ -80,6 +80,7 @@ const handleDingTalkMessage = async (
     });
 
   }
+  data.unionMessageId=unionMessageId ||data.msgId;
 
   recievedMessage = await prisma.recievedMessage.create({
     data: {
