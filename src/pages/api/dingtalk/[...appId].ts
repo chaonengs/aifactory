@@ -143,10 +143,11 @@ const chatModeMessage = async (
   let unionMessage = null;
   let type = null;
   let status = true;
+  let content=data.text.content.trim();
   //循环遍历模块类型，发送钉钉消息
   ChatModeTypes.forEach((item, index, array) => {
 
-    if (item.name === data.text.content) {
+    if (item.name === content) {
       status = false;
       const message = item.message.replace("#name", data.senderNick);
       const messageBody = message.replace("#time", ChatModeDateTime);
