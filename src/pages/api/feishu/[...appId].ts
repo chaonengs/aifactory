@@ -60,12 +60,12 @@ const handleFeishuMessage = async (
   app: App & { aiResource: AIResource },
   res: NextApiResponse
 ) => {
-  let dingTalkMessage = await prisma.recievedMessage.findUnique({ where: { id: event.data.message.message_id } });
-  if (dingTalkMessage?.processing) {
+  let feishuMessage = await prisma.recievedMessage.findUnique({ where: { id: event.data.message.message_id } });
+  if (feishuMessage?.processing) {
     res.status(400).end('messege in processing');
     return;
   }
-  if (dingTalkMessage && !dingTalkMessage.processing) {
+  if (feishuMessage && !feishuMessage.processing) {
     res.end('ok');
     return;
   }
@@ -74,7 +74,7 @@ const handleFeishuMessage = async (
     res.end('ok');
     return;
   }
-  dingTalkMessage = await prisma.recievedMessage.create({
+  feishuMessage = await prisma.recievedMessage.create({
     data: {
       id: event.data.message.message_id,
       appId: app.id,

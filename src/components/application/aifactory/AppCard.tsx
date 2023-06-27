@@ -429,7 +429,7 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
                   margin="dense"
                   id="config.appId"
                   name="config.appId"
-                  label="AppId"
+                  label="AppKey"
                   fullWidth
                   variant="standard"
                   value={formik.values.config.appId}
@@ -599,6 +599,15 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
                 variant="standard"
                 sx={{ minWidth: 500 }}
                 value={`${window.location.origin}/api/dingtalk/${app.id}`}
+              />
+              <TextField
+                margin="dense"
+                id="callbackurl"
+                label="白名单IP"
+                fullWidth
+                variant="standard"
+                sx={{ minWidth: 500 }}
+                value={`143.64.17.193`}
               />
             </>
           )}

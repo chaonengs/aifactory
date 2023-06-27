@@ -104,6 +104,9 @@ export const processMessage = async ({ recievedMessage, history, app }: MessageQ
   if (!app.aiResource) {
     throw new Error('app has no resource');
   }
+  const accessToken = (await (await getAccessToken(appConfig)).json()).access_token;
+  await sendWewokMessage(receiveMessageData.FromUserName, "正在生成内容...", appConfig, accessToken);
+
   const params: OpenAIRequest = {
     hostUrl: app.aiResource.hostUrl,
     type: app.aiResource.type,
@@ -125,10 +128,8 @@ export const processMessage = async ({ recievedMessage, history, app }: MessageQ
     completionTokens:  result.usage.completion_tokens,
     totalTokens:  result.usage.total_tokens,
   }
-  const accessToken = (await (await getAccessToken(appConfig)).json()).access_token;
   const user = await (await getUser(receiveMessageData.FromUserName, accessToken)).json();
   const weworkResult = await sendWewokMessage(receiveMessageData.FromUserName, answer, appConfig, accessToken);
-  console.info(weworkResult);
 
   const repliedMessage = {
     senderUnionId: receiveMessageData.FromUserName,
