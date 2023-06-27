@@ -194,7 +194,7 @@ const makeMessages = ({ receivedMessage, history, app }: MessageQueueBody) => {
   return {messages, promptTokens};
 };
 
-const processMessage = async ({ receivedMessage, history, app, sensitiveWords }: MessageQueueBody) => {
+export const processMessage = async ({ receivedMessage, history, app, sensitiveWords }: MessageQueueBody) => {
   const appConfig = app.config as FeishuAppConfig;
   //@ts-ignore
   const feiShuMessageData = receivedMessage.data as ReceiveMessageData;
@@ -279,5 +279,4 @@ const processMessage = async ({ receivedMessage, history, app, sensitiveWords }:
   return openaiStream;
 };
 
-export { processMessage };
 
