@@ -1,8 +1,8 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
-import { DataGrid, GridColDef, GridValueGetterParams } from '@mui/x-data-grid';
+import { DataGrid, GridCellParams, GridColDef, GridEventListener, GridValueGetterParams, MuiEvent } from '@mui/x-data-grid';
 import { usePagedMessages } from 'feed';
-import { Hidden, Skeleton, styled } from '@mui/material';
+import { Dialog, DialogContent, DialogContentText, DialogTitle, Hidden, Skeleton, styled } from '@mui/material';
 import TextareaAutosize from '@mui/base/TextareaAutosize';
 import { Message } from '@prisma/client';
 import { useSession } from 'next-auth/react';
@@ -28,18 +28,20 @@ const columns: GridColDef[] = [
     field: 'content',
     headerName: '问题',
     flex: 1,
-    sortable: false
+    sortable: false,
+    editable: false,
   },
   {
     field: 'answer',
     headerName: '回答',
     flex: 1,
-    sortable: false
+    sortable: false,
+    editable: false,
   },
   {
     field: 'sensitive',
     headerName: '敏感词',
-    valueGetter: (params) => ` ${params.row.SensitiveWordInMessage ? params.row.SensitiveWordInMessage.map((s) => s.plainText).toString() : '无'} `,
+    valueGetter: (params) => ` ${params.row.sensitiveWordInMessage ? params.row.sensitiveWordInMessage.map((s) => s.plainText).toString() : '无'} `,
     sortable: false,
     flex: 1
   },
@@ -75,11 +77,51 @@ export default function MessageHistory() {
 
   const { data } = usePagedMessages(session?.user.id, paginationModel.page + 1, paginationModel.pageSize);
 
+  const [open, setOpen] = React.useState(false);
+  const [dialogContext, setDialogContext] = React.useState('');
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+  
+  // const handleEvent: GridEventListener<'cellClick'> = (
+  //   params,  // GridCellParams<any>
+  //   event,   // MuiEvent<React.MouseEvent<HTMLElement>>
+  //   details, // GridCallbackDetails
+  // ) => {...}
+  
+  // // Imperative subscription
+  // apiRef.current.subscribeEvent(
+  //   'cellClick',
+  //   handleEvent,
+  // );
+  
+  // // Hook subscription (only available inside the scope of the grid)
+  // useGridApiEventHandler(apiRef, 'cellClick', handleEvent);
+  
+  // // Component prop (available on DataGrid, DataGridPro, DataGridPremium)
+  // <DataGrid
+  //   onCellClick={handleEvent}
+  //   {...other}
+  // />
+
   return (
     <Box sx={{ height: `${data?.pagination.total > 0 ? 'auto' : '500px'}`, overflow: 'hidden' }}>
       {data ? (
         // (<StyledTextarea defaultValue={JSON.stringify(messages)} disabled ></StyledTextarea>) :
         <DataGrid
+        onCellClick={(params: GridCellParams, event: MuiEvent<React.MouseEvent>) => {
+          event.defaultMuiPrevented = true;
+          if(params.field === 'content' || params.field === 'answer'){
+            setDialogContext(params.value);
+            handleClickOpen();
+          }
+          console.log(params);
+        }}
           disableColumnFilter
           columns={columns}
           rows={data.data}
@@ -95,6 +137,15 @@ export default function MessageHistory() {
       ) : (
         <Skeleton animation="wave" sx={{ height: 300 }} />
       )}
+
+<Dialog onClose={handleClose} open={open}>
+      <DialogTitle></DialogTitle>
+      <DialogContent>
+          <DialogContentText id="dialog-description">
+            {dialogContext}
+          </DialogContentText>
+        </DialogContent>
+    </Dialog>
     </Box>
   );
 }

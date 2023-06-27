@@ -2,12 +2,13 @@ import { Queue } from 'utils/quirrel/edge';
 import { processMessage as processFeishu } from 'processers/feishubot';
 import { processMessage as processWework } from 'processers/wework';
 import { processMessage as processDingTalk } from 'processers/dingTalkBot';
-import { AIResource, App, Message, RecievedMessage } from '@prisma/client/edge';
+import { AIResource, App, Message, ReceivedMessage, SensitiveWord } from '@prisma/client/edge';
 
 export type MessageQueueBody = {
-  recievedMessage: RecievedMessage;
+  receivedMessage: ReceivedMessage;
   history: Message[];
   app: App & { aiResource: AIResource };
+  sensitiveWords: SensitiveWord[] | null | undefined;
 };
 
 export default Queue(
@@ -15,15 +16,30 @@ export default Queue(
   //@ts-ignore
   async (messageQueueBody: MessageQueueBody) => {
     try {
-      if (messageQueueBody.recievedMessage.type === 'WEWORK') {
-        return await processWework(messageQueueBody);
+      if (messageQueueBody.receivedMessage.type === 'WEWORK') {
+        const result = await processWework(messageQueueBody);
+        if (result) {
+          return result;
+        } else {
+          return new Response('ok');
+        }
+        
       }
-      if (messageQueueBody.recievedMessage.type === 'DINGTALK') {
-        return await processDingTalk(messageQueueBody);
-
+      if (messageQueueBody.receivedMessage.type === 'DINGTALK') {
+        const result = await processDingTalk(messageQueueBody);
+        if (result) {
+          return result;
+        } else {
+          return new Response('ok');
+        }
       }
-      if (messageQueueBody.recievedMessage.type === 'FEISHU') {
-        return await processFeishu(messageQueueBody);
+      if (messageQueueBody.receivedMessage.type === 'FEISHU') {
+        const result = await processFeishu(messageQueueBody);
+        if (result) {
+          return result;
+        } else {
+          return new Response('ok');
+        }
       }
     } catch (err) {
       console.error(err);

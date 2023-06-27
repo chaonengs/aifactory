@@ -1,7 +1,7 @@
 import { AIResource, App as PrismaApp, Message as PrismaMessage } from '@prisma/client/edge';
 import { encode } from 'gpt-tokenizer';
 import { MessageQueueBody } from 'pages/api/queues/messages';
-import { AppConfig } from 'types/app';
+import { DingTalkAppConfig } from 'types/app';
 import { ReceiveMessageData } from 'types/feishu';
 import dingTalkMessageSend from 'utils/dingtalk/client';
 import { OpenAIChatComletion, OpenAIRequest } from 'utils/server/openai';
@@ -38,11 +38,12 @@ const saveProcesserResult = async ({
 
 
 
-const processMessage = async ({ recievedMessage, history, app }: MessageQueueBody) => {
-  const appConfig = app.config as AppConfig;
+const processMessage = async ({ receivedMessage, history, app }: MessageQueueBody) => {
+  let processResult = null;
+  const appConfig = app.config as DingTalkAppConfig;
   //@ts-ignore
-  const recievedMessageData = recievedMessage.data as ReceiveMessageData;
-  const question = recievedMessageData.text.content;
+  const receivedMessageData = receivedMessage.data as ReceiveMessageData;
+  const question = receivedMessageData.text.content;
   const messages = new Array();
   let promptTokens = 0;
 
@@ -99,17 +100,19 @@ const processMessage = async ({ recievedMessage, history, app }: MessageQueueBod
     completionTokens:  json.usage.completion_tokens,
     totalTokens:  json.usage.total_tokens,
   }
-  await dingTalkMessageSend(app, answer, recievedMessageData);
+  await dingTalkMessageSend(app, answer, receivedMessageData);
   const repliedMessage = {
-    senderUnionId: recievedMessageData?.senderStaffId || 'anonymous',
-    sender: recievedMessageData?.senderNick || 'anonymous',
+    senderUnionId: receivedMessageData?.senderStaffId || 'anonymous',
+    sender: receivedMessageData?.senderNick || 'anonymous',
     content: question,
     answer: answer,
     appId: app.id,
-    conversationId: recievedMessageData.unionMessageId,
-    recievedMessageId: recievedMessageData.msgId
+    conversationId: receivedMessageData.unionMessageId,
+    receivedMessageId: receivedMessageData.msgId
+
   };
   await saveProcesserResult({ repliedMessage, app, usage, answer });
+  return processResult;
 };
 
 

@@ -9,8 +9,8 @@ const createProcessMessageBody = (
     completionTokens: number,
     app: any,
     conversationId: string,
-    recievedMessageId: string,
-
+    receivedMessageId: string,
+    isAIAnswer: boolean
   ) => {
     const message = {
       senderUnionId: senderUnionId,
@@ -19,7 +19,8 @@ const createProcessMessageBody = (
       answer: answer,
       appId: app.id,
       conversationId: conversationId,
-      recievedMessageId: recievedMessageId,
+      receivedMessageId: receivedMessageId,
+      isAIAnswer: isAIAnswer,
     };
   
     const usage = {

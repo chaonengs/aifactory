@@ -10,7 +10,9 @@ export type Message = {
     answer:  string;
     appId:  string;
     conversationId:  string;
-    recievedMessageId:  string;
+    receivedMessageId:  string;
+    isAIAnswer: boolean;
+    hasError: boolean;
 }
 
 export type Usage = {
@@ -27,14 +29,13 @@ export type ProcessMessageBody = {
 
 export type MessageDBSaveRequest = {
     data: ProcessMessageBody | undefined | null;
-    recievedMessageId: string;
+    receivedMessageId: string;
 }
 
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
-    console.debug(req.body);
     const saveQuest = req.body as MessageDBSaveRequest;
-    await finishProcessing(saveQuest.recievedMessageId );
+    await finishProcessing(saveQuest.receivedMessageId );
     if(saveQuest.data){
         const [m, r, a] = await saveMessage(saveQuest.data.message, saveQuest.data.usage);
         await logSensitiveWord(m as PrismaMessage, (a as App).organizationId);

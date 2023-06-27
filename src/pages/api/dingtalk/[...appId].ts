@@ -34,13 +34,13 @@ const handleDingTalkMessage = async (
   app: App & { aiResource: AIResource },
   res: NextApiResponse
 ) => {
-  //获取当前消息是否存在，判断消息状态。
-  let recievedMessage = await prisma.recievedMessage.findUnique({ where: { id: data.msgId } });
-  if (recievedMessage?.processing) {
+
+  let receivedMessage = await prisma.receivedMessage.findUnique({ where: { id: data.msgId } });
+  if (receivedMessage?.processing) {
     res.status(400).end('messege in processing');
     return;
   }
-  if (recievedMessage && !recievedMessage.processing) {
+  if (receivedMessage && !receivedMessage.processing) {
     res.end('ok');
     return;
   }
@@ -74,7 +74,8 @@ const handleDingTalkMessage = async (
   //将unionMessageId 写入到data数据体中，给后续使用
   data.unionMessageId = unionMessageId || data.msgId;
   //写入数据
-  recievedMessage = await prisma.recievedMessage.create({
+  receivedMessage = await prisma.receivedMessage.create({
+
     data: {
       id: data.msgId,
       appId: app.id,
@@ -181,10 +182,9 @@ const chatModeMessage = async (
       }
     });
   }
-
-
   return status;
 }
+
 
 const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.body && req.body['msgtype'] && req.body['msgtype'] == 'text') {
