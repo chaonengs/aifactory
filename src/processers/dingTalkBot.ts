@@ -1,7 +1,7 @@
 import { AIResource, App as PrismaApp, Message as PrismaMessage } from '@prisma/client/edge';
 import { encode } from 'gpt-tokenizer';
 import { MessageQueueBody } from 'pages/api/queues/messages';
-import { AppConfig } from 'types/app';
+import { DingTalkAppConfig } from 'types/app';
 import { ReceiveMessageData } from 'types/feishu';
 import { Usage } from 'types/openai';
 import DingTalk from 'utils/dingtalk/client';
@@ -19,7 +19,7 @@ const saveProcesserResult = async ({
   usage: Usage;
 }) => {
   const params = { repliedMessage, usage, app, aiResource: app.aiResource, finished: true };
-  const body = JSON.stringify({ recievedMessageId: repliedMessage.conversationId, params });
+  const body = JSON.stringify({ receivedMessageId: repliedMessage.conversationId, params });
   const url = `${process.env.QUIRREL_BASE_URL}/api/db/saveProcesserResult`;
   await fetch(url, {
     method: 'POST',
@@ -33,11 +33,12 @@ const saveProcesserResult = async ({
 
 
 
-const processMessage = async ({ recievedMessage, history, app }: MessageQueueBody) => {
-  const appConfig = app.config as AppConfig;
+const processMessage = async ({ receivedMessage, history, app }: MessageQueueBody) => {
+  let processResult = null;
+  const appConfig = app.config as DingTalkAppConfig;
   //@ts-ignore
-  const recievedMessageData = recievedMessage.data as ReceiveMessageData;
-  const question = recievedMessageData.text.content;
+  const receivedMessageData = receivedMessage.data as ReceiveMessageData;
+  const question = receivedMessageData.text.content;
   const messages = new Array();
   let promptTokens = 0;
 
@@ -89,18 +90,23 @@ const processMessage = async ({ recievedMessage, history, app }: MessageQueueBod
   const result = await OpenAIChatComletion(params);
   const json = await result.json();
   const answer = json.choices[0].message.content;
-  const usage = json.usage as Usage;
-  DingTalk(app, answer, recievedMessageData);
+  const usage:Usage = {
+    promptTokens: json.usage.prompt_tokens,
+    completionTokens:  json.usage.completion_tokens,
+    totalTokens:  json.usage.total_tokens,
+  }
+  DingTalk(app, answer, receivedMessageData);
   const repliedMessage = {
-    senderUnionId: recievedMessageData?.senderNick || 'anonymous',
-    sender: recievedMessageData?.senderStaffId || 'anonymous',
+    senderUnionId: receivedMessageData?.senderNick || 'anonymous',
+    sender: receivedMessageData?.senderStaffId || 'anonymous',
     content: question,
     answer: answer,
     appId: app.id,
-    conversationId: recievedMessageData.msgId,
-    recievedMessageId: recievedMessageData.msgId
+    conversationId: receivedMessageData.msgId,
+    receivedMessageId: receivedMessageData.msgId
   };
   await saveProcesserResult({ repliedMessage, app, usage, answer });
+  return processResult;
 };
 
 

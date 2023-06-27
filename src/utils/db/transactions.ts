@@ -3,6 +3,23 @@ import { Message as MessageToSave, Usage as UsageToSave } from 'pages/api/db/sav
 
 const prisma = new PrismaClient();
 
+export const findSensitiveWords = async (messageContent:string, organizationId:string) => {
+  const organization = await prisma.organization.findFirstOrThrow({
+    where: { id: organizationId },
+    include: {
+      sensitiveWords: true
+    }
+  });
+
+  const matched = organization.sensitiveWords.filter((v,i,a)=>{
+    return messageContent.includes(v.value);
+  });
+  
+  return matched;
+}
+
+
+
 export const logSensitiveWord = async (message:Message, organizationId:string) => {
   const organization = await prisma.organization.findFirstOrThrow({
     where: { id: organizationId },
@@ -56,6 +73,8 @@ export const saveMessage = async (message: MessageToSave, usage: UsageToSave) =>
         answer: message.answer,
         appId: app.id,
         conversationId: message.conversationId,
+        isAIAnswer: message.isAIAnswer || false,
+        hasError: message.hasError || false,
         usage: {
           create: {
             aiResourceId: app.aiResource.id,
@@ -64,7 +83,7 @@ export const saveMessage = async (message: MessageToSave, usage: UsageToSave) =>
             totalTokens: usage.promptTokens + usage.completionTokens
           }
         },
-        recievedMessageId: message.recievedMessageId,
+        receivedMessageId: message.receivedMessageId,
         organizationId: app.organizationId
       }
     })
@@ -91,9 +110,9 @@ export const saveMessage = async (message: MessageToSave, usage: UsageToSave) =>
 
 };
 
-export const finishProcessing = async (recievedMessageId: string) => {
-  prisma.recievedMessage.update({
-    where: { id: recievedMessageId },
+export const finishProcessing = async (receivedMessageId: string) => {
+  prisma.receivedMessage.update({
+    where: { id: receivedMessageId },
     data: {
       processing: false
     }

@@ -1,3 +1,4 @@
+import { App, SensitiveWord } from '@prisma/client/edge';
 import { encode } from 'gpt-tokenizer';
 import { MessageDBSaveRequest, Message as MessageToSave, Usage as UsageToSave } from 'pages/api/db/saveProcesserResult';
 import { MessageQueueBody } from 'pages/api/queues/messages';
@@ -5,11 +6,11 @@ import { WeworkAppConfig } from 'types/app';
 import { Usage } from 'types/openai';
 import { Message } from 'types/wework';
 import { WEWORK_PROXYED_BASE_URL } from 'utils/server/const';
-import { OpenAIChatComletion, OpenAIRequest } from 'utils/server/openai';
+import { OpenAIChatComletion, OpenAIRequest, OpenAIStream } from 'utils/server/openai';
 
-const makeMessages = ({ recievedMessage, history, app }: MessageQueueBody) => {
+const makeMessages = ({ receivedMessage, history, app }: MessageQueueBody) => {
   const appConfig = app.config as WeworkAppConfig;
-  const receiveMessageData = recievedMessage.data as Message;
+  const receiveMessageData = receivedMessage.data as Message;
   const messages = new Array();
 
   let promptTokens = 0;
@@ -44,7 +45,7 @@ const makeMessages = ({ recievedMessage, history, app }: MessageQueueBody) => {
   };
 
   messages.push(message);
-  return messages;
+  return {messages, promptTokens};
 };
 
 const getAccessToken = (appConfig: WeworkAppConfig) => {
@@ -80,7 +81,7 @@ const sendWewokMessage = async (userId: string, answer: string, appConfig: Wewor
 
 const saveProcesserResult = async ({ repliedMessage, usage }: { repliedMessage: MessageToSave; usage: UsageToSave }) => {
   const params: MessageDBSaveRequest = {
-    recievedMessageId: repliedMessage.recievedMessageId,
+    receivedMessageId: repliedMessage.receivedMessageId,
     data: {
       message: repliedMessage,
       usage: usage
@@ -96,49 +97,95 @@ const saveProcesserResult = async ({ repliedMessage, usage }: { repliedMessage: 
   });
 };
 
-export const processMessage = async ({ recievedMessage, history, app }: MessageQueueBody) => {
-  const appConfig = app.config as WeworkAppConfig;
-  const receiveMessageData = recievedMessage.data as Message;
-
-  const messages = makeMessages({ recievedMessage, history, app });
-  if (!app.aiResource) {
-    throw new Error('app has no resource');
-  }
-  const accessToken = (await (await getAccessToken(appConfig)).json()).access_token;
-  await sendWewokMessage(receiveMessageData.FromUserName, "正在生成内容...", appConfig, accessToken);
-
-  const params: OpenAIRequest = {
-    hostUrl: app.aiResource.hostUrl,
-    type: app.aiResource.type,
-    apiVersion: app.aiResource.apiVersion,
-    model: app.aiResource.model,
-    systemPrompt: '',
-    temperature: appConfig.ai.temperature,
-    key: app.aiResource.apiKey,
-    messages: messages,
-    stream: false,
-    maxTokens: appConfig.ai.maxCompletionTokens,
-    maxPromptTokens: appConfig.ai.maxPromptTokens
-  };
-  const result = await (await OpenAIChatComletion(params)).json();
-  console.info(result);
-  const answer = result.choices[0].message.content;
-  const usage:Usage = {
-    promptTokens: result.usage.prompt_tokens,
-    completionTokens:  result.usage.completion_tokens,
-    totalTokens:  result.usage.total_tokens,
-  }
-  const user = await (await getUser(receiveMessageData.FromUserName, accessToken)).json();
-  const weworkResult = await sendWewokMessage(receiveMessageData.FromUserName, answer, appConfig, accessToken);
-
-  const repliedMessage = {
+const finish = async ({receiveMessageData, user, answer, app, sensitiveWords, usage, isAIAnswer, hasError}:{
+  receiveMessageData: Message;
+  user: any;
+  answer: string;
+  app: App;
+  sensitiveWords: SensitiveWord[] | null | undefined;
+  usage: Usage;
+  isAIAnswer: boolean;
+  hasError: boolean;
+}): Promise<void> => {
+    const repliedMessage = {
     senderUnionId: receiveMessageData.FromUserName,
     sender: user.name,
     content: receiveMessageData.Content,
     answer: answer,
     appId: app.id,
     conversationId: String(receiveMessageData.MsgId),
-    recievedMessageId: String(receiveMessageData.MsgId)
+    receivedMessageId: String(receiveMessageData.MsgId),
+    isAIAnswer: isAIAnswer,
+    hasError: false,
   };
   await saveProcesserResult({ repliedMessage, usage });
+}
+
+export const processMessage = async ({ receivedMessage, history, app, sensitiveWords }: MessageQueueBody) => {
+
+  const appConfig = app.config as WeworkAppConfig;
+  if (!app.aiResource) {
+    throw new Error('app has no resource');
+  }
+  const receiveMessageData = receivedMessage.data as Message;
+
+  const accessToken = (await (await getAccessToken(appConfig)).json()).access_token;
+  const user = await (await getUser(receiveMessageData.FromUserName, accessToken)).json();
+
+
+  let answer = '';
+  let usage:Usage = {
+    promptTokens: 0,
+    completionTokens:  0,
+    totalTokens: 0
+  }
+  if(sensitiveWords && sensitiveWords.length > 0) {
+    answer = '你的提问中存在敏感词，系统忽略本消息。';
+    await sendWewokMessage(receiveMessageData.FromUserName, answer, appConfig, accessToken);
+    await finish({receiveMessageData, user, answer, app, sensitiveWords, usage, isAIAnswer: false, hasError: false});
+    return null;
+  }
+  
+  const {messages, promptTokens} = makeMessages({ receivedMessage, history, app, sensitiveWords });
+  usage.promptTokens = promptTokens;
+  await sendWewokMessage(receiveMessageData.FromUserName, "正在生成内容...", appConfig, accessToken);
+
+  //@ts-ignore
+  let completionTokens = 0;
+  let lastSendAt = 0;
+
+  //@ts-ignore
+  const aiResource = app.aiResource as AIResource;
+  const params: OpenAIRequest = {
+    model: aiResource.model,
+    key: aiResource.apiKey,
+    hostUrl: aiResource.hostUrl,
+    type: aiResource.type,
+    apiVersion: aiResource.apiVersion,
+    maxTokens: appConfig.ai?.maxCompletionTokens || 2000,
+    temperature: appConfig.ai?.temperature || 1,
+    maxPromptTokens: appConfig.ai?.maxPromptTokens || 2000,
+    messages: messages,
+    systemPrompt: null,
+    stream: true
+  };
+  const openaiStream = OpenAIStream(
+    params,
+    async (data) => { 
+      usage.completionTokens += 1;
+      if (data) {
+        answer += data;
+      }
+    },
+    async (error) => {
+      console.error(error);
+      await sendWewokMessage(receiveMessageData.FromUserName, `${answer}\n[遇到错误，中止生成]`, appConfig, accessToken);
+      await finish({receiveMessageData, user, answer, app, sensitiveWords, usage, hasError:true, isAIAnswer:true});
+    },
+    async () => {
+      await sendWewokMessage(receiveMessageData.FromUserName, `${answer}\n[回复完成]`, appConfig, accessToken);
+      await finish({receiveMessageData, user, answer, app, sensitiveWords, usage, hasError:false, isAIAnswer:true});
+    }
+  );
+  return openaiStream;
 };
