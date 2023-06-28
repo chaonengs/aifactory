@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient, App, Prisma, AIResource, Message, RecievedMessage } from '@prisma/client';
+import { PrismaClient, App, Prisma, AIResource, Message, ReceivedMessage } from '@prisma/client';
 import { getSignature, decrypt, encrypt } from '@wecom/crypto';
 import MessageQueue from 'pages/api/queues/messages';
 import { NotFoundError, PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
@@ -99,7 +99,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   const resBody = makeRespone(config, decryptedJson);
 
   try {
-    const recievedMessage = await prisma.recievedMessage.create({
+    const receivedMessage = await prisma.receivedMessage.create({
       data: {
         id: String(decryptedJson.MsgId),
         data: decryptedJson,
@@ -112,7 +112,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       }
     });
     await MessageQueue.enqueue(
-      { recievedMessage: recievedMessage, history: [], app: app }, // job to be enqueued
+      { receivedMessage: receivedMessage, history: [], app: app }, // job to be enqueued
       { delay: 1 } // scheduling options
     );
     console.log(resBody);

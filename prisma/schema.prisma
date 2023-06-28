@@ -126,17 +126,19 @@ model Message {
   createdAt              DateTime                 @default(now())
   senderUnionId          String
   sender                 String
+  isAIAnswer             Boolean                  @default(true)
+  hasError               Boolean                  @default(false)
   app                    App                      @relation(fields: [appId], references: [id])
   appId                  String
   usage                  Usage?
   organization           Organization?            @relation(fields: [organizationId], references: [id])
   organizationId         String?
   conversationId         String?
-  recievedMessageId      String?
-  recievedMessage        RecievedMessage?         @relation(fields: [recievedMessageId], references: [id])
-  SensitiveWordInMessage SensitiveWordInMessage[]
+  receivedMessageId      String?
+  receivedMessage        ReceivedMessage?         @relation(fields: [receivedMessageId], references: [id])
+  sensitiveWordInMessage SensitiveWordInMessage[]
 
-  @@index([recievedMessageId])
+  @@index([receivedMessageId])
   @@index([conversationId])
   @@index([organizationId])
   @@index([appId])
@@ -198,14 +200,14 @@ model App {
   tokenLimitation  Int?
   tokenUsed        Int               @default(0)
   config           Json
-  recievedMessages RecievedMessage[]
+  receivedMessages ReceivedMessage[]
   builtIn          Boolean           @default(false)
 
   @@index([organizationId])
   @@index([aiResourceId])
 }
 
-enum RecievedMessageType {
+enum ReceivedMessageType {
   FEISHU
   WEWORK
   DINGTALK
@@ -213,7 +215,7 @@ enum RecievedMessageType {
   UNKNOWN
 }
 
-model RecievedMessage {
+model ReceivedMessage {
   id         String              @id
   data       Json
   processing Boolean
@@ -222,7 +224,7 @@ model RecievedMessage {
   eventName  String
   app        App                 @relation(fields: [appId], references: [id])
   appId      String
-  type       RecievedMessageType @default(UNKNOWN)
+  type       ReceivedMessageType @default(UNKNOWN)
   Message    Message[]
 
   @@index([appId])
@@ -235,7 +237,7 @@ model SensitiveWord {
 
   organization           Organization             @relation(fields: [organizationId], references: [id])
   organizationId         String
-  SensitiveWordInMessage SensitiveWordInMessage[]
+  sensitiveWordInMessage SensitiveWordInMessage[]
 
   @@unique([value, organizationId])
   @@index([organizationId])

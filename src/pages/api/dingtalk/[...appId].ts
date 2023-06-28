@@ -35,12 +35,12 @@ const handleDingTalkMessage = async (
   res: NextApiResponse
 ) => {
   //获取当前消息是否存在，判断消息状态。
-  let recievedMessage = await prisma.recievedMessage.findUnique({ where: { id: data.msgId } });
-  if (recievedMessage?.processing) {
+  let receivedMessage = await prisma.receivedMessage.findUnique({ where: { id: data.msgId } });
+  if (receivedMessage?.processing) {
     res.status(400).end('messege in processing');
     return;
   }
-  if (recievedMessage && !recievedMessage.processing) {
+  if (receivedMessage && !receivedMessage.processing) {
     res.end('ok');
     return;
   }
@@ -74,7 +74,7 @@ const handleDingTalkMessage = async (
   //将unionMessageId 写入到data数据体中，给后续使用
   data.unionMessageId = unionMessageId || data.msgId;
   //写入数据
-  recievedMessage = await prisma.recievedMessage.create({
+  receivedMessage = await prisma.receivedMessage.create({
     data: {
       id: data.msgId,
       appId: app.id,
@@ -88,10 +88,10 @@ const handleDingTalkMessage = async (
 
   //Send to queue.
   await MessageQueue.enqueue(
-    { recievedMessage: recievedMessage, history: history, app: app }, // job to be enqueued
+    { receivedMessage: receivedMessage, history: history, app: app }, // job to be enqueued
     { delay: 1 } // scheduling options
   );
-  //const openaiStream = await processMessage({recievedMessage,history,app});
+  //const openaiStream = await processMessage({receivedMessage,history,app});
   res.end('ok');
 };
 /**
