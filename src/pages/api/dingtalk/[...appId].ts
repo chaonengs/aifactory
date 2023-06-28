@@ -37,6 +37,7 @@ const handleDingTalkMessage = async (
   res: NextApiResponse,
   token: String
 ) => {
+
   //获取当前消息是否存在，判断消息状态。
   let receivedMessage = await prisma.receivedMessage.findUnique({ where: { id: data.msgId } });
   if (receivedMessage?.processing) {
@@ -98,7 +99,7 @@ const handleDingTalkMessage = async (
     { receivedMessage: receivedMessage, history: history, app: app, sensitiveWords: matched }, // job to be enqueued
     { delay: 1 } // scheduling options
   );
-  //const openaiStream = await processMessage({receivedMessage,history,app});
+  //const openaiStream = await processMessage({recievedMessage,history,app});
   res.end('ok');
 };
 /**
@@ -182,8 +183,6 @@ const chatModeMessage = async (
 
     }
   }
-
-
   return status;
 }
 const chatsessionInsertToUpdate = async (chatSession: ChatSession, status: boolean) => {
@@ -242,6 +241,7 @@ const DingTalkStartSend = async (
   }
   return token;
 }
+
 
 const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.body && req.body['msgtype'] && req.body['msgtype'] == 'text') {
