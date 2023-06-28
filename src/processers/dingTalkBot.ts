@@ -1,47 +1,44 @@
-import { AIResource, App as PrismaApp, Message as PrismaMessage } from '@prisma/client/edge';
+import { AIResource, App, Message as PrismaMessage } from '@prisma/client/edge';
 import { encode } from 'gpt-tokenizer';
 import { MessageQueueBody } from 'pages/api/queues/messages';
 import { DingTalkAppConfig } from 'types/app';
 import { ReceiveMessageData } from 'types/feishu';
 import dingTalkMessageSend from 'utils/dingtalk/client';
 import { OpenAIChatComletion, OpenAIRequest } from 'utils/server/openai';
-import { MessageDBSaveRequest, Message , Usage  } from 'pages/api/db/saveProcesserResult';
-
+import { MessageDBSaveRequest, Message, Usage } from 'pages/api/db/saveProcesserResult';
+/**
+ * 写入message数据库接口调用方法
+ * @param param0 
+ */
 const saveProcesserResult = async ({
   repliedMessage,
-  app,
-  answer,
   usage
 }: {
-  repliedMessage: PrismaMessage;
-  app: PrismaApp & { aiResource: AIResource };
-  answer: string;
+  repliedMessage: Message;
   usage: Usage;
 }) => {
-  const params = { repliedMessage, usage, app, aiResource: app.aiResource, finished: true };
-  const body = JSON.stringify({ receivedMessageId: repliedMessage.conversationId, params });
+  const params = { message: repliedMessage, usage };
+  const body = JSON.stringify({ receivedMessageId: repliedMessage.conversationId, data: params });
   const url = `${process.env.QUIRREL_BASE_URL}/api/db/saveProcesserResult`;
   await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(body)
+    body: body
   });
 };
+/**
+ * 根据信息生成ai所需数组
+ * @param appConfig  app配置
+ * @param history  历史消息
+ * @param question 当前消息
+ * @returns 返回数组
+ */
 
-
-
-
-const processMessage = async ({ receivedMessage, history, app }: MessageQueueBody) => {
-  let processResult = null;
-  const appConfig = app.config as DingTalkAppConfig;
-  //@ts-ignore
-  const receivedMessageData = receivedMessage.data as ReceiveMessageData;
-  const question = receivedMessageData.text.content;
-  const messages = new Array();
+const GenerateArrayMessage = async (appConfig: DingTalkAppConfig, history: Message[], question: String) => {
   let promptTokens = 0;
-
+  const messages = new Array();
   for (let i = 0; i < history.length; i++) {
     const answerMessage = {
       role: 'assistant',
@@ -72,8 +69,47 @@ const processMessage = async ({ receivedMessage, history, app }: MessageQueueBod
   };
 
   messages.push(message);
+  return messages;
+}
+/**
+ * 多数据源信息整合到Message数据
+ * @param param0 
+ */
+const finish = async ({ receivedMessageData, answer, app, usage, isAIAnswer, question }: {
+  receivedMessageData: Message;
+  answer: string;
+  app: App;
+  usage: Usage;
+  isAIAnswer: boolean;
+  question: String;
+}): Promise<void> => {
+  const repliedMessage = {
+    senderUnionId: receivedMessageData?.senderStaffId || 'anonymous',
+    sender: receivedMessageData?.senderNick || 'anonymous',
+    content: question,
+    answer: answer,
+    appId: app.id,
+    conversationId: receivedMessageData.unionMessageId,
+    recievedMessageId: receivedMessageData.msgId,
+    isAIAnswer: isAIAnswer,
+    hasError: false,
+  };
+  await saveProcesserResult({ repliedMessage, usage });
+}
 
-
+const processMessage = async ({ receivedMessage, history, app, sensitiveWords }: MessageQueueBody) => {
+  let answer = null;
+  const appConfig = app.config as DingTalkAppConfig;
+  //@ts-ignore
+  const receivedMessageData = receivedMessage.data as ReceiveMessageData;
+  const question = receivedMessageData.text.content;
+  const messages = await GenerateArrayMessage(appConfig, history, question);
+  if (sensitiveWords && sensitiveWords.length > 0) {
+    answer = '你的提问中存在敏感词，系统忽略本消息。';
+    await dingTalkMessageSend(app, answer, receivedMessageData, receivedMessageData.token);
+    await finish({ receiveMessageData, answer, app, usage, isAIAnswer: false, question });
+    return null;
+  }
   const params: OpenAIRequest = {
     hostUrl: app.aiResource.hostUrl,
     type: app.aiResource.type,
@@ -89,25 +125,15 @@ const processMessage = async ({ receivedMessage, history, app }: MessageQueueBod
   };
   const result = await OpenAIChatComletion(params);
   const json = await result.json();
-  const answer = json.choices[0].message.content;
-  const usage:Usage = {
+  answer = json.choices[0].message.content;
+  const usage: Usage = {
     promptTokens: json.usage.prompt_tokens,
-    completionTokens:  json.usage.completion_tokens,
-    totalTokens:  json.usage.total_tokens,
+    completionTokens: json.usage.completion_tokens,
+    totalTokens: json.usage.total_tokens,
   }
-  await dingTalkMessageSend(app, answer, receivedMessageData);
-  const repliedMessage = {
-    senderUnionId: receivedMessageData?.senderStaffId || 'anonymous',
-    sender: receivedMessageData?.senderNick || 'anonymous',
-    content: question,
-    answer: answer,
-    appId: app.id,
-    conversationId: receivedMessageData.unionMessageId,
-    recievedMessageId: receivedMessageData.msgId
-  };
-  await saveProcesserResult({ repliedMessage, app, usage, answer });
-  return processResult;
-};
+  await dingTalkMessageSend(app, answer, receivedMessageData, receivedMessageData.token);
+  await finish({ receivedMessageData, answer, app, usage, isAIAnswer: true, question });
+}
 
 
 

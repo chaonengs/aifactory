@@ -1,3 +1,4 @@
+import { ChatSessionType } from "@prisma/client";
 import { ReactElement } from "react";
 
 export const LAYOUT: any = {
@@ -14,21 +15,21 @@ export default LAYOUT;
 
 export const ResourceTypes = [
   {
-    code:"OPENAI",
-    name:"OpenAI",
+    code: "OPENAI",
+    name: "OpenAI",
   },
   {
-    code:"AZ_OPENAI",
-    name:"Azure OpenAI",
+    code: "AZ_OPENAI",
+    name: "Azure OpenAI",
   },
   {
-    code:"SELF_HOST_OPENAI",
-    name:"平台OpenAI",
+    code: "SELF_HOST_OPENAI",
+    name: "平台OpenAI",
   },
 ];
 
 export const AIResourceTypes = {
-  "OPENAI" : "OpenAI",
+  "OPENAI": "OpenAI",
   "AZ_OPENAI": "Azure OpenAI",
   "SELF_HOST_OPENAI": "平台OpenAI",
 }
@@ -60,26 +61,30 @@ export const AppTypes = {
   "DINGTALK": "钉钉机器人",
 }
 
-export const ChatModeTypes=[
+export const ChatModeTypes = [
   {
-    name:"帮助",
-    message:"### 发送信息\n\n若您想给机器人发送信息，有如下两种方式：\n\n1. **群聊：** 在机器人所在群里 **@机器人** 后边跟着要提问的内容。\n\n2. **私聊：** 点击机器人的 **头像** 后，再点击 **发消息。** \n\n### 系统指令\n\n系统指令是一些特殊的词语，当您向机器人发送这些词语时，会触发对应的功能。\n\n**📢 注意：系统指令，即只发指令，没有特殊标识，也没有内容。**\n\n以下是系统指令详情：\n\n|    指令    |                     描述                     |                             示例                             |\n| :--------: | :------------------------------------------: | :----------------------------------------------------------: |\n|  **单聊**  | 每次对话都是一次新的对话，没有聊天上下文联系 | <details><br /><summary>预览</summary><br /><img src='https://cdn.staticaly.com/gh/eryajf/tu/main/img/image_20230404_193608.jpg'><br /></details> |\n|  **串聊**  |            带上下文联系的对话模式            | <details><br /><summary>预览</summary><br /><img src='https://cdn.staticaly.com/gh/eryajf/tu/main/img/image_20230404_193608.jpg'><br /></details> |\n|  **重置**  |        重置上下文模式，回归到默认模式        | <details><br /><summary>预览</summary><br /><img src='https://cdn.staticaly.com/gh/eryajf/tu/main/img/image_20230404_193608.jpg'><br /></details> |\n|  **帮助**  |                 获取帮助信息                 | <details><br /><summary>预览</summary><br /><img src='https://cdn.staticaly.com/gh/eryajf/tu/main/img/image_20230404_202336.jpg'><br /></details> |\n\n\n### 友情提示\n\n使用 **串聊模式** 会显著加快机器人所用账号的余额消耗速度，因此，若无保留上下文的需求，建议使用 **单聊模式。** \n\n即使有保留上下文的需求，也应适时使用 **重置** 指令来重置上下文。\n\n"
+    name: ["帮助", "/help"],
+    message: "### 开启多轮对话\n\n * 使用/start或者开始，开启多轮对话\n\n * 使用/end或者关闭，关闭多轮对话\n\n * 使用/reset或者重置，开启新一轮对话"
   },
   {
-    name:"单聊",
-    message:"**[Concentrate] 现在进入与 #name 的单聊模式**",
-    type:1
+    name: ["关闭", "/end"],
+    message: "**Hi，#name。欢迎回到单轮对话模式**\n\n>",
+    type: ChatSessionType.SINGLEWHEEL
   },
   {
-    name:"串聊",
-    message:"**[Concentrate] 现在进入与 #name 的串聊模式**\n\n>#time分钟后将恢复默认聊天模式：单聊",
-    type:2
+    name: ["开始", "/start"],
+    message: "**Hi，#name，欢迎使用多轮对话，请开始你的提问**\n\n>#time分钟后将恢复单轮对话模式，如需退出，请单独输入“/end”或者“关闭”，如需开启全新多轮对话，请输入“/reset”或者“重置”",
+    type: ChatSessionType.MUITIWHEEL
   },
   {
-    name:"重置",
-    message:"**[RecyclingSymbol]已重置与 #name 的对话模式**\n\n> 可以开始新的对话 [Bubble]",
-    type:3
+    name: ["重置", "/reset"],
+    message: "** Hi，#name。历史消息已清空**\n\n> [RecyclingSymbol]可以开始新的对话啦",
+    type: 'RESET'
   }
 ]
 //串聊时间限制
-export const ChatModeDateTime= 10
+export const ChatModeDateTime = 10
+export const chatTemplate = {
+  OpenWord: "思考中，请稍候",
+  ExpireWord: "Hi，#name，当前已经恢复至单轮对话模式"
+}
