@@ -219,7 +219,7 @@ const AuthLogin = ({ ...others }) => {
             <Box sx={{ mt: 2 }}>
               
                 <Button disableElevation disabled={isSubmitting} fullWidth size="large" type="submit" variant="contained" color="secondary">
-                  登录
+                  注册/登录
                 </Button>
               
             </Box>

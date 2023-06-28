@@ -158,8 +158,8 @@ model AIResource {
   organizationId String
   type           AIResourceType @default(OPENAI)
   name           String
-  model          String
-  apiKey         String
+  model          String?
+  apiKey         String?
   tokenUsed      Int            @default(0)
   tokenRemains   Int            @default(0)
   hostUrl        String?

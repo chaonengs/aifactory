@@ -1,4 +1,4 @@
-import { PrismaClient, User as DBUser } from '@prisma/client';
+import { PrismaClient, User as DBUser, AIResourceType } from '@prisma/client';
 import NextAuth, { Account, NextAuthOptions, Profile, User as AuthUser } from 'next-auth';
 import GithubProvider from 'next-auth/providers/github';
 import EmailProvider from "next-auth/providers/email"
@@ -6,6 +6,7 @@ import FeiShuProvider from 'nextauth/providers/feishu';
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import type { OAuthConfig } from "next-auth/providers"
 import { sendVerificationRequest } from 'nextauth/providers/email';
+import { modelToEncodingMap } from 'gpt-tokenizer/esm/mapping';
 
 const prisma = new PrismaClient();
 
@@ -80,24 +81,36 @@ export const authOptions: NextAuthOptions = {
         }
       })
       if(org === null || org === undefined){
-        await prisma.organization.create({
-          data: {
-            id: authuser.user.id,
-            name: authuser.user.name as string,
-            users: {
-              create: [
-                {
-                  role: 'OWNER',
-                  user: {
-                    connect: {
-                      id: authuser.user.id
+        await prisma.$transaction(
+          [
+            prisma.organization.create({
+            data: {
+              id: authuser.user.id,
+              name: authuser.user.name as string,
+              users: {
+                create: [
+                  {
+                    role: 'OWNER',
+                    user: {
+                      connect: {
+                        id: authuser.user.id
+                      }
                     }
                   }
-                }
-              ]
+                ]
+              },
+              aiResources: {
+                create: 
+                  {
+                    type: AIResourceType.AZ_OPENAI,
+                    tokenRemains: 20000,
+                    name: 'Azure OpenAI 体验资源',
+                  }
+              },
             }
-          }
-        })
+          })
+        ]
+        )
       }
     }
   },
