@@ -79,6 +79,7 @@ model Organization {
   apiKeys        APIKey[]
   users          OrganizationUsers[]
   sensitiveWords SensitiveWord[]
+  chatSession      ChatSession[]
 }
 
 enum Role {
@@ -201,6 +202,7 @@ model App {
   tokenUsed        Int               @default(0)
   config           Json
   receivedMessages ReceivedMessage[]
+  chatSession      ChatSession[]
   builtIn          Boolean           @default(false)
 
   @@index([organizationId])
@@ -254,4 +256,28 @@ model SensitiveWordInMessage {
   @@id([messageId, sensitiveWordId])
   @@index([messageId])
   @@index([sensitiveWordId])
+}
+
+enum ChatSessionType {
+  MUITIWHEEL
+  SINGLEWHEEL
+}
+
+model ChatSession {
+  createdAt      DateTime
+  expiringAt     DateTime
+  sender         String
+  app            App            @relation(fields: [appId], references: [id])
+  appId          String
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  organizationId String
+  conversationId String
+  groupId        String
+  type           ChatSessionType @default(SINGLEWHEEL)
+
+  @@id([groupId, sender])
+  @@index([appId])
+  @@index([organizationId])
+  @@index([groupId])
+  @@index([sender])
 }
