@@ -33,17 +33,20 @@ const AccessToken = async (app: App) => {
 }
 
 // Define function to send message to DingTalk robot
-const sendMessageToRobot = async (app: App, message: String, json: JSON) => {
-  if (json.conversationType == 1) {
-    SingleChatSend(app, message, json);
-  } else {
-    GroupChatSend(app, message, json);
+const sendMessageToRobot = async (app: App, message: String, json: JSON, token: String) => {
+  if (!token) {
+    token = await AccessToken(app);
   }
-
+  if (json.conversationType == 1) {
+    await SingleChatSend(app, message, json, token);
+  } else {
+    await GroupChatSend(app, message, json, token);
+  }
+  return token;
 }
 
-const SingleChatSend = async (app: App, message: String, json: JSON) => {
-  const token = await AccessToken(app);
+const SingleChatSend = async (app: App, message: String, json: JSON, token: String) => {
+
   const url = DINGTALK_URL + `/v1.0/robot/oToMessages/batchSend`;
   const data = {
     msgParam: '{"title":"' + message + '","text":"' + message + '"}',
@@ -65,8 +68,7 @@ const SingleChatSend = async (app: App, message: String, json: JSON) => {
     console.error(error);
   }
 }
-const GroupChatSend = async (app: App, message: String, json: JSON) => {
-  const token = await AccessToken(app);
+const GroupChatSend = async (app: App, message: String, json: JSON, token: String) => {
   const url = DINGTALK_URL + `/v1.0/robot/groupMessages/send`;
   const data = {
     msgParam: '{"title":"' + message + '","text":"' + message + '"}',

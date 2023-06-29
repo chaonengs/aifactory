@@ -5,12 +5,12 @@ import { finishProcessing, logSensitiveWord, saveMessage } from "utils/db/transa
 
 export type Message = {
     senderUnionId: string;
-    sender:  string;
-    content:  string;
-    answer:  string;
-    appId:  string;
-    conversationId:  string;
-    receivedMessageId:  string;
+    sender: string;
+    content: string;
+    answer: string;
+    appId: string;
+    conversationId: string;
+    receivedMessageId: string;
     isAIAnswer: boolean;
     hasError: boolean;
 }
@@ -35,8 +35,8 @@ export type MessageDBSaveRequest = {
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
     const saveQuest = req.body as MessageDBSaveRequest;
-    await finishProcessing(saveQuest.receivedMessageId );
-    if(saveQuest.data){
+    await finishProcessing(saveQuest.receivedMessageId);
+    if (saveQuest.data) {
         const [m, r, a] = await saveMessage(saveQuest.data.message, saveQuest.data.usage);
         await logSensitiveWord(m as PrismaMessage, (a as App).organizationId);
     }
