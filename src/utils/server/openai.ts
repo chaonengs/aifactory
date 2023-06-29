@@ -143,8 +143,8 @@ export const OpenAIChatComletion = (request : OpenAIRequest) => {
     stream: stream,
   };
 
-  //console.log(requestHeaders)
-  //console.log(requestBody)
+  console.log(requestHeaders)
+  console.log(requestBody)
   
   return fetch(url, {
     headers: requestHeaders,
@@ -166,15 +166,22 @@ export const OpenAIStream = async (
 
   if (res.status !== 200) {
     console.error(res)
-    await onError(await res.text());
-    await onComplete();
+    const result = await res.text();
 
-    const result = await res.json();
-    if (result.error) {
-      throw new OpenAIError(result.error.message, result.error.type, result.error.param, result.error.code, params);
-
-    } else {
-      throw new Error(`OpenAI API returned an error: ${decoder.decode(result?.value) || result.statusText}`);
+    try{
+      const resultJson = JSON.parse(result);
+      await onError(resultJson);
+      await onComplete();
+      if (resultJson.error) {
+        throw new OpenAIError(resultJson.error.message, resultJson.error.type, resultJson.error.param, resultJson.error.code, params);
+      } else {
+        throw new Error(`OpenAI API returned an error: ${result}`);
+      }
+    }
+    catch(e){
+      await onError(result);
+      await onComplete();
+      throw new Error(`OpenAI API returned an error: ${result}`);
     }
   }
 
