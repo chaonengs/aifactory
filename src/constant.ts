@@ -78,7 +78,7 @@ export const ChatModeTypes = [
   },
   {
     name: ["重置", "/reset"],
-    message: "** Hi，#name。历史消息已清空**\n\n> [RecyclingSymbol]可以开始新的对话啦",
+    message: "**Hi，#name。历史消息已清空**\n\n> [RecyclingSymbol]可以开始新的对话啦",
     type: 'RESET'
   }
 ]
