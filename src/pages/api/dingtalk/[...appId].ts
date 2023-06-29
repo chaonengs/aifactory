@@ -284,7 +284,7 @@ const handleRequest = async (req: NextApiRequest, res: NextApiResponse) => {
     const unionStatus = await chatModeMessage(data, app, res);
     if (unionStatus) {
       let token = await DingTalkStartSend(data, app);
-      await handleDingTalkMessage(data, app, res, token);
+       handleDingTalkMessage(data, app, res, token);
     }
 
 
