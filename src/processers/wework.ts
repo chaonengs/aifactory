@@ -111,7 +111,7 @@ const finish = async ({receiveMessageData, user, answer, app, sensitiveWords, us
 }): Promise<void> => {
     const repliedMessage = {
     senderUnionId: receiveMessageData.FromUserName,
-    sender: user.name,
+    sender: user?.name? user.namne : receiveMessageData.FromUserName,
     content: receiveMessageData.Content,
     answer: answer,
     appId: app.id,

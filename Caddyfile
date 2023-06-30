@@ -1,0 +1,16 @@
+{
+	auto_https off
+}
+
+http://wework-naodong.chilunyc.com {
+	reverse_proxy https://qyapi.weixin.qq.com {
+		header_up Host {upstream_hostport}
+	}
+}
+
+:80 {
+	reverse_proxy https://console.naodong.chilunyc.com {
+		header_up Host {upstream_hostport}
+	}
+}
+
