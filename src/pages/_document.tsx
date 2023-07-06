@@ -27,6 +27,8 @@ export default function Document() {
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap"
           rel="stylesheet"
         />
+        <link rel="stylesheet" href="https://useimean.com/sdk/main.css" />
+
       </Head>
       <body>
         <Main />
