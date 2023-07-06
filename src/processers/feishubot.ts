@@ -1,14 +1,16 @@
 import { ApiError } from 'next/dist/server/api-utils';
 
 import { AIResource, App, ReceivedMessage } from '.prisma/client/edge';
+import { chatModeHistory } from 'constant';
 import { encode } from 'gpt-tokenizer';
+import { MessageDBSaveRequest, Usage } from 'pages/api/db/saveProcesserResult';
 import { MessageQueueBody } from 'pages/api/queues/messages';
 import { FeishuAppConfig } from 'types/app';
 import { ReceiveMessageData, User } from 'types/feishu';
-import { createProcessMessageBody } from 'utils/db/helper';
-import { getInternalTenantAccessToken, getUser, patchMessage, replyMessage } from 'utils/server/feishu';
+import { getChatHistory, getInternalTenantAccessToken, getUser, patchMessage, replyMessage } from 'utils/server/feishu';
 import { OpenAIRequest, OpenAIStream } from 'utils/server/openai';
-import { MessageDBSaveRequest, Usage } from 'pages/api/db/saveProcesserResult';
+import chat from 'store/slices/chat';
+import { count } from 'console';
 
 const getFeishuUser = async (accessToken: string, userId: string) => {
   const req = {
@@ -129,7 +131,7 @@ const finish = async ({
     content: question,
     answer: airesult,
     appId: app.id,
-    conversationId:  feiShuMessageData.message.root_id || feiShuMessageData.message.message_id,
+    conversationId: feiShuMessageData.message.root_id || feiShuMessageData.message.message_id,
     receivedMessageId: feiShuMessageData.message.message_id,
     isAIAnswer: isAIAnswer,
     hasError: hasError,
@@ -141,9 +143,9 @@ const finish = async ({
     totalTokens: promptTokens + completionTokens
   };
 
-  const params:MessageDBSaveRequest = {
+  const params: MessageDBSaveRequest = {
     receivedMessageId: feiShuMessageData.message.message_id,
-    data:{
+    data: {
       message,
       usage
     }
@@ -158,6 +160,94 @@ const finish = async ({
     body: JSON.stringify(params)
   });
 };
+/**
+ * 判断内容是否为摘要，如果为摘要则飞书获取群里100条消息，然后根据消息整理成messages
+ * @param receivedMessage 消息体
+ * @param accessToken 飞书token
+ * @returns 
+ */
+const feishuHistoryMakeMessages = async (receivedMessage: ReceivedMessage, accessToken: string) => {
+  const receiveMessageData = receivedMessage.data as ReceiveMessageData;
+  const messages = new Array();
+  let promptTokens = 0;
+  let text = JSON.parse(receiveMessageData.message.content).text;
+  let status = false;
+  //判断是否为摘要
+  if (chatModeHistory.name.indexOf(text) != -1) {
+  //生成7天之前开始时间和当前结束时间
+    let endTime = Math.floor(Date.now() / 1000);
+    let startTime = endTime - chatModeHistory.during;
+    //根据时间倒叙获取50条数据（飞书最大支持50条）
+    const resultOne = await getChatHistory(accessToken, receiveMessageData.message.chat_id, null, startTime, endTime);
+    const chatHistroy = await resultOne.json();
+    if (chatHistroy && chatHistroy.data) {
+      const json = chatHistroy.data;
+      //如果page_token存在则去追加获取50条
+      if (json.page_token) {
+        let resultTwo = await getChatHistory(accessToken, receiveMessageData.message.chat_id, json.page_token, startTime, endTime);
+        const chatHistroyTwo = await resultTwo.json();
+        if (chatHistroyTwo && chatHistroyTwo.data) {
+          const jsonTwo = chatHistroyTwo.data;
+          //生成messages和promptToken数量
+          const chatHistroyMessageTwo = chatHistroyMessage(messages, jsonTwo);
+          promptTokens += chatHistroyMessageTwo.promptTokens;
+        }
+      }
+      //生成messages和promptToken数量
+      const chatHistroyMessageOne = chatHistroyMessage(messages, json);
+      promptTokens += chatHistroyMessageOne.promptTokens;
+      //生成摘要关键文字（最后一条）
+      const contentMessage = {
+        role: 'user',
+        content: chatModeHistory.message
+      };
+      messages.push(contentMessage);
+      promptTokens += encode(chatModeHistory.message).length;
+      status = true;
+    }
+
+  }
+  return { messages, promptTokens, status };
+}
+const chatHistroyMessage = (messages: Array, chatHistroy: JSON) => {
+  let promptTokens = 0;
+  if (chatHistroy.items) {
+    let itemArray = chatHistroy.items;
+    itemArray.forEach(elementJson => {
+      let message = null;
+      if (elementJson.body && elementJson.body['content']) {
+        const content = JSON.parse(elementJson.body['content']);
+        if (elementJson.sender && elementJson.sender['sender_type'] && elementJson.sender['sender_type'] == 'user') {
+
+          if (content.text) {
+            message = content.text;
+            const contentMessage = {
+              role: 'user',
+              content: message
+            };
+            messages.unshift(contentMessage);
+          }
+
+        } else {
+          if (content.elements && content.elements.length != 0) {
+            message = content.elements[0][0]['text'];
+            const answerMessage = {
+              role: 'assistant',
+              content: message
+            };
+            messages.unshift(answerMessage);
+          }
+        }
+      }
+      if (message) {
+        promptTokens += encode(message).length;
+      }
+
+
+    });
+  }
+  return { promptTokens };
+}
 
 
 const makeMessages = ({ receivedMessage, history, app }: MessageQueueBody) => {
@@ -198,7 +288,7 @@ const makeMessages = ({ receivedMessage, history, app }: MessageQueueBody) => {
   };
 
   messages.push(message);
-  return {messages, promptTokens};
+  return { messages, promptTokens };
 };
 
 export const processMessage = async ({ receivedMessage, history, app, sensitiveWords }: MessageQueueBody) => {
@@ -213,9 +303,9 @@ export const processMessage = async ({ receivedMessage, history, app, sensitiveW
   // const senderType = feiShuMessageData.sender.sender_type;
 
   let answer = '';
-  let usage:Usage = {
+  let usage: Usage = {
     promptTokens: 0,
-    completionTokens:  0,
+    completionTokens: 0,
     totalTokens: 0
   }
 
@@ -228,16 +318,26 @@ export const processMessage = async ({ receivedMessage, history, app, sensitiveW
   }
 
 
-  if(sensitiveWords && sensitiveWords.length > 0) {
+  if (sensitiveWords && sensitiveWords.length > 0) {
     answer = '你的提问中存在敏感词，系统忽略本消息。';
     await trySendOrUpdateFeishuCard(accessToken, 'AI助理', answer, '回复完成', null, receivedMessage.id, null);
-    await finish({ airesult:answer, question, feishuSender, promptTokens:0, completionTokens:0, app, receivedMessage, isAIAnswer:false, hasError: false });
+    await finish({ airesult: answer, question, feishuSender, promptTokens: 0, completionTokens: 0, app, receivedMessage, isAIAnswer: false, hasError: false });
     return null;
   }
+  let messages = [];
+  let promptTokens = 0;
+  //判断是否为摘要
+  const feishuHistory = await feishuHistoryMakeMessages(receivedMessage, accessToken);
+  if (!feishuHistory.status) {
+    //如果不为摘要则继续按照内容生成messages
+    const makeMessage = makeMessages({ receivedMessage, history, app, sensitiveWords });
+    messages = makeMessage.messages;
+    promptTokens = makeMessage.promptTokens;
+  } else {
+    messages = feishuHistory.messages;
+    promptTokens = feishuHistory.promptTokens;
+  }
 
-
-  
-  const {messages, promptTokens} = makeMessages({ receivedMessage, history, app, sensitiveWords });
   const repliedMessageId = await trySendOrUpdateFeishuCard(accessToken, 'AI助理', '...', '回复中', null, receivedMessage.id, null);
 
   //@ts-ignore
@@ -254,7 +354,7 @@ export const processMessage = async ({ receivedMessage, history, app, sensitiveW
     type: aiResource.type,
     apiVersion: aiResource.apiVersion,
     maxTokens: appConfig.ai?.maxCompletionTokens || 2000,
-    temperature: appConfig.ai?.temperature || 1,
+    temperature: feiShuMessageData.temperature || appConfig.ai?.temperature || 1,
     maxPromptTokens: appConfig.ai?.maxPromptTokens || 2000,
     messages: messages,
     systemPrompt: null,
@@ -269,18 +369,18 @@ export const processMessage = async ({ receivedMessage, history, app, sensitiveW
         if (Date.now() - lastSendAt > 750) {
           const result = await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复中', null, null, repliedMessageId);
           lastSendAt = Date.now();
-        } 
+        }
       }
     },
     async (error) => {
       console.error(error);
       await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '错误中止', null, null, repliedMessageId);
-      await finish({ airesult, question, feishuSender, promptTokens, completionTokens, app, receivedMessage, isAIAnswer:true , hasError: true });
+      await finish({ airesult, question, feishuSender, promptTokens, completionTokens, app, receivedMessage, isAIAnswer: true, hasError: true });
     },
     async () => {
       // console.log(`enter finish , tokens: ${completionTokens}` )
       await trySendOrUpdateFeishuCard(accessToken, 'AI助理', airesult, '回复完成', null, null, repliedMessageId);
-      await finish({ airesult, question, feishuSender, promptTokens, completionTokens, app, receivedMessage, isAIAnswer:true, hasError: false  });
+      await finish({ airesult, question, feishuSender, promptTokens, completionTokens, app, receivedMessage, isAIAnswer: true, hasError: false });
     }
   );
   return openaiStream;

@@ -61,6 +61,7 @@ export interface ReceiveMessageData {
     app_id?: string;
     sender: Sender;
     message: Message;
+    temperature?:number;
 }
 
 export interface User {

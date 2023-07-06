@@ -142,9 +142,10 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
             temperature: config.ai?.temperature || 1,
             maxCompletionTokens: config.ai?.maxCompletionTokens || 2000,
             maxPromptTokens: config.ai?.maxPromptTokens || 2000
-          }
+          },
+          cardId:config.cardId || ''
         },
-        aiResourceId: app.aiResourceId
+        aiResourceId: app.aiResourceId,
       };
     }
 
@@ -303,6 +304,7 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
                 {app.appType === 'DINGTALK' && <Tab label="钉钉" value="dingtalk" />}
                 <Tab label="AI" value="ai" />
                 <Tab label="资源" value="resource" />
+                {app.appType === 'FEISHU' && <Tab label="消息卡片" value="card" />}
               </TabList>
             </Box>
             <TabPanel value="feishu">
@@ -536,6 +538,25 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
                 </TextField>
               </Stack>
             </TabPanel>
+            {app.appType === 'FEISHU' && (
+              <TabPanel value="card">
+                <Stack>
+                  <TextField
+                    margin="dense"
+                    id="config.cardId"
+                    name="config.cardId"
+                    label="卡片ID"
+                    fullWidth
+                    variant="standard"
+                    value={formik.values.config.cardId}
+                    onChange={formik.handleChange}
+                    error={formik.touched.config?.cardId && Boolean(formik.errors.config?.cardId)}
+                    helperText={formik.touched.config?.cardId && formik.errors.config?.cardId}
+                  />
+
+                </Stack>
+              </TabPanel>
+            )}
           </TabContext>
         </DialogContent>
         <DialogActions>
@@ -562,6 +583,15 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
                 variant="standard"
                 sx={{ minWidth: 500 }}
                 value={`${window.location.origin}/api/feishu/${app.id}`}
+              />
+               <TextField
+                margin="dense"
+                id="callbackurl"
+                label="消息卡片接收地址"
+                fullWidth
+                variant="standard"
+                sx={{ minWidth: 500 }}
+                value={`${window.location.origin}/api/feishuCard/${app.id}`}
               />
             </>
           )}

@@ -63,8 +63,11 @@ const getUser = (accessToken, id, idType) => {
 }
 
 
-const getChatHistory = (accessToken, chatId) => {
-  const url = `https://open.feishu.cn/open-apis/im/v1/messages?container_id_type=chat&container_id=${chatId}&sort_type=ByCreateTimeDesc&page_size=50`;
+const getChatHistory = (accessToken, chatId,pageToken,startTime,endTime) => {
+  let url = `https://open.feishu.cn/open-apis/im/v1/messages?container_id_type=chat&container_id=${chatId}&start_time=${startTime}&end_time=${endTime}&sort_type=ByCreateTimeDesc&page_size=50`;
+  if(pageToken){
+    url+=`&page_token=${pageToken}`;
+  }
   return fetch(url, {
       method: "GET", 
       headers: {

@@ -274,6 +274,7 @@ model ChatSession {
   conversationId String
   groupId        String
   type           ChatSessionType @default(SINGLEWHEEL)
+  temperature    Json?
 
   @@id([groupId, sender])
   @@index([appId])
