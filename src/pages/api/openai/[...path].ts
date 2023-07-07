@@ -24,7 +24,7 @@ const handler = async (req: NextRequest) => {
         `https://api.openai.com/${path}`,
         {
             method: req.method,
-            body: req.body,
+            body: await req.text(),
             headers: headers,
         }
         
