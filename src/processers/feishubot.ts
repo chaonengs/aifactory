@@ -6,12 +6,10 @@ import { encode } from 'gpt-tokenizer';
 import { MessageDBSaveRequest, Usage } from 'pages/api/db/saveProcesserResult';
 import { MessageQueueBody } from 'pages/api/queues/messages';
 import { FeishuAppConfig } from 'types/app';
-import { ReceiveMessageData, User } from 'types/feishu';
+import { ReceiveMessageData, User, FeiShuMessageHistory } from 'types/feishu';
 import { getChatHistory, getInternalTenantAccessToken, getUser, patchMessage, replyMessage } from 'utils/server/feishu';
 import { OpenAIRequest, OpenAIStream } from 'utils/server/openai';
-import chat from 'store/slices/chat';
-import { count } from 'console';
-
+import { now } from 'next-auth/client/_utils';
 const getFeishuUser = async (accessToken: string, userId: string) => {
   const req = {
     user_id_type: 'union_id',
@@ -160,8 +158,16 @@ const finish = async ({
     body: JSON.stringify(params)
   });
 };
+const feishuMessageIsSummary = (receivedMessage: ReceivedMessage) => {
+  const receiveMessageData = receivedMessage.data as ReceiveMessageData;
+  let text = JSON.parse(receiveMessageData.message.content).text;
+  if (chatModeHistory.name.indexOf(text) != -1) {
+    return true;
+  }
+  return false;
+}
 /**
- * 判断内容是否为摘要，如果为摘要则飞书获取群里100条消息，然后根据消息整理成messages
+ *飞书历史接口获取群里100条消息，然后根据消息整理成messages
  * @param receivedMessage 消息体
  * @param accessToken 飞书token
  * @returns 
@@ -170,49 +176,40 @@ const feishuHistoryMakeMessages = async (receivedMessage: ReceivedMessage, acces
   const receiveMessageData = receivedMessage.data as ReceiveMessageData;
   const messages = new Array();
   let promptTokens = 0;
-  let text = JSON.parse(receiveMessageData.message.content).text;
-  let status = false;
-  //判断是否为摘要
-  if (chatModeHistory.name.indexOf(text) != -1) {
-    //生成7天之前开始时间和当前结束时间
-    let endTime = Math.floor(Date.now() / 1000);
-    let startTime = endTime - chatModeHistory.during;
-    //根据时间倒叙获取50条数据（飞书最大支持50条）
-    const resultOne = await getChatHistory(accessToken, receiveMessageData.message.chat_id, null, startTime, endTime);
-    const chatHistroy = await resultOne.json();
-    if (chatHistroy && chatHistroy.data) {
-      const json = chatHistroy.data;
-      //如果page_token存在则去追加获取50条
-      if (json.page_token) {
-        let resultTwo = await getChatHistory(accessToken, receiveMessageData.message.chat_id, json.page_token, startTime, endTime);
-        const chatHistroyTwo = await resultTwo.json();
-        if (chatHistroyTwo && chatHistroyTwo.data) {
-          const jsonTwo = chatHistroyTwo.data;
-          //生成messages和promptToken数量
-          const chatHistroyMessageTwo = chatHistroyMessage(messages, jsonTwo);
-          promptTokens += chatHistroyMessageTwo.promptTokens;
-        }
+  //生成7天之前开始时间和当前结束时间
+  let endTime = now();
+  let startTime = endTime - chatModeHistory.during;
+  //根据时间倒叙获取50条数据（飞书最大支持50条）
+  const resultOne = await getChatHistory(accessToken, receiveMessageData.message.chat_id, null, startTime, endTime);
+  const feiShuMessageHistory = await resultOne.json() as FeiShuMessageHistory;
+  if (feiShuMessageHistory && feiShuMessageHistory.data) {
+    //如果page_token存在则去追加获取50条
+    if (feiShuMessageHistory.data.page_token) {
+      let resultTwo = await getChatHistory(accessToken, receiveMessageData.message.chat_id, feiShuMessageHistory.data.page_token, startTime, endTime);
+      const feiShuMessageHistoryTwo = await resultTwo.json() as FeiShuMessageHistory;
+      if (feiShuMessageHistoryTwo && feiShuMessageHistoryTwo.data) {
+        //生成messages和promptToken数量
+        const chatHistroyMessageTwo = chatHistroyMessage(messages, feiShuMessageHistoryTwo);
+        promptTokens += chatHistroyMessageTwo.promptTokens;
       }
-      //生成messages和promptToken数量
-      const chatHistroyMessageOne = chatHistroyMessage(messages, json);
-      promptTokens += chatHistroyMessageOne.promptTokens;
-      //生成摘要关键文字（最后一条）
-      const contentMessage = {
-        role: 'user',
-        content: chatModeHistory.message
-      };
-      messages.push(contentMessage);
-      promptTokens += encode(chatModeHistory.message).length;
-      status = true;
     }
-
+    //生成messages和promptToken数量
+    const chatHistroyMessageOne = chatHistroyMessage(messages, feiShuMessageHistory);
+    promptTokens += chatHistroyMessageOne.promptTokens;
+    //生成摘要关键文字（最后一条）
+    const contentMessage = {
+      role: 'user',
+      content: chatModeHistory.message
+    };
+    messages.push(contentMessage);
+    promptTokens += encode(chatModeHistory.message).length;
   }
-  return { messages, promptTokens, status };
+  return { messages, promptTokens };
 }
-const chatHistroyMessage = (messages: Array, chatHistroy: JSON) => {
+const chatHistroyMessage = (messages: Array, feiShuMessageHistory: FeiShuMessageHistory) => {
   let promptTokens = 0;
-  if (chatHistroy.items) {
-    let itemArray = chatHistroy.items;
+  if (feiShuMessageHistory.data.items) {
+    let itemArray = feiShuMessageHistory.data.items;
     itemArray.forEach(elementJson => {
       let message = null;
       if (elementJson.body && elementJson.body['content']) {
@@ -229,16 +226,6 @@ const chatHistroyMessage = (messages: Array, chatHistroy: JSON) => {
           }
 
         }
-        //else {
-        //   if (content.elements && content.elements.length != 0) {
-        //     message = content.elements[0][0]['text'];
-        //     const answerMessage = {
-        //       role: 'assistant',
-        //       content: message
-        //     };
-        //     messages.unshift(answerMessage);
-        //   }
-        // }
       }
       if (message) {
         promptTokens += encode(message).length;
@@ -328,13 +315,15 @@ export const processMessage = async ({ receivedMessage, history, app, sensitiveW
   let messages = [];
   let promptTokens = 0;
   //判断是否为摘要
-  const feishuHistory = await feishuHistoryMakeMessages(receivedMessage, accessToken);
-  if (!feishuHistory.status) {
+
+  if (!await feishuMessageIsSummary(receivedMessage)) {
     //如果不为摘要则继续按照内容生成messages
-    const makeMessage = makeMessages({ receivedMessage, history, app, sensitiveWords });
+    const makeMessage = makeMessages({ receivedMessage, history, app, sensitiveWords }); 
     messages = makeMessage.messages;
     promptTokens = makeMessage.promptTokens;
+
   } else {
+    const feishuHistory = await feishuHistoryMakeMessages(receivedMessage, accessToken);
     messages = feishuHistory.messages;
     promptTokens = feishuHistory.promptTokens;
   }

@@ -97,10 +97,10 @@ const handleFeishuMessage = async (
     }
   });
   //得到聊天会话对话样式
-  if(chatSession && chatSession.temperature){
-    if(chatSession.temperature['value']){
-      let temperature=Number(chatSession.temperature['value']) ;
-      event.data.temperature=temperature;
+  if (chatSession && chatSession.temperature) {
+    if (chatSession.temperature['value']) {
+      let temperature = Number(chatSession.temperature['value']);
+      event.data.temperature = temperature;
     }
 
   }
@@ -137,7 +137,7 @@ const handleFeishuMessage = async (
       take: 50
     });
   }
-  
+
   // Send to queue.
   await MessageQueue.enqueue(
     { receivedMessage: receivedMessage, history: history, app: app, sensitiveWords: matched }, // job to be enqueued
@@ -155,7 +155,7 @@ const handleFeishuMessage = async (
  * @param app 应用信息
  * @param res 
  * @returns 返回状态：true：代表是帮助，false:代表非帮助
- */ 
+ */
 const chatSessionCard = async (
   client: lark.Client,
   event: ReceiveMessageEvent,
@@ -168,14 +168,18 @@ const chatSessionCard = async (
 
   const config = app.config as Prisma.JsonObject;
   let chatModeName = ChatModeTypes[0].name;
-  let status = false;
+  let helpStatus = false;
   //判断是否为帮助
-  if (chatModeName.indexOf(JSON.parse(event.data.message.content).text)!= -1) {
+  if (chatModeName.indexOf(JSON.parse(event.data.message.content).text) != -1) {
+    let openId=event.data.sender.sender_id?.open_id || "";
     //根据群组和用户id读取聊天话题
-    let chatSession = await prisma.chatSession.findFirst({
+    let chatSession = await prisma.chatSession.findUnique({
       where: {
-        groupId: event.data.message.chat_id,
-        sender: event.data.sender.sender_id?.open_id
+        groupId_sender_appId: {
+          groupId: event.data.message.chat_id,
+          sender: openId,
+          appId: app.id
+        }
       }
     });
     let defaultSelectMenu = "";
@@ -202,9 +206,9 @@ const chatSessionCard = async (
         template_variable: record
       }
     });
-    status = true;
+    helpStatus = true;
   }
-  return status;
+  return helpStatus;
 }
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
@@ -258,8 +262,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       const event = (await dispatcher.invoke(data)) as ReceiveMessageEvent;
       if (event.name === 'im.message.receive_v1') {
         //判断是不是帮助模块。是则发送卡片消息，不是则继续往下调用
-        let status = await chatSessionCard(client, event, app, res);
-        if (!status) {
+        let helpStatus = await chatSessionCard(client, event, app, res);
+        if (!helpStatus) {
           handleFeishuMessage(client, event, app, res);
         } else {
           res.end('ok');
