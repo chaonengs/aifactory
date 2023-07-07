@@ -45,7 +45,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps }, }: AppProps & 
 
   useEffect(() => {
     init({
-      projectId: 'a4fF1VIld7z5QR7gDiHoD', // 项目id
+      projectId: 'wNlfTXpjYv1qBj6swF-FW', // 项目id
       baseUrl: 'https://useimean.com', // 请求服务器地址
       onStepChange:function ({
         recording, // 经验对象
