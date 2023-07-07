@@ -7,6 +7,7 @@ import { ParsedEvent, ReconnectInterval, createParser } from 'eventsource-parser
 import { SSEParser } from 'utils/sse';
 import { decode } from 'punycode';
 import { number } from 'yup';
+import * as Sentry from "@sentry/nextjs";
 
 export class OpenAIError extends Error {
   type: string;
@@ -165,7 +166,9 @@ export const OpenAIStream = async (
   const decoder = new TextDecoder();
 
   if (res.status !== 200) {
-    console.error(res)
+    console.error(res);
+    Sentry.captureException(new Error(`Open AI request error: ${res.status} - ${await res.text()}` ));
+
     const result = await res.text();
 
     try{

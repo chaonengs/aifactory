@@ -1,4 +1,4 @@
-import { ReactElement, ReactNode } from 'react';
+import { ReactElement, ReactNode, useEffect } from 'react';
 
 // global styles
 import '../styles/globals.css';
@@ -25,6 +25,12 @@ import { ToastContainer, toast } from 'react-toastify';
 
 import 'react-toastify/dist/ReactToastify.css';
 import useConfig from 'hooks/useConfig';
+
+import Script from 'next/script'
+import { init } from "imean-sdk"
+
+
+
 // types
 type LayoutProps = NextPage & {
   getLayout?: (page: ReactElement) => ReactNode;
@@ -37,7 +43,29 @@ interface Props {
 function MyApp({ Component, pageProps: { session, ...pageProps }, }: AppProps & Props) {
   const getLayout = Component.getLayout ?? ((page: any) => page);
 
+  useEffect(() => {
+    init({
+      projectId: 'wNlfTXpjYv1qBj6swF-FW', // 项目id
+      baseUrl: 'https://useimean.com', // 请求服务器地址
+      onStepChange:function ({
+        recording, // 经验对象
+        currentIndex, // 当前步骤数组下标
+      }) { }, // 引导中步骤变化
+      onFinish:function ({
+        recording, // 经验对象
+      }) { }, // 引导步骤完成
+      onExit:function ({
+        recording, // 经验对象
+      }) { }, // 引导中主动退出
+      identity:function () {
+        return {}
+      }, // 返回用户信息
+      hideHelp: false, // 设置为false即展示帮助中心
+      })
+}, []);
+
   return (
+    <>
     <Provider store={store}>
       <ConfigProvider>
         <ThemeCustomization>
@@ -57,6 +85,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps }, }: AppProps & 
         </ThemeCustomization>
       </ConfigProvider>
     </Provider>
+    </>
   );
 }
 

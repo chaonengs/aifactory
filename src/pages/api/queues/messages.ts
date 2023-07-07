@@ -3,6 +3,7 @@ import { processMessage as processFeishu } from 'processers/feishubot';
 import { processMessage as processWework } from 'processers/wework';
 import { processMessage as processDingTalk } from 'processers/dingTalkBot';
 import { AIResource, App, Message, ReceivedMessage, SensitiveWord } from '@prisma/client/edge';
+import * as Sentry from "@sentry/nextjs";
 
 export type MessageQueueBody = {
   receivedMessage: ReceivedMessage;
@@ -43,6 +44,8 @@ export default Queue(
       }
     } catch (err) {
       console.error(err);
+      Sentry.captureException(err);
+
       return new Response(JSON.stringify({ error: (err as Error).message }), {
         status: 500,
         headers: {

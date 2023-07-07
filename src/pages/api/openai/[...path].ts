@@ -19,12 +19,17 @@ const handler = async (req: NextRequest) => {
     // let headers : { [key: string]: any } = {};
     // console.log(req.headers)
     // console.log(req.headers.toString())
-    headers['Authorization'] = req.headers.get('Authorization')
+    headers['Authorization'] = req.headers.get('Authorization');
+    headers['Content-Type'] = 'application/json';
+    const org = req.headers.get('OpenAI-Organization');
+    if (org) {
+        headers['OpenAI-Organization'] = org;
+    }
     const res = await fetch( 
         `https://api.openai.com/${path}`,
         {
             method: req.method,
-            body: req.body,
+            body: await req.text(),
             headers: headers,
         }
         
