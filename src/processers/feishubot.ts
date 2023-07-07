@@ -174,7 +174,7 @@ const feishuHistoryMakeMessages = async (receivedMessage: ReceivedMessage, acces
   let status = false;
   //判断是否为摘要
   if (chatModeHistory.name.indexOf(text) != -1) {
-  //生成7天之前开始时间和当前结束时间
+    //生成7天之前开始时间和当前结束时间
     let endTime = Math.floor(Date.now() / 1000);
     let startTime = endTime - chatModeHistory.during;
     //根据时间倒叙获取50条数据（飞书最大支持50条）
@@ -228,16 +228,17 @@ const chatHistroyMessage = (messages: Array, chatHistroy: JSON) => {
             messages.unshift(contentMessage);
           }
 
-        } else {
-          if (content.elements && content.elements.length != 0) {
-            message = content.elements[0][0]['text'];
-            const answerMessage = {
-              role: 'assistant',
-              content: message
-            };
-            messages.unshift(answerMessage);
-          }
         }
+        //else {
+        //   if (content.elements && content.elements.length != 0) {
+        //     message = content.elements[0][0]['text'];
+        //     const answerMessage = {
+        //       role: 'assistant',
+        //       content: message
+        //     };
+        //     messages.unshift(answerMessage);
+        //   }
+        // }
       }
       if (message) {
         promptTokens += encode(message).length;
