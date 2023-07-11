@@ -120,8 +120,8 @@ const chatSessionfindBy = async (data: JSON) => {
     type = chatSession.type;
     conversationId = chatSession.conversationId;
     let createAt = Number(chatSession.createdAt);
-    let expiringAt = Number(chatSession.expiringAt);
-    if (createAt < datetime && expiringAt > datetime) {
+    let expiredAt = Number(chatSession.expiredAt);
+    if (createAt < datetime && expiredAt > datetime) {
       status = true;
     }
   }
@@ -185,7 +185,7 @@ const chatModeMessage = async (
 }
 const chatsessionInsertToUpdate = async (chatSession: ChatSession, status: boolean) => {
   let datetime = new Date();
-  let expiringAt = new Date(Date.now() + ChatModeDateTime * 60000);
+  let expiredAt = new Date(Date.now() + ChatModeDateTime * 60000);
   let uuid = randomUUID();
   if (status) {
     await prisma.chatSession.updateMany({
@@ -195,7 +195,7 @@ const chatsessionInsertToUpdate = async (chatSession: ChatSession, status: boole
       },
       data: {
         createdAt: datetime,
-        expiringAt: expiringAt,
+        expiredAt: expiredAt,
         type: chatSession.type,
         conversationId: uuid
       }
@@ -205,7 +205,7 @@ const chatsessionInsertToUpdate = async (chatSession: ChatSession, status: boole
     await prisma.chatSession.create({
       data: {
         createdAt: datetime,
-        expiringAt: expiringAt,
+        expiredAt: expiredAt,
         sender: chatSession.sender,
         appId: chatSession.appId,
         organizationId: chatSession.organizationId,

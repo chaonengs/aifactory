@@ -265,7 +265,7 @@ enum ChatSessionType {
 
 model ChatSession {
   createdAt      DateTime
-  expiringAt     DateTime
+  expiredAt     DateTime
   sender         String
   app            App            @relation(fields: [appId], references: [id])
   appId          String

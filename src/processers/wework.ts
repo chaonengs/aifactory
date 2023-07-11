@@ -130,7 +130,6 @@ export const processMessage = async ({ receivedMessage, history, app, sensitiveW
     throw new Error('app has no resource');
   }
   const receiveMessageData = receivedMessage.data as Message;
-
   const accessToken = (await (await getAccessToken(appConfig)).json()).access_token;
   const user = await (await getUser(receiveMessageData.FromUserName, accessToken)).json();
 
@@ -152,9 +151,6 @@ export const processMessage = async ({ receivedMessage, history, app, sensitiveW
   usage.promptTokens = promptTokens;
   await sendWewokMessage(receiveMessageData.FromUserName, "正在生成内容...", appConfig, accessToken);
 
-  //@ts-ignore
-  let completionTokens = 0;
-  let lastSendAt = 0;
 
   //@ts-ignore
   const aiResource = app.aiResource as AIResource;
