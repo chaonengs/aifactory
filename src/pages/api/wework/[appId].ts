@@ -24,15 +24,13 @@ const findApp = async (id: string) => {
   });
 };
 
-const wrapResponeMessage = (message: string, toUser: string, fromUser: string, createTime = now()) => `
-<xml>
+const wrapResponeMessage = (message: string, toUser: string, fromUser: string, createTime = now()) => `<xml>
    <ToUserName><![CDATA[${toUser}]]></ToUserName>
    <FromUserName><![CDATA[${fromUser}]]></FromUserName> 
    <CreateTime>${createTime}</CreateTime>
    <MsgType><![CDATA[text]]></MsgType>
    <Content><![CDATA[${message}]]></Content>
-</xml>
-`;
+</xml>`;
 
 const firstResponseXML = (toUser: string, fromUser: string) => wrapResponeMessage('开始生产内容', toUser, fromUser);
 
@@ -215,7 +213,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       { delay: 1 } // scheduling options
     );
     const resBody = makeRespone(firstResponseXML(decryptedJson.FromUserName, decryptedJson.ToUserName), config);
-    res.setHeader('Content-Type', 'text/xml').end(resBody);
+    res.end(resBody);
   } catch (e) {
     if ((e as PrismaClientKnownRequestError).code === 'P2002') {
       res.end('ok');
