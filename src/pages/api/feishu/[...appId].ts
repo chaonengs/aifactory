@@ -98,10 +98,12 @@ const handleFeishuMessage = async (
   });
   //得到聊天会话对话样式
   if (chatSession && chatSession.temperature) {
-    if (chatSession.temperature['value']) {
-      let temperature = Number(chatSession.temperature['value']);
-      event.data.temperature = temperature;
-    }
+    let temperature = chatSession.temperature;
+    OpenAITemperature.forEach((item) => {
+      if (item.key === temperature) {
+        event.data.temperature = item.value;
+      }
+    })
 
   }
 
@@ -167,11 +169,11 @@ const chatSessionCard = async (
   }
 
   const config = app.config as Prisma.JsonObject;
-  let chatModeName = ChatModeTypes[0].name;
   let helpStatus = false;
+  let text=JSON.parse(event.data.message.content).text;
   //判断是否为帮助
-  if (chatModeName.indexOf(JSON.parse(event.data.message.content).text) != -1) {
-    let openId=event.data.sender.sender_id?.open_id || "";
+  if (text==='/help' || text==='帮助') {
+    let openId = event.data.sender.sender_id?.open_id || "";
     //根据群组和用户id读取聊天话题
     let chatSession = await prisma.chatSession.findUnique({
       where: {
@@ -185,8 +187,13 @@ const chatSessionCard = async (
     let defaultSelectMenu = "";
     //读取对话样式，如果没有则显示默认值
     if (chatSession && chatSession.temperature) {
-      const temperature = chatSession.temperature as Prisma.JsonObject;
-      defaultSelectMenu = temperature['text'] as string;
+
+      let temperature = chatSession.temperature;
+      OpenAITemperature.forEach((item) => {
+        if (item.key === temperature) {
+          defaultSelectMenu = item.text;
+        }
+      })
     } else {
       defaultSelectMenu = OpenAITemperature[0].text;
     }

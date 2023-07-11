@@ -90,23 +90,26 @@ export const chatTemplate = {
   ExpireWord: "Hi，#name，当前已经恢复至单轮对话模式"
 }
 //AI 飞书模块可选择temperature值
-export const OpenAITemperature=[
+export const OpenAITemperature = [
   {
+    key: "k1",
     text: "更有创造力",
     value: 1.0
   },
   {
+    key: "k2",
     text: "更平衡",
     value: 0.7
   },
   {
+    key: "k3",
     text: "更精准",
     value: 0.1
   }
 ]
-export const chatModeHistory={
-  name:['摘要','/summary'],
-  message:'根据以上会话记录，希望你能够对这些记录进行摘要。要求简明扼要，以包含列表的大纲形式输出。',
-  during:7*24*60*60,
-  size:100
+export const chatModeHistory = {
+  name: ['摘要', '/summary'],
+  message: '根据以上会话记录，希望你能够对这些记录进行摘要。要求简明扼要，以包含列表的大纲形式输出。',
+  during: 7 * 24 * 60 * 60,
+  size: 100
 }

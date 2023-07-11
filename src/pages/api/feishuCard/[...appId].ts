@@ -33,11 +33,11 @@ const chatSessionInsertToUpdate = async (
   let uuid = randomUUID();
   //获取客户操作value值
   let value = Number(action.option);
-  let temperature = {};
+  let temperature = null;
   //根据客户操作value值读取json
   OpenAITemperature.forEach((item) => {
     if (item.value === value) {
-      temperature = item;
+      temperature = item.key;
     }
   })
   await prisma.chatSession.upsert({
