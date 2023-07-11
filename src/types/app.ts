@@ -10,6 +10,7 @@ export type FeishuAppConfig = {
   encryptKey: string;
   verificationToken: string;
   ai: AppAIConfig;
+  cardId:string;
 };
 
 export type WeworkAppConfig = {

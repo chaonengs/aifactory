@@ -48,19 +48,35 @@ export interface ReceiveMessageEvent extends Event {
     message: Message;
   };
 }
+export interface FeiShuMessageHistory {
+  data: {
+    has_more?: boolean;
+    page_token?: string;
+    items: {
+      body?: {
+        content: string
+      } | undefined;
+      sender?: {
+        sender_type?: string;
+      } | undefined;
+    }[]
+    | undefined;
+  }
+}
 
 export interface ReceiveMessageData {
   event_id?: string;
-    token?: string;
-    create_time?: string;
-    event_type?: string;
-    tenant_key?: string;
-    ts?: string;
-    uuid?: string;
-    type?: string;
-    app_id?: string;
-    sender: Sender;
-    message: Message;
+  token?: string;
+  create_time?: string;
+  event_type?: string;
+  tenant_key?: string;
+  ts?: string;
+  uuid?: string;
+  type?: string;
+  app_id?: string;
+  sender: Sender;
+  message: Message;
+  temperature?: number;
 }
 
 export interface User {
@@ -75,22 +91,22 @@ export interface User {
   mobile_visible?: boolean | undefined;
   gender?: number | undefined;
   avatar?:
-    | {
-        avatar_72?: string | undefined;
-        avatar_240?: string | undefined;
-        avatar_640?: string | undefined;
-        avatar_origin?: string | undefined;
-      }
-    | undefined;
+  | {
+    avatar_72?: string | undefined;
+    avatar_240?: string | undefined;
+    avatar_640?: string | undefined;
+    avatar_origin?: string | undefined;
+  }
+  | undefined;
   status?:
-    | {
-        is_frozen?: boolean | undefined;
-        is_resigned?: boolean | undefined;
-        is_activated?: boolean | undefined;
-        is_exited?: boolean | undefined;
-        is_unjoin?: boolean | undefined;
-      }
-    | undefined;
+  | {
+    is_frozen?: boolean | undefined;
+    is_resigned?: boolean | undefined;
+    is_activated?: boolean | undefined;
+    is_exited?: boolean | undefined;
+    is_unjoin?: boolean | undefined;
+  }
+  | undefined;
   department_ids?: string[] | undefined;
   leader_user_id?: string | undefined;
   city?: string | undefined;
@@ -101,45 +117,45 @@ export interface User {
   employee_no?: string | undefined;
   employee_type?: number | undefined;
   positions?:
-    | {
-        position_code?: string | undefined;
-        position_name?: string | undefined;
-        department_id?: string | undefined;
-        leader_user_id?: string | undefined;
-        leader_position_code?: string | undefined;
-        is_major?: boolean | undefined;
-      }[]
-    | undefined;
+  | {
+    position_code?: string | undefined;
+    position_name?: string | undefined;
+    department_id?: string | undefined;
+    leader_user_id?: string | undefined;
+    leader_position_code?: string | undefined;
+    is_major?: boolean | undefined;
+  }[]
+  | undefined;
   orders?:
-    | {
-        department_id?: string | undefined;
-        user_order?: number | undefined;
-        department_order?: number | undefined;
-        is_primary_dept?: boolean | undefined;
-      }[]
-    | undefined;
+  | {
+    department_id?: string | undefined;
+    user_order?: number | undefined;
+    department_order?: number | undefined;
+    is_primary_dept?: boolean | undefined;
+  }[]
+  | undefined;
   custom_attrs?:
+  | {
+    type?: string | undefined;
+    id?: string | undefined;
+    value?:
     | {
-        type?: string | undefined;
-        id?: string | undefined;
-        value?:
-          | {
-              text?: string | undefined;
-              url?: string | undefined;
-              pc_url?: string | undefined;
-              option_value?: string | undefined;
-              name?: string | undefined;
-              picture_url?: string | undefined;
-              generic_user?:
-                | {
-                    id: string;
-                    type: number;
-                  }
-                | undefined;
-            }
-          | undefined;
-      }[]
+      text?: string | undefined;
+      url?: string | undefined;
+      pc_url?: string | undefined;
+      option_value?: string | undefined;
+      name?: string | undefined;
+      picture_url?: string | undefined;
+      generic_user?:
+      | {
+        id: string;
+        type: number;
+      }
+      | undefined;
+    }
     | undefined;
+  }[]
+  | undefined;
   enterprise_email?: string | undefined;
   time_zone?: string | undefined;
   description?: string | undefined;
@@ -148,53 +164,53 @@ export interface User {
   job_level_id?: string | undefined;
   job_family_id?: string | undefined;
   assign_info?:
+  | {
+    subscription_id?: string | undefined;
+    license_plan_key?: string | undefined;
+    product_name?: string | undefined;
+    i18n_name?:
     | {
-        subscription_id?: string | undefined;
-        license_plan_key?: string | undefined;
-        product_name?: string | undefined;
-        i18n_name?:
-          | {
-              zh_cn?: string | undefined;
-              ja_jp?: string | undefined;
-              en_us?: string | undefined;
-            }
-          | undefined;
-        start_time?: string | undefined;
-        end_time?: string | undefined;
-      }[]
+      zh_cn?: string | undefined;
+      ja_jp?: string | undefined;
+      en_us?: string | undefined;
+    }
     | undefined;
+    start_time?: string | undefined;
+    end_time?: string | undefined;
+  }[]
+  | undefined;
   department_path?:
+  | {
+    department_id?: string | undefined;
+    department_name?:
     | {
-        department_id?: string | undefined;
-        department_name?:
-          | {
-              name?: string | undefined;
-              i18n_name?:
-                | {
-                    zh_cn?: string | undefined;
-                    ja_jp?: string | undefined;
-                    en_us?: string | undefined;
-                  }
-                | undefined;
-            }
-          | undefined;
-        department_path?:
-          | {
-              department_ids?: string[] | undefined;
-              department_path_name?:
-                | {
-                    name?: string | undefined;
-                    i18n_name?:
-                      | {
-                          zh_cn?: string | undefined;
-                          ja_jp?: string | undefined;
-                          en_us?: string | undefined;
-                        }
-                      | undefined;
-                  }
-                | undefined;
-            }
-          | undefined;
-      }[]
+      name?: string | undefined;
+      i18n_name?:
+      | {
+        zh_cn?: string | undefined;
+        ja_jp?: string | undefined;
+        en_us?: string | undefined;
+      }
+      | undefined;
+    }
     | undefined;
+    department_path?:
+    | {
+      department_ids?: string[] | undefined;
+      department_path_name?:
+      | {
+        name?: string | undefined;
+        i18n_name?:
+        | {
+          zh_cn?: string | undefined;
+          ja_jp?: string | undefined;
+          en_us?: string | undefined;
+        }
+        | undefined;
+      }
+      | undefined;
+    }
+    | undefined;
+  }[]
+  | undefined;
 }
