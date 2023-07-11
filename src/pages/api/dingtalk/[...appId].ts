@@ -8,9 +8,7 @@ import dingTalkSend from 'utils/dingtalk/client';
 import { findSensitiveWords } from 'utils/db/transactions';
 
 
-const prisma = new PrismaClient({
-  log: ['query']
-});
+const prisma = new PrismaClient();
 /* 
   读取APP表下应用信息
 */

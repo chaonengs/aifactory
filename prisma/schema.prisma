@@ -274,10 +274,10 @@ model ChatSession {
   conversationId String
   groupId        String
   type           ChatSessionType @default(SINGLEWHEEL)
+  temperature    String?
 
   @@id([groupId, sender])
   @@index([appId])
   @@index([organizationId])
-  @@index([groupId])
-  @@index([sender])
+  @@unique([groupId,sender,appId])
 }
