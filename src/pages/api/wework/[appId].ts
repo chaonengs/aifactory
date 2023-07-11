@@ -32,7 +32,7 @@ const wrapResponeMessage = (message: string, toUser: string, fromUser: string, c
    <Content><![CDATA[${message}]]></Content>
 </xml>`;
 
-const firstResponseXML = (toUser: string, fromUser: string) => wrapResponeMessage('开始生产内容', toUser, fromUser);
+const firstResponseXML = (toUser: string, fromUser: string) => wrapResponeMessage('开始生产内容...', toUser, fromUser);
 
 // Verify wework api request and app id, return app if appid is valid and this is not a wework api verification request
 const weworkVerify = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -56,7 +56,6 @@ const weworkVerify = async (req: NextApiRequest, res: NextApiResponse) => {
 
 const makeRespone = (messageXML: string, config: AppConfig, timestamp = now(), nonce = String(Math.random() * 10000000000)) => {
   // const messageXML = firstResponseXML(decryptedJson.FromUserName, config.corpId);
-  console.log('messageXML: ', messageXML);
   const encrypted = encrypt(config.encodingAESKey, messageXML, config.corpId);
   const signature = getSignature(config.token, timestamp, nonce, encrypted);
   return `<xml>

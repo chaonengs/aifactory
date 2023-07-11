@@ -112,7 +112,7 @@ const finish = async ({receivedMessage, user, answer, app, sensitiveWords, usage
     const receiveMessageData = receivedMessage.data as Message;
     const repliedMessage = {
       senderUnionId: receiveMessageData.FromUserName,
-      sender: user?.name? user.namne : receiveMessageData.FromUserName,
+      sender: user?.name,
       content: receiveMessageData.Content,
       answer: answer,
       appId: app.id,
@@ -121,6 +121,9 @@ const finish = async ({receivedMessage, user, answer, app, sensitiveWords, usage
       isAIAnswer: isAIAnswer,
       hasError: false,
     };
+    if(repliedMessage.sender === null || repliedMessage.sender === undefined || repliedMessage.sender === ''){
+      repliedMessage.sender = receiveMessageData.FromUserName;
+    }
     await saveProcesserResult({ repliedMessage, usage });
   }
 
