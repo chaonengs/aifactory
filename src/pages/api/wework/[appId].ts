@@ -58,7 +58,7 @@ const makeRespone = (messageXML: string, config: AppConfig, timestamp = now(), n
   // const messageXML = firstResponseXML(decryptedJson.FromUserName, config.corpId);
   console.log('messageXML: ', messageXML);
   const encrypted = encrypt(config.encodingAESKey, messageXML, config.corpId);
-  const signature = getSignature(config.encodingAESKey, timestamp, nonce, encrypted);
+  const signature = getSignature(config.token, timestamp, nonce, encrypted);
   return `<xml>
     <Encrypt><![CDATA[${encrypted}]]></Encrypt>
     <MsgSignature><![CDATA[${signature}]]></MsgSignature>
