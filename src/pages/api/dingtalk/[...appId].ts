@@ -1,6 +1,6 @@
 import { AIResource, App, ChatSession, Message, PrismaClient } from '@prisma/client';
 import { NotFoundError } from '@prisma/client/runtime/library';
-import { ChatModeDateTime, ChatModeTypes, chatTemplate } from 'constant';
+import { ChatModeDateTime, ChatCommands, chatTemplate } from 'constant';
 import { randomUUID } from 'crypto';
 import { NextApiRequest, NextApiResponse } from 'next';
 import MessageQueue from 'pages/api/queues/messages';
@@ -144,7 +144,7 @@ const chatModeMessage = async (
   let status = true;
   let content = data.text.content.trim();
   //循环遍历模块类型，发送钉钉消息
-  ChatModeTypes.forEach((item, index, array) => {
+  ChatCommands.forEach((item, index, array) => {
 
     if (item.name.indexOf(content) != -1) {
       status = false;

@@ -1,7 +1,7 @@
 import * as lark from '@larksuiteoapi/node-sdk';
 import { AIResource, App, Message, Prisma, PrismaClient } from '@prisma/client';
 import { NotFoundError } from '@prisma/client/runtime/library';
-import { ChatModeTypes, OpenAITemperature } from 'constant';
+import { ChatCommands, OpenAITemperature } from 'constant';
 import { NextApiRequest, NextApiResponse } from 'next';
 import MessageQueue from 'pages/api/queues/messages';
 import { ReceiveMessageData, ReceiveMessageEvent } from 'types/feishu';

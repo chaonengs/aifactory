@@ -79,7 +79,8 @@ model Organization {
   apiKeys        APIKey[]
   users          OrganizationUsers[]
   sensitiveWords SensitiveWord[]
-  chatSession      ChatSession[]
+  chatSessions    ChatSession[]
+  providers       Provider[]
 }
 
 enum Role {
@@ -114,11 +115,6 @@ model Usage {
   @@index([aiResourceId])
 }
 
-// model Converstion {
-//   id string @id
-//   feishuMessageId string @id
-//   systemMessageId string @
-// }
 
 model Message {
   id                     String                   @id @default(cuid())
@@ -267,7 +263,7 @@ model ChatSession {
   createdAt      DateTime
   expiredAt     DateTime
   sender         String
-  app            App            @relation(fields: [appId], references: [id])
+  app            App             @relation(fields: [appId], references: [id])
   appId          String
   organization   Organization    @relation(fields: [organizationId], references: [id])
   organizationId String
@@ -280,4 +276,29 @@ model ChatSession {
   @@index([appId])
   @@index([organizationId])
   @@unique([groupId,sender,appId])
+}
+
+enum PorviderType {
+  GITHUB
+  FEISHU
+  WEWORK
+  DINGTALK
+  OAUTH
+}
+
+model Provider {
+  id                    String       @id @default(cuid())
+  name String
+  organization          Organization @relation(fields: [organizationId], references: [id])
+  organizationId        String
+  type                  PorviderType
+  cliendId              String
+  clientSecret          String
+  accessToken           String?
+  accessTokenExpiredAt  DateTime?
+  refreshToken          String?
+  refreshTokenExpiredAt DateTime?
+  config Json?
+  
+  @@index([organizationId])
 }

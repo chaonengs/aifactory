@@ -62,7 +62,7 @@ export const AppTypes = {
   "DINGTALK": "钉钉机器人",
 }
 
-export const ChatModeTypes = [
+export const ChatCommands = [
   {
     name: ["帮助", "/help"],
     message: "### 开启多轮对话\n\n * 使用/start或者开始，开启多轮对话\n\n * 使用/end或者关闭，关闭多轮对话\n\n * 使用/reset或者重置，开启新一轮对话"
