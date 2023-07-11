@@ -133,7 +133,7 @@ export const processMessage = async ({ receivedMessage, history, app, sensitiveW
   const receiveMessageData = receivedMessage.data as Message;
   const accessToken = (await (await getAccessToken(appConfig)).json()).access_token;
   const user = await (await getUser(receiveMessageData.FromUserName, accessToken)).json();
-
+  console.log(user);
 
   let answer = '';
   let usage:Usage = {
@@ -150,7 +150,7 @@ export const processMessage = async ({ receivedMessage, history, app, sensitiveW
   
   const {messages, promptTokens} = makeMessages({ receivedMessage, history, app, sensitiveWords });
   usage.promptTokens = promptTokens;
-  await sendWewokMessage(receiveMessageData.FromUserName, "正在生成内容...", appConfig, accessToken);
+  // await sendWewokMessage(receiveMessageData.FromUserName, "正在生成内容...", appConfig, accessToken);
 
 
   //@ts-ignore
