@@ -24,19 +24,17 @@ const findApp = async (id: string) => {
   });
 };
 
-const wrapResponeMessage = (message: string, toUser: string, fromUser: string) => `
+const wrapResponeMessage = (message: string, toUser: string, fromUser: string, createTime = now()) => `
 <xml>
    <ToUserName><![CDATA[${toUser}]]></ToUserName>
    <FromUserName><![CDATA[${fromUser}]]></FromUserName> 
-   <CreateTime>${now()}</CreateTime>
+   <CreateTime>${createTime}</CreateTime>
    <MsgType><![CDATA[text]]></MsgType>
    <Content><![CDATA[${message}]]></Content>
 </xml>
 `;
 
 const firstResponseXML = (toUser: string, fromUser: string) => wrapResponeMessage('开始生产内容', toUser, fromUser);
-
-
 
 // Verify wework api request and app id, return app if appid is valid and this is not a wework api verification request
 const weworkVerify = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -58,34 +56,32 @@ const weworkVerify = async (req: NextApiRequest, res: NextApiResponse) => {
   return { app, isVerification: false, verificationMessage: null };
 };
 
-const makeRespone = (messageXML: string, config: AppConfig) => {
-  const timestamp = now();
-  const nonce = Math.random() * 10000000000;
+const makeRespone = (messageXML: string, config: AppConfig, timestamp = now(), nonce = String(Math.random() * 10000000000)) => {
   // const messageXML = firstResponseXML(decryptedJson.FromUserName, config.corpId);
-  console.log("messageXML: ", messageXML);
-  const encrypted = encrypt(config.encodingAESKey,messageXML , config.corpId);
-  const signature = getSignature(config.encodingAESKey, timestamp, String(nonce), encrypted);
+  console.log('messageXML: ', messageXML);
+  const encrypted = encrypt(config.encodingAESKey, messageXML, config.corpId);
+  const signature = getSignature(config.encodingAESKey, timestamp, nonce, encrypted);
   return `<xml>
     <Encrypt><![CDATA[${encrypted}]]></Encrypt>
     <MsgSignature><![CDATA[${signature}]]></MsgSignature>
     <TimeStamp>${timestamp}</TimeStamp>
-    <Nonce><![CDATA[${String(nonce)}]]></Nonce>
+    <Nonce><![CDATA[${nonce}]]></Nonce>
   </xml>`;
 };
 
 const findCommand = (text: string) => {
   let matched = null;
-  for(let i = 0; i < ChatCommands.length; i++) {
+  for (let i = 0; i < ChatCommands.length; i++) {
     if (ChatCommands[i].name.indexOf(text) != -1) {
       matched = ChatCommands[i];
     }
   }
   return matched;
-}
+};
 
-const handleChatCommands = async (message:WeworkReceivedMessage, app: App, res: NextApiResponse) => {
+const handleChatCommands = async (message: WeworkReceivedMessage, app: App, res: NextApiResponse) => {
   const command = findCommand(message.Content.trim());
-  if(command){
+  if (command) {
     if (command.type === ChatSessionType.MUITIWHEEL || command.type === 'RESET') {
       await prisma.chatSession.upsert({
         where: {
@@ -99,7 +95,7 @@ const handleChatCommands = async (message:WeworkReceivedMessage, app: App, res: 
           createdAt: new Date(),
           expiredAt: new Date(new Date().getTime() + 10 * 60000),
           type: ChatSessionType.MUITIWHEEL,
-          conversationId: randomUUID(),
+          conversationId: randomUUID()
         },
         create: {
           sender: message.FromUserName,
@@ -109,7 +105,7 @@ const handleChatCommands = async (message:WeworkReceivedMessage, app: App, res: 
           conversationId: randomUUID(),
           createdAt: new Date(),
           expiredAt: new Date(new Date().getTime() + 10 * 60000),
-          type: ChatSessionType.MUITIWHEEL,
+          type: ChatSessionType.MUITIWHEEL
         }
       });
     }
@@ -126,7 +122,7 @@ const handleChatCommands = async (message:WeworkReceivedMessage, app: App, res: 
           createdAt: new Date(),
           expiredAt: new Date(new Date().getTime() + 10 * 60000),
           type: ChatSessionType.SINGLEWHEEL,
-          conversationId: randomUUID(),
+          conversationId: randomUUID()
         },
         create: {
           sender: message.FromUserName,
@@ -136,22 +132,23 @@ const handleChatCommands = async (message:WeworkReceivedMessage, app: App, res: 
           conversationId: randomUUID(),
           createdAt: new Date(),
           expiredAt: new Date(new Date().getTime() + 10 * 60000),
-          type: ChatSessionType.SINGLEWHEEL,
+          type: ChatSessionType.SINGLEWHEEL
         }
       });
     }
 
-    const wrapped = wrapResponeMessage(command.message.replace('，#name', ''), message.FromUserName, message.ToUserName);
-    res.end(makeRespone(wrapped, app.config as AppConfig));
+    const wrapped = wrapResponeMessage(command.message.replace('，#name', ''), message.FromUserName, message.ToUserName, message.CreateTime+1);
+    const resBody = makeRespone(wrapped, app.config as AppConfig, message.CreateTime+1);
+    console.log(resBody);
+    res.end(resBody);
     return true;
   }
   return false;
-}
+};
 
-const handleSensitiveWords = async (message:WeworkReceivedMessage, app: App, res: NextApiResponse) => {
+const handleSensitiveWords = async (message: WeworkReceivedMessage, app: App, res: NextApiResponse) => {
   const matched = await findSensitiveWords(message.Content, app.organizationId);
-
-}
+};
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { app, isVerification, verificationMessage } = await weworkVerify(req, res);
@@ -175,7 +172,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   console.debug(decrypted);
   const decryptedJson = new XMLParser().parse(decrypted.message).xml as WeworkReceivedMessage;
 
-  if(await handleChatCommands(decryptedJson, app, res)) {
+  if (await handleChatCommands(decryptedJson, app, res)) {
     return;
   }
   const chatSession = await prisma.chatSession.findUnique({
@@ -183,19 +180,19 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       groupId_sender_appId: {
         groupId: decryptedJson.FromUserName,
         sender: decryptedJson.FromUserName,
-        appId: app.id,
+        appId: app.id
       }
     }
   });
 
-  let history:Message[] = [];
+  let history: Message[] = [];
   if (chatSession && chatSession.expiredAt > new Date() && chatSession.type === ChatSessionType.MUITIWHEEL) {
     history = await prisma.message.findMany({
       where: {
         conversationId: chatSession.conversationId
       }
-    })
-  } 
+    });
+  }
 
   try {
     const receivedMessage = await prisma.receivedMessage.create({
