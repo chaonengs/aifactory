@@ -9,7 +9,7 @@ import { FeishuAppConfig } from 'types/app';
 import { ReceiveMessageData, User, FeiShuMessageHistory } from 'types/feishu';
 import { getChatHistory, getInternalTenantAccessToken, getUser, patchMessage, replyMessage } from 'utils/server/feishu';
 import { OpenAIRequest, OpenAIStream } from 'utils/server/openai';
-import { now } from 'next-auth/client/_utils';
+
 const getFeishuUser = async (accessToken: string, userId: string) => {
   const req = {
     user_id_type: 'union_id',
@@ -177,7 +177,7 @@ const feishuHistoryMakeMessages = async (receivedMessage: ReceivedMessage, acces
   const messages = new Array();
   let promptTokens = 0;
   //生成7天之前开始时间和当前结束时间
-  let endTime = now();
+  let endTime = Math.floor(Date.now() / 1000);
   let startTime = endTime - chatModeHistory.during;
   //根据时间倒叙获取50条数据（飞书最大支持50条）
   const resultOne = await getChatHistory(accessToken, receiveMessageData.message.chat_id, null, startTime, endTime);
