@@ -138,7 +138,7 @@ const handleChatCommands = async (message: WeworkReceivedMessage, app: App, res:
     const wrapped = wrapResponeMessage(command.message.replace('，#name', ''), message.FromUserName, message.ToUserName, message.CreateTime+1);
     const resBody = makeRespone(wrapped, app.config as AppConfig, message.CreateTime+1);
     console.log(resBody);
-    res.end(resBody);
+    res.setHeader('Content-Type','application/xml').end(resBody);
     return true;
   }
   return false;
