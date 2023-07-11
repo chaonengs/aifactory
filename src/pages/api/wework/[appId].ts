@@ -207,7 +207,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         processing: true,
         appId: app.id,
         type: 'WEWORK',
-        eventName: 'WeWork_message_received'
+        eventName: 'WeWork_message_received',
+        conversationId: chatSession?.conversationId
       }
     });
 

@@ -79,8 +79,8 @@ model Organization {
   apiKeys        APIKey[]
   users          OrganizationUsers[]
   sensitiveWords SensitiveWord[]
-  chatSessions    ChatSession[]
-  providers       Provider[]
+  chatSessions   ChatSession[]
+  providers      Provider[]
 }
 
 enum Role {
@@ -114,7 +114,6 @@ model Usage {
   @@index([messageId])
   @@index([aiResourceId])
 }
-
 
 model Message {
   id                     String                   @id @default(cuid())
@@ -214,16 +213,17 @@ enum ReceivedMessageType {
 }
 
 model ReceivedMessage {
-  id         String              @id
-  data       Json
-  processing Boolean
-  createdAt  DateTime            @default(now())
-  recievedAt DateTime            @default(now())
-  eventName  String
-  app        App                 @relation(fields: [appId], references: [id])
-  appId      String
-  type       ReceivedMessageType @default(UNKNOWN)
-  Message    Message[]
+  id             String              @id
+  data           Json
+  processing     Boolean
+  conversationId String?
+  createdAt      DateTime            @default(now())
+  recievedAt     DateTime            @default(now())
+  eventName      String
+  app            App                 @relation(fields: [appId], references: [id])
+  appId          String
+  type           ReceivedMessageType @default(UNKNOWN)
+  Message        Message[]
 
   @@index([appId])
 }
@@ -260,22 +260,22 @@ enum ChatSessionType {
 }
 
 model ChatSession {
-  createdAt      DateTime
-  expiredAt     DateTime
+  createdAt      DateTime        @default(now())
+  expiredAt      DateTime
   sender         String
   app            App             @relation(fields: [appId], references: [id])
   appId          String
   organization   Organization    @relation(fields: [organizationId], references: [id])
   organizationId String
-  conversationId String
+  conversationId String          @default(uuid())
   groupId        String
   type           ChatSessionType @default(SINGLEWHEEL)
   temperature    String?
 
   @@id([groupId, sender])
+  @@unique([groupId, sender, appId])
   @@index([appId])
   @@index([organizationId])
-  @@unique([groupId,sender,appId])
 }
 
 enum PorviderType {
@@ -288,7 +288,7 @@ enum PorviderType {
 
 model Provider {
   id                    String       @id @default(cuid())
-  name String
+  name                  String
   organization          Organization @relation(fields: [organizationId], references: [id])
   organizationId        String
   type                  PorviderType
@@ -298,7 +298,7 @@ model Provider {
   accessTokenExpiredAt  DateTime?
   refreshToken          String?
   refreshTokenExpiredAt DateTime?
-  config Json?
-  
+  config                Json?
+
   @@index([organizationId])
 }

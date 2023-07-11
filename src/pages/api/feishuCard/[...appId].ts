@@ -50,13 +50,13 @@ const chatSessionInsertToUpdate = async (
     },
     update: {
       createdAt: datetime,
-      expiringAt: datetime,
+      expiredAt: datetime,
       type: ChatSessionType.MUITIWHEEL,
       temperature: temperature
     },
     create: {
       createdAt: datetime,
-      expiringAt: datetime,
+      expiredAt: datetime,
       sender: sender,
       appId: app.id,
       organizationId: app.organizationId,
