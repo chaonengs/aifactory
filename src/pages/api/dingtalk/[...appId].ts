@@ -1,6 +1,6 @@
 import { AIResource, App, ChatSession, Message, PrismaClient } from '@prisma/client';
 import { NotFoundError } from '@prisma/client/runtime/library';
-import { ChatModeDateTime, ChatModeTypes, chatTemplate } from 'constant';
+import { ChatModeDateTime, ChatCommands, chatTemplate } from 'constant';
 import { randomUUID } from 'crypto';
 import { NextApiRequest, NextApiResponse } from 'next';
 import MessageQueue from 'pages/api/queues/messages';
@@ -8,9 +8,7 @@ import dingTalkSend from 'utils/dingtalk/client';
 import { findSensitiveWords } from 'utils/db/transactions';
 
 
-const prisma = new PrismaClient({
-  log: ['query']
-});
+const prisma = new PrismaClient();
 /* 
   读取APP表下应用信息
 */
@@ -122,8 +120,8 @@ const chatSessionfindBy = async (data: JSON) => {
     type = chatSession.type;
     conversationId = chatSession.conversationId;
     let createAt = Number(chatSession.createdAt);
-    let expiringAt = Number(chatSession.expiringAt);
-    if (createAt < datetime && expiringAt > datetime) {
+    let expiredAt = Number(chatSession.expiredAt);
+    if (createAt < datetime && expiredAt > datetime) {
       status = true;
     }
   }
@@ -146,7 +144,7 @@ const chatModeMessage = async (
   let status = true;
   let content = data.text.content.trim();
   //循环遍历模块类型，发送钉钉消息
-  ChatModeTypes.forEach((item, index, array) => {
+  ChatCommands.forEach((item, index, array) => {
 
     if (item.name.indexOf(content) != -1) {
       status = false;
@@ -187,7 +185,7 @@ const chatModeMessage = async (
 }
 const chatsessionInsertToUpdate = async (chatSession: ChatSession, status: boolean) => {
   let datetime = new Date();
-  let expiringAt = new Date(Date.now() + ChatModeDateTime * 60000);
+  let expiredAt = new Date(Date.now() + ChatModeDateTime * 60000);
   let uuid = randomUUID();
   if (status) {
     await prisma.chatSession.updateMany({
@@ -197,7 +195,7 @@ const chatsessionInsertToUpdate = async (chatSession: ChatSession, status: boole
       },
       data: {
         createdAt: datetime,
-        expiringAt: expiringAt,
+        expiredAt: expiredAt,
         type: chatSession.type,
         conversationId: uuid
       }
@@ -207,7 +205,7 @@ const chatsessionInsertToUpdate = async (chatSession: ChatSession, status: boole
     await prisma.chatSession.create({
       data: {
         createdAt: datetime,
-        expiringAt: expiringAt,
+        expiredAt: expiredAt,
         sender: chatSession.sender,
         appId: chatSession.appId,
         organizationId: chatSession.organizationId,

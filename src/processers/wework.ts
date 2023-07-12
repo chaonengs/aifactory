@@ -1,4 +1,4 @@
-import { App, SensitiveWord } from '@prisma/client/edge';
+import { App, ReceivedMessage, SensitiveWord } from '@prisma/client/edge';
 import { encode } from 'gpt-tokenizer';
 import { MessageDBSaveRequest, Message as MessageToSave, Usage as UsageToSave } from 'pages/api/db/saveProcesserResult';
 import { MessageQueueBody } from 'pages/api/queues/messages';
@@ -99,8 +99,8 @@ const saveProcesserResult = async ({ repliedMessage, usage }: { repliedMessage: 
   });
 };
 
-const finish = async ({receiveMessageData, user, answer, app, sensitiveWords, usage, isAIAnswer, hasError}:{
-  receiveMessageData: Message;
+const finish = async ({receivedMessage, user, answer, app, sensitiveWords, usage, isAIAnswer, hasError}:{
+  receivedMessage: ReceivedMessage;
   user: any;
   answer: string;
   app: App;
@@ -109,19 +109,23 @@ const finish = async ({receiveMessageData, user, answer, app, sensitiveWords, us
   isAIAnswer: boolean;
   hasError: boolean;
 }): Promise<void> => {
+    const receiveMessageData = receivedMessage.data as Message;
     const repliedMessage = {
-    senderUnionId: receiveMessageData.FromUserName,
-    sender: user?.name? user.namne : receiveMessageData.FromUserName,
-    content: receiveMessageData.Content,
-    answer: answer,
-    appId: app.id,
-    conversationId: String(receiveMessageData.MsgId),
-    receivedMessageId: String(receiveMessageData.MsgId),
-    isAIAnswer: isAIAnswer,
-    hasError: false,
-  };
-  await saveProcesserResult({ repliedMessage, usage });
-}
+      senderUnionId: receiveMessageData.FromUserName,
+      sender: user?.name,
+      content: receiveMessageData.Content,
+      answer: answer,
+      appId: app.id,
+      conversationId: receivedMessage.conversationId ||  String(receiveMessageData.MsgId),
+      receivedMessageId: String(receiveMessageData.MsgId),
+      isAIAnswer: isAIAnswer,
+      hasError: false,
+    };
+    if(repliedMessage.sender === null || repliedMessage.sender === undefined || repliedMessage.sender === ''){
+      repliedMessage.sender = receiveMessageData.FromUserName;
+    }
+    await saveProcesserResult({ repliedMessage, usage });
+  }
 
 export const processMessage = async ({ receivedMessage, history, app, sensitiveWords }: MessageQueueBody) => {
 
@@ -130,10 +134,9 @@ export const processMessage = async ({ receivedMessage, history, app, sensitiveW
     throw new Error('app has no resource');
   }
   const receiveMessageData = receivedMessage.data as Message;
-
   const accessToken = (await (await getAccessToken(appConfig)).json()).access_token;
   const user = await (await getUser(receiveMessageData.FromUserName, accessToken)).json();
-
+  console.log(user);
 
   let answer = '';
   let usage:Usage = {
@@ -144,17 +147,14 @@ export const processMessage = async ({ receivedMessage, history, app, sensitiveW
   if(sensitiveWords && sensitiveWords.length > 0) {
     answer = '你的提问中存在敏感词，系统忽略本消息。';
     await sendWewokMessage(receiveMessageData.FromUserName, answer, appConfig, accessToken);
-    await finish({receiveMessageData, user, answer, app, sensitiveWords, usage, isAIAnswer: false, hasError: false});
+    await finish({receivedMessage, user, answer, app, sensitiveWords, usage, isAIAnswer: false, hasError: false});
     return null;
   }
   
   const {messages, promptTokens} = makeMessages({ receivedMessage, history, app, sensitiveWords });
   usage.promptTokens = promptTokens;
-  await sendWewokMessage(receiveMessageData.FromUserName, "正在生成内容...", appConfig, accessToken);
+  // await sendWewokMessage(receiveMessageData.FromUserName, "正在生成内容...", appConfig, accessToken);
 
-  //@ts-ignore
-  let completionTokens = 0;
-  let lastSendAt = 0;
 
   //@ts-ignore
   const aiResource = app.aiResource as AIResource;
@@ -182,11 +182,11 @@ export const processMessage = async ({ receivedMessage, history, app, sensitiveW
     async (error) => {
       console.error(error);
       await sendWewokMessage(receiveMessageData.FromUserName, `${answer}\n[遇到错误，中止生成]`, appConfig, accessToken);
-      await finish({receiveMessageData, user, answer, app, sensitiveWords, usage, hasError:true, isAIAnswer:true});
+      await finish({receivedMessage, user, answer, app, sensitiveWords, usage, hasError:true, isAIAnswer:true});
     },
     async () => {
       await sendWewokMessage(receiveMessageData.FromUserName, `${answer}\n[回复完成]`, appConfig, accessToken);
-      await finish({receiveMessageData, user, answer, app, sensitiveWords, usage, hasError:false, isAIAnswer:true});
+      await finish({receivedMessage, user, answer, app, sensitiveWords, usage, hasError:false, isAIAnswer:true});
     }
   );
   return openaiStream;

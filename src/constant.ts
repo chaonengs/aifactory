@@ -36,6 +36,7 @@ export const AIResourceTypes = {
 
 export const OpenAIModels = [
   "gpt-3.5-turbo",
+  "gpt-3.5-turbo-16k",
   "gpt-4",
   "gpt-4-0314",
   "gpt-4-32k",
@@ -61,7 +62,7 @@ export const AppTypes = {
   "DINGTALK": "钉钉机器人",
 }
 
-export const ChatModeTypes = [
+export const ChatCommands = [
   {
     name: ["帮助", "/help"],
     message: "### 开启多轮对话\n\n * 使用/start或者开始，开启多轮对话\n\n * 使用/end或者关闭，关闭多轮对话\n\n * 使用/reset或者重置，开启新一轮对话"
@@ -87,4 +88,28 @@ export const ChatModeDateTime = 10
 export const chatTemplate = {
   OpenWord: "思考中，请稍候",
   ExpireWord: "Hi，#name，当前已经恢复至单轮对话模式"
+}
+//AI 飞书模块可选择temperature值
+export const OpenAITemperature = [
+  {
+    key: "k1",
+    text: "更有创造力",
+    value: 1.0
+  },
+  {
+    key: "k2",
+    text: "更平衡",
+    value: 0.7
+  },
+  {
+    key: "k3",
+    text: "更精准",
+    value: 0.1
+  }
+]
+export const chatModeHistory = {
+  name: ['摘要', '/summary'],
+  message: '根据以上会话记录，希望你能够对这些记录进行摘要。要求简明扼要，以包含列表的大纲形式输出。',
+  during: 7 * 24 * 60 * 60,
+  size: 100
 }

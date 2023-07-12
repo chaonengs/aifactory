@@ -90,7 +90,7 @@ const finish = async ({ receivedMessageData, answer, app, usage, isAIAnswer, que
     answer: answer,
     appId: app.id,
     conversationId: receivedMessageData.unionMessageId,
-    recievedMessageId: receivedMessageData.msgId,
+    receivedMessageId: receivedMessageData.msgId,
     isAIAnswer: isAIAnswer,
     hasError: false,
   };
