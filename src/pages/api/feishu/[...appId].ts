@@ -170,7 +170,10 @@ const chatSessionCard = async (
 
   const config = app.config as Prisma.JsonObject;
   let helpStatus = false;
-  let text=JSON.parse(event.data.message.content).text.trim();
+  let text=JSON.parse(event.data.message.content).text;
+  if(text.indexOf("@_user")!=-1){
+    text=text.substr(8).trim();
+  }
   //判断是否为帮助
   if (text==='/help' || text==='帮助') {
     let openId = event.data.sender.sender_id?.open_id || "";

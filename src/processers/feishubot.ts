@@ -160,7 +160,10 @@ const finish = async ({
 };
 const feishuMessageIsSummary = (receivedMessage: ReceivedMessage) => {
   const receiveMessageData = receivedMessage.data as ReceiveMessageData;
-  let text = JSON.parse(receiveMessageData.message.content).text.trim();
+  let text = JSON.parse(receiveMessageData.message.content).text;
+  if(text.indexOf("@_user")!=-1){
+    text=text.substr(8).trim();
+  }
   if (chatModeHistory.name.indexOf(text) != -1) {
     return true;
   }
