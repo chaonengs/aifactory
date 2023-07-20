@@ -141,6 +141,10 @@
   "documentation": "文献资料",
   "roadmap": "路线图",
 
+  "organization-management": "团队管理",
+  "organization-members": "团队用户",
+  "organization-settings": "团队设置",
+
   "title": "多语言",
   "home": "家",
   "change": "改变语言",

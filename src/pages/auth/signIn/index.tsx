@@ -3,7 +3,7 @@ import { ReactElement } from 'react';
 // material-ui
 import { useTheme } from '@mui/material/styles';
 import { Divider, Grid, Stack, Typography, useMediaQuery } from '@mui/material';
-import Link from '../../Link';
+import Link from '../../../Link';
 
 // project imports
 import LAYOUT from 'constant';

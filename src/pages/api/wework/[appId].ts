@@ -166,7 +166,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   const encryptString = jsonBody.xml.Encrypt;
   const config = app.config as AppConfig;
   const decrypted = decrypt(config.encodingAESKey, encryptString);
-  console.debug(decrypted);
   const decryptedJson = new XMLParser().parse(decrypted.message).xml as WeworkReceivedMessage;
 
   if (await handleChatCommands(decryptedJson, app, res)) {

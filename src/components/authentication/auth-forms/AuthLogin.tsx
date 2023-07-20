@@ -84,12 +84,12 @@ const AuthLogin = ({ ...others }) => {
             </Button>
           
         </Grid>
-        {/* <Grid item xs={12}>
+        <Grid item xs={12}>
           
             <Button
               disableElevation
               fullWidth
-              onClick={()=> signIn('feishu')}
+              onClick={()=> signIn('clk0ug5vg000008mic3vxbx1i')}
               size="large"
               variant="outlined"
               sx={{
@@ -104,7 +104,7 @@ const AuthLogin = ({ ...others }) => {
               飞书登录
             </Button>
           
-        </Grid> */}
+        </Grid>
         <Grid item xs={12}>
           <Box
             sx={{

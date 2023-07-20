@@ -1,7 +1,7 @@
 import type { OAuthConfig, OAuthUserConfig } from "next-auth/providers"
 
 /** @see https://open.feishu.cn/document/common-capabilities/sso/api/get-user-info */
-export interface FeiShuProfile extends Record<string, any> {
+export interface FeishuProfile extends Record<string, any> {
   sub: string
   name: string
   picture: string
@@ -21,12 +21,12 @@ export interface FeiShuProfile extends Record<string, any> {
 }
 
 
-export default function Feishu<P extends FeiShuProfile>(
+export default function FeishuProvider<P extends FeishuProfile>(
   options: OAuthUserConfig<P>
 ): OAuthConfig<P> {
   return {
-    id: "feishu",
-    name: "FeiShu",
+    id: options.id || "feishu",
+    name: options.name || "FeiShu",
     type: "oauth",
     authorization: {
       url: "https://passport.feishu.cn/suite/passport/oauth/authorize",
