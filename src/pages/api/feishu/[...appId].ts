@@ -170,12 +170,15 @@ const chatSessionCard = async (
 
   const config = app.config as Prisma.JsonObject;
   let helpStatus = false;
-  let text=JSON.parse(event.data.message.content).text;
-  if(text.indexOf("@_user")!=-1){
-    text=text.substr(8).trim();
+  let text = JSON.parse(event.data.message.content).text;
+  // if (text.indexOf("@_user") != -1) {
+  //   text = text.substr(8).trim();
+  // }
+  if (/@_user_\d/.test(text)) {
+    text = text.replace(/@_user_\d/, '').trim();
   }
   //判断是否为帮助
-  if (text==='/help' || text==='帮助') {
+  if (text === '/help' || text === '帮助') {
     let openId = event.data.sender.sender_id?.open_id || "";
     //根据群组和用户id读取聊天话题
     let chatSession = await prisma.chatSession.findUnique({
@@ -270,7 +273,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       );
 
       const event = (await dispatcher.invoke(data)) as ReceiveMessageEvent;
-      if (event.name === 'im.message.receive_v1') {
+      if (event.name === 'im.message.receive_v1' && ((event.data.message.chat_type === 'group' && event.data.message.mentions) || event.data.message.chat_type === 'p2p')) {
         //判断是不是帮助模块。是则发送卡片消息，不是则继续往下调用
         let helpStatus = await chatSessionCard(client, event, app, res);
         if (!helpStatus) {
