@@ -1,12 +1,13 @@
 import { PrismaClient, User as DBUser, AIResourceType } from '@prisma/client';
 import NextAuth, { Account, NextAuthOptions, Profile, User as AuthUser } from 'next-auth';
 import GithubProvider from 'next-auth/providers/github';
-import EmailProvider from "next-auth/providers/email"
-import FeiShuProvider from 'nextauth/providers/feishu';
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import type { OAuthConfig } from "next-auth/providers"
+import EmailProvider from 'next-auth/providers/email';
+import { PrismaAdapter } from '@next-auth/prisma-adapter';
+import type { OAuthConfig } from 'next-auth/providers';
 import { sendVerificationRequest } from 'nextauth/providers/email';
 import { modelToEncodingMap } from 'gpt-tokenizer/esm/mapping';
+import FeishuProvider from 'nextauth/providers/feishu';
+import { NextApiRequest, NextApiResponse } from 'next';
 
 const prisma = new PrismaClient();
 
@@ -29,11 +30,20 @@ const prisma = new PrismaClient();
 //   )
 // }
 
+const organizationProviders = async () => {
+  const providers = await prisma.provider.findMany();
+};
+
+// const getProviderId = (req:NextApiRequest) => {
+//   const nextauth = url.pathname.split("/").slice(3);
+
+// }
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   pages: {
     signIn: '/auth/signin',
-    verifyRequest: '/auth/verify-request', 
+    verifyRequest: '/auth/verify-request'
   },
   providers: [
     EmailProvider({
@@ -47,14 +57,19 @@ export const authOptions: NextAuthOptions = {
       },
       from: process.env.EMAIL_FROM,
 
-      sendVerificationRequest: sendVerificationRequest,
+      sendVerificationRequest: sendVerificationRequest
       // maxAge: 24 * 60 * 60, // How long email links are valid for (default 24h)
     }),
     GithubProvider({
       clientId: process.env.GITHUB_ID as string,
-      clientSecret: process.env.GITHUB_SECRET as string,
+      clientSecret: process.env.GITHUB_SECRET as string
     }),
-    // FeiShuProvider({
+    FeishuProvider({
+      id: 'clk0ug5vg000008mic3vxbx1i',
+      clientId: process.env.FEISHU_APP_ID as string,
+      clientSecret: process.env.FEISHU_APP_SECRET as string
+    })
+    // FeishuProvider({
     //   clientId: process.env.FEISHU_APP_ID as string,
     //   clientSecret: process.env.FEISHU_APP_SECRET as string,
     // }),
@@ -62,7 +77,7 @@ export const authOptions: NextAuthOptions = {
   events: {
     async createUser(authuser) {
       const regex = /@\S+\.\S+/gm;
-      if(!authuser.user.name && authuser.user.email) {
+      if (!authuser.user.name && authuser.user.email) {
         authuser.user.name = authuser.user.email.replace(regex, '');
         const user = await prisma.user.update({
           where: {
@@ -71,19 +86,17 @@ export const authOptions: NextAuthOptions = {
           data: {
             name: authuser.user.name
           }
-        })
-        
+        });
       }
 
       const org = await prisma.organization.findUnique({
         where: {
           id: authuser.user.id
         }
-      })
-      if(org === null || org === undefined){
-        await prisma.$transaction(
-          [
-            prisma.organization.create({
+      });
+      if (org === null || org === undefined) {
+        await prisma.$transaction([
+          prisma.organization.create({
             data: {
               id: authuser.user.id,
               name: authuser.user.name as string,
@@ -100,31 +113,29 @@ export const authOptions: NextAuthOptions = {
                 ]
               },
               aiResources: {
-                create: 
-                  {
-                    type: AIResourceType.AZ_OPENAI,
-                    tokenRemains: 20000,
-                    name: 'Azure OpenAI 体验资源',
-                  }
-              },
+                create: {
+                  type: AIResourceType.AZ_OPENAI,
+                  tokenRemains: 20000,
+                  name: 'Azure OpenAI 体验资源'
+                }
+              }
             }
           })
-        ]
-        )
+        ]);
       }
     }
   },
   callbacks: {
     async session({ session, token, user }) {
-      session.user.id = user.id
-      return session
+      session.user.id = user.id;
+      return session;
     }
   }
 
-    // FeiShuProvider({
-    //   clientId: process.env.FEISHU_APP_ID as string,
-    //   clientSecret: process.env.FEISHU_APP_SECRET as string,
-    // })
+  // FeiShuProvider({
+  //   clientId: process.env.FEISHU_APP_ID as string,
+  //   clientSecret: process.env.FEISHU_APP_SECRET as string,
+  // })
   // callbacks: {
   //   async signIn({ user, account, profile, email, credentials }) {
   //     if(account?.provider && account?.providerAccountId){
@@ -225,7 +236,6 @@ export const authOptions: NextAuthOptions = {
   //     const prisma = new PrismaClient();
   //     credentials.
 
-
   //     const isAllowedToSignIn = true
   //     if (isAllowedToSignIn) {
   //       return true
@@ -239,7 +249,43 @@ export const authOptions: NextAuthOptions = {
   // }
 };
 
-export default NextAuth(authOptions);
+export default async (req: NextApiRequest, res: NextApiResponse) => {
+  const options = authOptions;
+  const providerId = req.query?.nextauth?.at(1);
 
+  // const providers = await prisma.provider.findMany();
+  // for (const p of providers) {
+  //   if (p.type === 'FEISHU') {
+  //     options.providers.push(
+  //       FeishuProvider(
+  //         {
+  //           clientId: p.cliendId,
+  //           clientSecret: p.clientSecret,
+  //           id: p.id,
+  //           name: p.name,
+  //         }
+  //       )
+  //     )
+  //   }
+  // }
 
+  if (providerId && providerId !== 'github'){
+    const p = await prisma.provider.findUniqueOrThrow({where: {id: providerId}});
+    if (p.type === 'FEISHU') {
+      options.providers.push(
+        FeishuProvider(
+          {
+            clientId: p.cliendId,
+            clientSecret: p.clientSecret,
+            id: p.id,
+            name: p.id,
+          }
+        )
+      )
+    }
+  }
+  NextAuth(req, res, options);
+  // options.providers.push
+};
 
+// export default NextAuth(authOptions);

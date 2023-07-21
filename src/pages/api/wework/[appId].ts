@@ -134,7 +134,7 @@ const handleChatCommands = async (message: WeworkReceivedMessage, app: App, res:
       });
     }
 
-    const wrapped = wrapResponeMessage(command.message.replace('，#name', ''), message.FromUserName, message.ToUserName, message.CreateTime+1);
+    const wrapped = wrapResponeMessage(command.message.replace('，#name', '').replace('#time', '10'), message.FromUserName, message.ToUserName, message.CreateTime+1);
     const resBody = makeRespone(wrapped, app.config as AppConfig, message.CreateTime+1);
     console.log(resBody);
     res.setHeader('Content-Type','application/xml').end(resBody);
@@ -166,7 +166,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   const encryptString = jsonBody.xml.Encrypt;
   const config = app.config as AppConfig;
   const decrypted = decrypt(config.encodingAESKey, encryptString);
-  console.debug(decrypted);
   const decryptedJson = new XMLParser().parse(decrypted.message).xml as WeworkReceivedMessage;
 
   if (await handleChatCommands(decryptedJson, app, res)) {

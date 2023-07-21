@@ -9,7 +9,7 @@ import { NavItemType } from 'types';
 import { FormattedMessage } from 'react-intl';
 
 // assets
-import { IconApps, IconAsset, IconBrain, IconBrandChrome, IconBuildingStore, IconHelp, IconHistory, IconSitemap, IconSquareAsterisk } from '@tabler/icons-react';
+import { IconApps, IconAsset, IconBrain, IconBrandChrome, IconBuildingSkyscraper, IconBuildingStore, IconHelp, IconHistory, IconSettings, IconSitemap, IconSquareAsterisk, IconUsers } from '@tabler/icons-react';
 import { IconMessage2 } from '@tabler/icons-react';
 
 
@@ -71,6 +71,30 @@ const menus = {
           type: 'item',
           url: '/messages/sensitives',
           icon: IconSquareAsterisk,
+          breadcrumbs: false
+        }
+      ]
+    },
+    {
+      id: 'organization-management',
+      type: 'collapse',
+      icon: IconBuildingSkyscraper,
+      title: <FormattedMessage id="organization-management" />,
+      children: [
+        {
+          id: 'organization-members',
+          title: <FormattedMessage id="organization-members" />,
+          type: 'item',
+          url: '/organization/members',
+          icon: IconUsers,
+          breadcrumbs: false
+        },
+        {
+          id: 'organization-settings',
+          title: <FormattedMessage id="organization-settings" />,
+          type: 'item',
+          url: '/organization/settings',
+          icon: IconSettings,
           breadcrumbs: false
         }
       ]
