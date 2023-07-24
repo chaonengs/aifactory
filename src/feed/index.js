@@ -16,23 +16,52 @@ export function useOrganization (id) {
 }
 
 
-export function useOrganizationUsers(userId) {
-  const { data, error, isLoading } = useSWR(`/api/rest/organizationUsers?where={"userId":{"$eq":"${userId}"}}&include=organization`, fetcher)
+export function useOrganizationWithProviders (id) {
+  const url = `/api/rest/organizations/${id}?include=providers`;
+  const { data, error, isLoading } = useSWR(url, fetcher)
+ 
   return {
-    organizationUsers: data,
+    url,
+    organization: data,
     isLoading,
     isError: error
   }
 }
 
 
+export function useOrganizationUsers(userId) {
+  const url = `/api/rest/organizationUsers?where={"userId":{"$eq":"${userId}"}}&include=organization`;
+  const { data, error, isLoading } = useSWR(url, fetcher)
+  return {
+    url,
+    organizationUsers: data,
+    isLoading,
+    isError: error
+  }
+}
+
+export function useProviders(organizationId) {
+  const url = `/api/rest/providers?where={"organizationId":{"$eq":"${organizationId}"}}`;
+  const { data, error, isLoading } = useSWR(url, fetcher)
+  return {
+    providers: data,
+    isLoading,
+    isError: error,
+    url
+  }
+}
+
+
+
 export function useApp(id) {
-  const { data, error, isLoading } = useSWR(`/api/rest/apps/${id}`, fetcher)
+  const url = `/api/rest/apps/${id}`;
+  const { data, error, isLoading } = useSWR(url, fetcher)
  
   return {
     app: data,
     isLoading,
-    isError: error
+    isError: error,
+    url,
   }
 }
 
@@ -44,17 +73,19 @@ export function useApps(organizationId) {
     url,
     apps: data,
     isLoading,
-    isError: error
+    isError: error,
   }
 }
 
 export function useSensitiveWords(organizationId) {
-  const { data, error, isLoading } = useSWR(`/api/rest/sensitiveWords?where={"organizationId":{"$eq":"${organizationId}"}}`, fetcher)
+  const url = `/api/rest/sensitiveWords?where={"organizationId":{"$eq":"${organizationId}"}}`;
+  const { data, error, isLoading } = useSWR(url, fetcher)
  
   return {
     sensitiveWords: data,
     isLoading,
-    isError: error
+    isError: error,
+    url,
   }
 }
 
@@ -70,6 +101,22 @@ export function usePagedSensitiveWords(organizationId, page, size) {
   }
 }
 
+
+export function usePagedOrganizationUsers(organizationId, page, size) {
+  const url = `/api/rest/organizationUsers?where={"organizationId":{"$eq":"${organizationId}"}}&include=user&page=${page}&limit=${size}`;
+  const { data, error, isLoading } = useSWR(url, fetcher)
+ 
+  return {
+    url: url,
+    page: data,
+    isLoading,
+    isError: error
+  }
+}
+
+
+
+
 export function useAIResources(organizationId){
   const url = `/api/rest/aIResources?where={"organizationId":{"$eq":"${organizationId}"}}&include=apps`;
   const { data, error, isLoading } = useSWR(url, fetcher)
@@ -84,12 +131,14 @@ export function useAIResources(organizationId){
 
 
 export function useAIResource(id) {
-  const { data, error, isLoading } = useSWR(`/api/rest/airesources/${id}`, fetcher)
+  const url = `/api/rest/airesources/${id}`;
+  const { data, error, isLoading } = useSWR(url, fetcher)
  
   return {
     aiResource: data,
     isLoading,
-    isError: error
+    isError: error,
+    url,
   }
 }
 
