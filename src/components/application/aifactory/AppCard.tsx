@@ -1,7 +1,7 @@
+import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { TabContext, TabList, TabPanel, LoadingButton } from '@mui/lab';
+import { LoadingButton, TabContext, TabList, TabPanel } from '@mui/lab';
 import { Box, Chip, MenuItem, Stack, Tab } from '@mui/material';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -27,7 +27,7 @@ import useConfig from 'hooks/useConfig';
 import * as React from 'react';
 import { toast } from 'react-toastify';
 import { mutate } from 'swr';
-import { WeworkAppConfig, FeishuAppConfig, DingTalkAppConfig } from 'types/app';
+import { DingTalkAppConfig, FeishuAppConfig, WeworkAppConfig } from 'types/app';
 
 interface ExpandMoreProps extends IconButtonProps {
   expand: boolean;
@@ -65,6 +65,7 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
   const [thirdpartyOpen, setThirdpartyOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [updateOpen, setUpdateOpen] = React.useState(false);
   const [configTab, setConfigTab] = React.useState(app.appType.toLowerCase());
   const { url, organization } = useOrganization(useConfig().organization);
   const host = process.env.NEXTAUTH_URL;
@@ -87,11 +88,15 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
   const handleDeleteOpen = () => {
     setDeleteOpen(true);
   };
-
   const handleDeleteClose = () => {
     setDeleteOpen(false);
   };
-
+  const handleUpdateOpen = () => {
+    setUpdateOpen(true);
+  };
+  const handleUpdateClose = () => {
+    setUpdateOpen(false);
+  };
   const handleDelete = async () => {
     setIsDeleting(true);
     await toast.promise(deleteApp(app.id), {
@@ -143,9 +148,10 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
             maxCompletionTokens: config.ai?.maxCompletionTokens || 2000,
             maxPromptTokens: config.ai?.maxPromptTokens || 2000
           },
-          cardId:config.cardId || ''
+          cardId: config.cardId || ''
         },
         aiResourceId: app.aiResourceId,
+        name: app.name || '',
       };
     }
 
@@ -208,6 +214,7 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
         error: '保存失败 🤯'
       });
       setSubmitting(false);
+      setUpdateOpen(false);
     }
   });
 
@@ -219,9 +226,15 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
             app.builtIn ? (
               <Chip label="平台内置" color="primary" />
             ) : (
-              <IconButton aria-label="delete" onClick={() => handleDeleteOpen()}>
-                <DeleteIcon />
-              </IconButton>
+              <>
+                <IconButton aria-label="edit" onClick={() => handleUpdateOpen()}>
+                  <EditIcon />
+                </IconButton>
+                <IconButton aria-label="delete" onClick={() => handleDeleteOpen()}>
+                  <DeleteIcon />
+                </IconButton>
+              </>
+
             )
           }
           title={app.name || app.appType}
@@ -584,7 +597,7 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
                 sx={{ minWidth: 500 }}
                 value={`${window.location.origin}/api/feishu/${app.id}`}
               />
-               <TextField
+              <TextField
                 margin="dense"
                 id="callbackurl"
                 label="消息卡片接收地址"
@@ -664,6 +677,24 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
           <LoadingButton loading={isDeleting} onClick={handleDelete}>
             删除
           </LoadingButton>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={updateOpen} onClose={handleUpdateClose} fullWidth>
+        <DialogTitle>修改应用名 </DialogTitle>
+        <DialogContent>
+          <TextField
+            margin="dense"
+            variant="standard"
+            id="name"
+            label="应用名称"
+            fullWidth
+            value={formik.values.name}
+            onChange={formik.handleChange}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleUpdateClose}>取消</Button>
+          <LoadingButton loading={formik.isSubmitting}  onClick={formik.submitForm}>修改</LoadingButton>
         </DialogActions>
       </Dialog>
     </>
