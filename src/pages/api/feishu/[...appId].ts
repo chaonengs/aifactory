@@ -223,6 +223,27 @@ const chatSessionCard = async (
   }
   return helpStatus;
 }
+/** 
+ * 判断是否在群组@机器人
+ * return 返回 true 表示@机器人或单聊。false 表示基本消息或者不是@机器人
+ * */
+const judgingRobots = (
+  event: ReceiveMessageEvent,
+  app: App
+) => {
+  let robotStatus = false;
+  if (event.data.message.chat_type === 'group' && event.data.message.mentions) {
+    const mentions = event.data.message.mentions;
+    mentions.some(mention => {
+      if (mention.name === app.name && mention.id && !mention.id.user_id) {
+        robotStatus = true;
+      }
+    })
+  } else if (event.data.message.chat_type === 'p2p') {
+    robotStatus = true;
+  }
+  return robotStatus;
+}
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { appId } = req.query;
@@ -273,7 +294,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       );
 
       const event = (await dispatcher.invoke(data)) as ReceiveMessageEvent;
-      if (event.name === 'im.message.receive_v1' && ((event.data.message.chat_type === 'group' && event.data.message.mentions) || event.data.message.chat_type === 'p2p')) {
+
+      if (event.name === 'im.message.receive_v1' && judgingRobots(event, app)) {
         //判断是不是帮助模块。是则发送卡片消息，不是则继续往下调用
         let helpStatus = await chatSessionCard(client, event, app, res);
         if (!helpStatus) {
