@@ -182,7 +182,8 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
             maxPromptTokens: config.ai?.maxPromptTokens || 2000
           }
         },
-        aiResourceId: app.aiResourceId
+        aiResourceId: app.aiResourceId,
+        name: app.name || '',
       };
     }
     if (app.appType === 'DINGTALK') {
@@ -198,7 +199,8 @@ export default function AppCard({ app }: { app: App & { aiResource: AIResource |
             maxPromptTokens: config.ai?.maxPromptTokens || 2000
           }
         },
-        aiResourceId: app.aiResourceId
+        aiResourceId: app.aiResourceId,
+        name: app.name || '',
       };
     }
     throw new Error('Invalid app type: ' + app.appType);
