@@ -167,24 +167,23 @@ export const OpenAIStream = async (
 
   if (res.status !== 200) {
     console.error(res);
-    Sentry.captureException(new Error(`Open AI request error: ${res.status} - ${await res.text()}` ));
-
-    const result = await res.text();
+    const textResult = await res.text();
+    Sentry.captureException(new Error(`Open AI request error: ${res.status} - ${textResult}` ));
 
     try{
-      const resultJson = JSON.parse(result);
+      const resultJson = JSON.parse(textResult);
       await onError(resultJson);
       await onComplete();
       if (resultJson.error) {
         throw new OpenAIError(resultJson.error.message, resultJson.error.type, resultJson.error.param, resultJson.error.code, params);
       } else {
-        throw new Error(`OpenAI API returned an error: ${result}`);
+        throw new Error(`OpenAI API returned an error: ${textResult}`);
       }
     }
     catch(e){
-      await onError(result);
+      await onError(textResult);
       await onComplete();
-      throw new Error(`OpenAI API returned an error: ${result}`);
+      throw new Error(`OpenAI API returned an error: ${textResult}`);
     }
   }
 

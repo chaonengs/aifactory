@@ -70,6 +70,12 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+enum OrganizationPlan {
+  FREE
+  PRO
+  ULTIMATE
+}
+
 model Organization {
   id             String              @id @default(cuid())
   name           String
@@ -81,6 +87,7 @@ model Organization {
   sensitiveWords SensitiveWord[]
   chatSessions   ChatSession[]
   providers      Provider[]
+  plan           OrganizationPlan @default(FREE)
 }
 
 enum Role {
@@ -302,3 +309,6 @@ model Provider {
 
   @@index([organizationId])
 }
+
+
+
