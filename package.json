@@ -37,6 +37,8 @@
     "@reduxjs/toolkit": "^1.9.5",
     "@sentry/nextjs": "^7.54.0",
     "@tabler/icons-react": "^2.20.0",
+    "@upstash/redis": "^1.22.0",
+    "@vercel/kv": "^0.2.2",
     "@wecom/crypto": "^1.0.1",
     "add": "^2.0.6",
     "amazon-cognito-identity-js": "^6.2.0",
