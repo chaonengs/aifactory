@@ -15,7 +15,8 @@ const schema = buildSchemaSync({
 });
 
 const server = new ApolloServer({
-  schema
+  schema, 
+  introspection: true,
 });
 
 export default startServerAndCreateNextHandler(server, {
