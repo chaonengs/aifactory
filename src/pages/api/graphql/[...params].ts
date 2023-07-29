@@ -19,9 +19,15 @@ const server = new ApolloServer({
   introspection: true,
 });
 
-export default startServerAndCreateNextHandler(server, {
+export default (req: NextApiRequest, res: NextApiResponse) => { 
+  console.log(req)
+  console.log(req.method)
+  console.log(req.body)
+  console.log(req.headers)
+  startServerAndCreateNextHandler(server, {
   context: async (req, res) => ({ req, res, prisma }),
 });
+}
 
 // const handler = (req: NextApiRequest, res: NextApiResponse) => {
 //   const graphqlHandler = startServerAndCreateNextHandler(server, { context: async (req, res) => ({ req, res, prisma }) });
